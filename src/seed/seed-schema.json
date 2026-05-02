@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ISO 27001 Control Seed Record",
+  "description": "Schema for a single control row in the controls-2022.json or controls-2013.json seed files.",
+  "type": "object",
+  "required": [
+    "control_id",
+    "version",
+    "name",
+    "theme",
+    "description",
+    "control_type",
+    "new_in_2022"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "control_id": {
+      "type": "string",
+      "description": "Annex A control identifier (e.g. '5.1' for 2022, 'A.5.1.1' for 2013).",
+      "pattern": "^(A\\.)?[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+    },
+    "version": {
+      "type": "string",
+      "enum": ["2022", "2013"],
+      "description": "ISO 27001 edition this control belongs to."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short name of the control as it appears in the standard."
+    },
+    "theme": {
+      "type": "string",
+      "description": "Control theme / domain (e.g. 'Organizational', 'Technological', 'A.5 Information security policies')."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Normative control statement from the standard."
+    },
+    "guidance": {
+      "type": "string",
+      "description": "Implementation guidance text (optional)."
+    },
+    "control_type": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["Preventive", "Detective", "Corrective"]
+      },
+      "minItems": 1,
+      "description": "One or more control type classifications."
+    },
+    "attributes": {
+      "type": "object",
+      "description": "ISO 27001:2022 attribute tags (null or absent for 2013 controls).",
+      "properties": {
+        "information_security_properties": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "cybersecurity_concepts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "operational_capabilities": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "security_domains": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "related_controls": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Control IDs of related controls within the same version."
+    },
+    "new_in_2022": {
+      "type": "boolean",
+      "description": "True only for the 11 controls introduced in the 2022 edition."
+    },
+    "iso_clause_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Mandatory ISMS clause IDs (4–10) that reference this control."
+    }
+  }
+}

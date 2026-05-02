@@ -12,6 +12,7 @@
  */
 
 import { openDb, closeDb } from "./db/connection.js";
+import { seedAll } from "./seed/seeder.js";
 
 const args = process.argv.slice(2);
 const dbFlag = args.indexOf("--db");
@@ -39,7 +40,11 @@ try {
 
   console.error(`[iso27001-mcp] Database ready: ${dbPath}`);
   console.error(`[iso27001-mcp] Applied migrations: ${applied.map((r) => r.filename).join(", ")}`);
-  console.error("[iso27001-mcp] Phase 1 complete — server stub running.");
+
+  // Phase 2: seed all ISO 27001 reference data (idempotent)
+  seedAll(db);
+
+  console.error("[iso27001-mcp] Phase 2 complete — seed data ready.");
 
   // Graceful shutdown
   process.on("SIGTERM", () => { closeDb(); process.exit(0); });
