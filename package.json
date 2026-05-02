@@ -1,0 +1,43 @@
+{
+  "name": "iso27001-mcp",
+  "version": "2.0.0",
+  "description": "Stateful ISO 27001:2022 ISMS management for Claude",
+  "license": "MIT",
+  "engines": { "node": ">=20.11.0" },
+  "volta": { "node": "20.11.0" },
+  "bin": { "iso27001-mcp": "./dist/index.js" },
+  "main": "./dist/index.js",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "dev": "tsx src/index.ts",
+    "generate-checksums": "tsx scripts/generate-checksums.ts",
+    "verify-checksums": "tsx scripts/verify-checksums.ts"
+  },
+  "dependencies": {
+    "better-sqlite3-multiple-ciphers": "12.9.0",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "express": "4.22.1",
+    "express-rate-limit": "7.5.1",
+    "mustache": "4.2.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.13",
+    "@types/express": "4.17.25",
+    "@types/mustache": "4.2.6",
+    "@types/node": "20.19.39",
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "@typescript-eslint/parser": "7.18.0",
+    "@vitest/coverage-v8": "1.6.1",
+    "eslint": "8.57.1",
+    "tsup": "8.4.0",
+    "tsx": "4.21.0",
+    "typescript": "5.4.5",
+    "vitest": "1.6.1"
+  }
+}
