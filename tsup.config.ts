@@ -9,7 +9,7 @@ export default defineConfig({
   sourcemap: false,
   minify: false,
   banner: { js: "#!/usr/bin/env node" },
-  // Keep native modules external — @journeyapps/sqlcipher must not be bundled
-  external: ["@journeyapps/sqlcipher"],
+  // Keep native modules external — .node binaries cannot be bundled by esbuild
+  external: ["better-sqlite3-multiple-ciphers"],
   noExternal: [],
 });
