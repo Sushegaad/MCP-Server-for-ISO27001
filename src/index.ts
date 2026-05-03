@@ -10,6 +10,7 @@
  */
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { startSseServer } from "./transport/sse.js";
 import { loadSecrets } from "./security/secrets.js";
 import { openDb, closeDb } from "./db/connection.js";
 import { seedAll } from "./seed/seeder.js";
@@ -180,13 +181,20 @@ async function startServer(): Promise<void> {
     // Phase 3: warn about admin keys with no expiry
     warnAdminExpiry();
 
-    // Phase 4: build server (registers all 43 tools) and connect stdio transport
-    const server    = createServer();
-    const transport = new StdioServerTransport();
+    // Phase 7: select transport based on --mode flag
+    const mode = argValue("--mode") ?? "local";
+    const server = createServer();
 
-    await server.connect(transport);
-
-    console.error("[iso27001-mcp] Server ready — listening on stdio.");
+    if (mode === "hosted" || mode === "team") {
+      // SSE transport for multi-user modes
+      startSseServer(server);
+      console.error(`[iso27001-mcp] Server ready — SSE mode on port ${process.env["SSE_PORT"] ?? "3000"}.`);
+    } else {
+      // stdio transport for local/CI modes (default)
+      const transport = new StdioServerTransport();
+      await server.connect(transport);
+      console.error("[iso27001-mcp] Server ready — listening on stdio.");
+    }
 
   } catch (err) {
     // Re-throw so the top-level .catch() handler can log and exit

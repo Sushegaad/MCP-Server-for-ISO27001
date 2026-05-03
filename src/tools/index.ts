@@ -27,6 +27,49 @@ import { TOOL_SCHEMAS } from "../security/validate.js";
 import { handleGetServerInfo } from "./server-info.js";
 import { getDb } from "../db/connection.js";
 
+// ── Group 1: Control Registry ─────────────────────────────────
+import {
+  handleGetControl, handleListControls, handleSearchControls,
+  handleGetControlAttributes, handleCompareVersions,
+  handleGetClauseRequirement, handleListClauseRequirements,
+} from "./controls.js";
+
+// ── Group 2: Gap Analysis ─────────────────────────────────────
+import {
+  handleCreateGapAssessment, handleUpdateControlStatus, handleGetGapSummary,
+  handleListGapAssessments, handleExportGapReport,
+  handleGenerateRemediationRoadmap, handleArchiveGapAssessment,
+} from "./gap-analysis.js";
+
+// ── Group 3: Risk Management ──────────────────────────────────
+import {
+  handleCreateRisk, handleGetRisk, handleUpdateRisk, handleListRisks,
+  handleGetRiskSummary, handleCreateTreatmentPlan,
+  handleUpdateTreatmentStatus, handleGenerateRiskRegister,
+} from "./risks.js";
+
+// ── Group 4: Policy Management ────────────────────────────────
+import {
+  handleCreatePolicy, handleGetPolicy, handleUpdatePolicy, handleListPolicies,
+} from "./policies.js";
+
+// ── Group 5: Statement of Applicability ──────────────────────
+import {
+  handleGenerateSoa, handleUpdateSoaEntry, handleExportSoa,
+} from "./soa.js";
+
+// ── Group 6: Audit Management ─────────────────────────────────
+import {
+  handleCreateAudit, handleRecordFinding, handleCreateCorrectiveAction,
+  handleUpdateCorrectiveAction, handleGenerateAuditReport,
+} from "./audit-management.js";
+
+// ── Group 7: Evidence Tracking ────────────────────────────────
+import {
+  handleRegisterEvidence, handleListEvidence, handleGetEvidenceGaps,
+  handleLinkJiraTicket, handleLinkGithubIssue,
+} from "./evidence-tracking.js";
+
 // ── Types ─────────────────────────────────────────────────────
 
 type ToolResult = {
@@ -34,7 +77,7 @@ type ToolResult = {
   isError: boolean;
 };
 
-type ToolHandler = (args: Record<string, unknown>) => ToolResult;
+type ToolHandler = (args: Record<string, unknown>) => ToolResult | Promise<ToolResult>;
 
 // ── extractShape ─────────────────────────────────────────────
 // MCP SDK registerTool() expects a ZodRawShape, not a full ZodObject.
@@ -55,14 +98,6 @@ function ok(data: unknown): ToolResult {
     content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
     isError: false,
   };
-}
-
-function stub(toolName: string): ToolResult {
-  return ok({
-    status: "not_implemented",
-    tool: toolName,
-    message: `${toolName} will be implemented in Phase 5–6.`,
-  });
 }
 
 // ── TOOL_DESCRIPTIONS ─────────────────────────────────────────
@@ -180,58 +215,58 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
 
 const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
-  // ── Group 1: Control Registry (stubs) ────────────────────
-  get_control:              (args) => stub(`get_control(${JSON.stringify(args)})`),
-  list_controls:            (_)    => stub("list_controls"),
-  search_controls:          (args) => stub(`search_controls("${(args as {query?: string}).query ?? ""}")`),
-  get_control_attributes:   (args) => stub(`get_control_attributes(${JSON.stringify(args)})`),
-  compare_versions:         (args) => stub(`compare_versions(${JSON.stringify(args)})`),
-  get_clause_requirement:   (args) => stub(`get_clause_requirement(${JSON.stringify(args)})`),
-  list_clause_requirements: (_)    => stub("list_clause_requirements"),
+  // ── Group 1: Control Registry ────────────────────────────
+  get_control:              handleGetControl,
+  list_controls:            handleListControls,
+  search_controls:          handleSearchControls,
+  get_control_attributes:   handleGetControlAttributes,
+  compare_versions:         handleCompareVersions,
+  get_clause_requirement:   handleGetClauseRequirement,
+  list_clause_requirements: handleListClauseRequirements,
 
-  // ── Group 2: Gap Analysis (stubs) ────────────────────────
-  create_gap_assessment:        (_) => stub("create_gap_assessment"),
-  update_control_status:        (_) => stub("update_control_status"),
-  get_gap_summary:              (_) => stub("get_gap_summary"),
-  list_gap_assessments:         (_) => stub("list_gap_assessments"),
-  export_gap_report:            (_) => stub("export_gap_report"),
-  generate_remediation_roadmap: (_) => stub("generate_remediation_roadmap"),
-  archive_gap_assessment:       (_) => stub("archive_gap_assessment"),
+  // ── Group 2: Gap Analysis ─────────────────────────────────
+  create_gap_assessment:        handleCreateGapAssessment,
+  update_control_status:        handleUpdateControlStatus,
+  get_gap_summary:              handleGetGapSummary,
+  list_gap_assessments:         handleListGapAssessments,
+  export_gap_report:            handleExportGapReport,
+  generate_remediation_roadmap: handleGenerateRemediationRoadmap,
+  archive_gap_assessment:       handleArchiveGapAssessment,
 
-  // ── Group 3: Risk Management (stubs) ─────────────────────
-  create_risk:             (_) => stub("create_risk"),
-  get_risk:                (_) => stub("get_risk"),
-  update_risk:             (_) => stub("update_risk"),
-  list_risks:              (_) => stub("list_risks"),
-  get_risk_summary:        (_) => stub("get_risk_summary"),
-  create_treatment_plan:   (_) => stub("create_treatment_plan"),
-  update_treatment_status: (_) => stub("update_treatment_status"),
-  generate_risk_register:  (_) => stub("generate_risk_register"),
+  // ── Group 3: Risk Management ──────────────────────────────
+  create_risk:             handleCreateRisk,
+  get_risk:                handleGetRisk,
+  update_risk:             handleUpdateRisk,
+  list_risks:              handleListRisks,
+  get_risk_summary:        handleGetRiskSummary,
+  create_treatment_plan:   handleCreateTreatmentPlan,
+  update_treatment_status: handleUpdateTreatmentStatus,
+  generate_risk_register:  handleGenerateRiskRegister,
 
-  // ── Group 4: Policy Management (stubs) ───────────────────
-  create_policy: (_) => stub("create_policy"),
-  get_policy:    (_) => stub("get_policy"),
-  update_policy: (_) => stub("update_policy"),
-  list_policies: (_) => stub("list_policies"),
+  // ── Group 4: Policy Management ────────────────────────────
+  create_policy: handleCreatePolicy,
+  get_policy:    handleGetPolicy,
+  update_policy: handleUpdatePolicy,
+  list_policies: handleListPolicies,
 
-  // ── Group 5: Statement of Applicability (stubs) ──────────
-  generate_soa:     (_) => stub("generate_soa"),
-  update_soa_entry: (_) => stub("update_soa_entry"),
-  export_soa:       (_) => stub("export_soa"),
+  // ── Group 5: Statement of Applicability ──────────────────
+  generate_soa:     handleGenerateSoa,
+  update_soa_entry: handleUpdateSoaEntry,
+  export_soa:       handleExportSoa,
 
-  // ── Group 6: Audit Management (stubs) ────────────────────
-  create_audit:             (_) => stub("create_audit"),
-  record_finding:           (_) => stub("record_finding"),
-  create_corrective_action: (_) => stub("create_corrective_action"),
-  update_corrective_action: (_) => stub("update_corrective_action"),
-  generate_audit_report:    (_) => stub("generate_audit_report"),
+  // ── Group 6: Audit Management ─────────────────────────────
+  create_audit:             handleCreateAudit,
+  record_finding:           handleRecordFinding,
+  create_corrective_action: handleCreateCorrectiveAction,
+  update_corrective_action: handleUpdateCorrectiveAction,
+  generate_audit_report:    handleGenerateAuditReport,
 
-  // ── Group 7: Evidence Tracking (stubs) ───────────────────
-  register_evidence: (_) => stub("register_evidence"),
-  list_evidence:     (_) => stub("list_evidence"),
-  get_evidence_gaps: (_) => stub("get_evidence_gaps"),
-  link_jira_ticket:  (_) => stub("link_jira_ticket"),
-  link_github_issue: (_) => stub("link_github_issue"),
+  // ── Group 7: Evidence Tracking ────────────────────────────
+  register_evidence: handleRegisterEvidence,
+  list_evidence:     handleListEvidence,
+  get_evidence_gaps: handleGetEvidenceGaps,
+  link_jira_ticket:  handleLinkJiraTicket,
+  link_github_issue: handleLinkGithubIssue,
 
   // ── Group 8: Server Info ──────────────────────────────────
   get_server_info: (_args) => handleGetServerInfo(),
@@ -333,7 +368,7 @@ export function registerAllTools(server: McpServer): void {
         const { sanitisedFields } = sanitiseParams(args as Record<string, unknown>);
 
         // ── Step 7: call domain handler ───────────────────────
-        result = handler(args as Record<string, unknown>);
+        result = await handler(args as Record<string, unknown>);
 
         outcome = result.isError ? "error" : "success";
         if (result.isError) {

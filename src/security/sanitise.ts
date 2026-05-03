@@ -88,11 +88,13 @@ export function sanitise(input: string, fieldName: string): SanitiseResult {
   // Trim and apply length cap
   cleaned = cleaned.trim();
   const cap = LENGTH_CAPS[fieldName] ?? DEFAULT_LENGTH_CAP;
-  if (cleaned.length > cap) {
+  const truncated = cleaned.length > cap;
+  if (truncated) {
     cleaned = cleaned.slice(0, cap);
   }
 
-  const wasSanitised = cleaned !== input.trim().slice(0, cap);
+  // wasSanitised is true if injection patterns were removed OR the input was truncated
+  const wasSanitised = truncated || cleaned !== input.trim().slice(0, cap);
 
   return {
     cleaned,
