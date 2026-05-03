@@ -472,4 +472,60 @@ describe("handleGenerateRiskRegister", () => {
     expect(data.format).toBe("markdown");
     expect(data.content).toContain("# Risk Register");
   });
+
+  it("renders '—' placeholder for null owner in markdown format", () => {
+    const riskNoOwner = { ...baseRiskRow, owner: null, treatment_types: null };
+    mockStmt.all.mockReturnValue([riskNoOwner]);
+
+    const result = handleGenerateRiskRegister({ format: "markdown" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.content).toContain("—");
+  });
+
+  it("returns empty treatment_types array for json format when treatment_types is null", () => {
+    const riskNoTreatments = { ...baseRiskRow, treatment_types: null };
+    mockStmt.all.mockReturnValue([riskNoTreatments]);
+
+    const result = handleGenerateRiskRegister({ format: "json" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.risks[0].treatment_types).toHaveLength(0);
+  });
+
+  it("applies risk_level_filter and status_filter", () => {
+    mockStmt.all.mockReturnValue([riskWithTreatments]);
+
+    const result = handleGenerateRiskRegister({
+      format: "json",
+      risk_level_filter: "high",
+      status_filter: "open",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.total).toBe(1);
+  });
+});
+
+// ── handleListRisks — with filters ───────────────────────────────────────
+
+describe("handleListRisks — with filters", () => {
+  it("applies risk_level, status, and owner filters", () => {
+    const countStmt = { get: vi.fn(() => ({ n: 2 })), all: vi.fn(() => []), run: vi.fn() };
+    const rowsStmt  = { get: vi.fn(), all: vi.fn(() => [baseRiskRow, { ...baseRiskRow, id: "risk-2" }]), run: vi.fn() };
+
+    mockDb.prepare
+      .mockReturnValueOnce(countStmt)
+      .mockReturnValueOnce(rowsStmt);
+
+    const result = handleListRisks({ risk_level: "high", status: "open", owner: "security-team" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.total).toBe(2);
+    expect(data.risks).toHaveLength(2);
+  });
 });

@@ -308,3 +308,120 @@ describe("handleListPolicies", () => {
     expect(data.policies).toHaveLength(0);
   });
 });
+
+// ── Additional branch-coverage tests ─────────────────────────
+
+describe("handleCreatePolicy — template branch coverage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDb.prepare.mockReturnValue(mockStmt);
+  });
+
+  it("returns empty clause/control mappings when template has no frontmatter", () => {
+    vi.mocked(readFileSync).mockReturnValueOnce(
+      "# {{organisation_name}} Policy\n\nScope: {{scope}}\nOwner: {{owner}}\n",
+    );
+    mockStmt.run.mockReturnValue({ changes: 1 });
+
+    const result = handleCreatePolicy({
+      type: "information_security",
+      organisation_name: "Acme Ltd",
+      scope: "All IT systems",
+      owner: "CISO",
+      effective_date: "2025-01-01",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.clause_mappings).toHaveLength(0);
+    expect(data.control_mappings).toHaveLength(0);
+  });
+
+  it("returns empty mappings when frontmatter has no clause/control_mappings keys", () => {
+    // Frontmatter is present but doesn't define the expected keys →
+    // clauseMatch and controlMatch will both be null (covers if(clauseMatch)=false branch)
+    vi.mocked(readFileSync).mockReturnValueOnce(
+      "---\ntitle: Test Policy\n---\n# {{organisation_name}} Policy\n\nScope: {{scope}}\n",
+    );
+    mockStmt.run.mockReturnValue({ changes: 1 });
+
+    const result = handleCreatePolicy({
+      type: "information_security",
+      organisation_name: "Acme Ltd",
+      scope: "All IT systems",
+      owner: "CISO",
+      effective_date: "2025-01-01",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.clause_mappings).toHaveLength(0);
+    expect(data.control_mappings).toHaveLength(0);
+  });
+});
+
+describe("handleListPolicies — additional filter branches", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDb.prepare.mockReturnValue(mockStmt);
+  });
+
+  it("applies type filter when provided", () => {
+    const countStmt = { get: vi.fn(() => ({ n: 1 })), all: vi.fn(() => []), run: vi.fn() };
+    const rowsStmt  = {
+      get: vi.fn(),
+      all: vi.fn(() => [{ ...BASE_POLICY_ROW, next_review_date: "2099-12-31" }]),
+      run: vi.fn(),
+    };
+    mockDb.prepare.mockReturnValueOnce(countStmt).mockReturnValueOnce(rowsStmt);
+
+    const result = handleListPolicies({ type: "information_security" });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.total).toBe(1);
+  });
+
+  it("applies owner and overdue_only filters", () => {
+    const countStmt = { get: vi.fn(() => ({ n: 0 })), all: vi.fn(() => []), run: vi.fn() };
+    const rowsStmt  = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(countStmt).mockReturnValueOnce(rowsStmt);
+
+    const result = handleListPolicies({ owner: "CISO", overdue_only: true });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.total).toBe(0);
+    expect(data.policies).toHaveLength(0);
+  });
+});
+
+describe("handleUpdatePolicy — no scope/owner provided", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDb.prepare.mockReturnValue(mockStmt);
+  });
+
+  it("falls back to current scope and owner when not supplied", () => {
+    const getStmt     = { get: vi.fn(() => BASE_POLICY_ROW), all: vi.fn(() => []), run: vi.fn() };
+    const archiveStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
+    const updateStmt  = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
+
+    mockDb.prepare
+      .mockReturnValueOnce(getStmt)
+      .mockReturnValueOnce(archiveStmt)
+      .mockReturnValueOnce(updateStmt);
+
+    // scope and owner deliberately omitted → handler uses current.scope / current.owner
+    const result = handleUpdatePolicy({
+      policy_id: "pol-1",
+      reviewed_by: "auditor@example.com",
+      change_summary: "Minor text cleanup",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.id).toBe("pol-1");
+    expect(data.version).toBe(2);
+  });
+});

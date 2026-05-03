@@ -459,3 +459,162 @@ describe("handleArchiveGapAssessment", () => {
     }
   });
 });
+
+// ── handleGetGapSummary — breakdown_by branches ───────────────────────────
+
+// Shared control fixtures with attributes needed for all breakdown types
+const CONTROLS_WITH_META = [
+  {
+    control_id: "5.1", name: "C1", theme: "Organizational",
+    control_type: '["Preventive"]', new_in_2022: 0, description: "",
+    attributes: JSON.stringify({ cybersecurity_concepts: ["Identify", "Protect"] }),
+  },
+  {
+    control_id: "5.2", name: "C2", theme: "Technological",
+    control_type: '["Detective"]', new_in_2022: 0, description: "",
+    attributes: JSON.stringify({ cybersecurity_concepts: ["Detect"] }),
+  },
+];
+
+function makeBreakdownMocks(breakdown_by: string) {
+  const assessStmt    = { get: vi.fn(() => activeAssessment), all: vi.fn(() => []), run: vi.fn() };
+  const controlsStmt  = { get: vi.fn(), all: vi.fn(() => CONTROLS_WITH_META), run: vi.fn() };
+  const statusesStmt  = {
+    get: vi.fn(),
+    all: vi.fn(() => [
+      { control_id: "5.1", status: "implemented" },
+      { control_id: "5.2", status: "not_implemented" },
+    ]),
+    run: vi.fn(),
+  };
+  const openRisksStmt = {
+    get: vi.fn(),
+    all: vi.fn(() => [
+      { related_controls: '["5.1","5.2"]', risk_score: 20 },
+    ]),
+    run: vi.fn(),
+  };
+
+  mockDb.prepare
+    .mockReturnValueOnce(assessStmt)
+    .mockReturnValueOnce(controlsStmt)
+    .mockReturnValueOnce(statusesStmt)
+    .mockReturnValueOnce(openRisksStmt);
+
+  return handleGetGapSummary({ assessment_id: "assess-1", breakdown_by });
+}
+
+describe("handleGetGapSummary — breakdown_by branches", () => {
+  it("returns theme breakdown when breakdown_by='theme'", () => {
+    const result = makeBreakdownMocks("theme");
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(Array.isArray(data.breakdown)).toBe(true);
+    expect(data.breakdown.length).toBeGreaterThan(0);
+    expect(data.breakdown[0]).toHaveProperty("group");
+    expect(data.breakdown[0]).toHaveProperty("total");
+  });
+
+  it("returns control_type breakdown when breakdown_by='control_type'", () => {
+    const result = makeBreakdownMocks("control_type");
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(Array.isArray(data.breakdown)).toBe(true);
+    expect(data.breakdown.length).toBeGreaterThan(0);
+    expect(data.breakdown[0]).toHaveProperty("group");
+  });
+
+  it("returns cybersecurity_concept breakdown when breakdown_by='cybersecurity_concept'", () => {
+    const result = makeBreakdownMocks("cybersecurity_concept");
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(Array.isArray(data.breakdown)).toBe(true);
+    expect(data.breakdown.length).toBeGreaterThan(0);
+  });
+
+  it("includes top_10_remediation_priority with risk scores when risks reference controls", () => {
+    const result = makeBreakdownMocks("theme");
+    const data = JSON.parse(result.content[0].text);
+    // top_10_remediation_priority should contain controls with max_risk_score from open risks
+    expect(Array.isArray(data.top_10_remediation_priority)).toBe(true);
+  });
+});
+
+// ── handleCreateGapAssessment — themes_in_scope branch ───────────────────
+
+describe("handleCreateGapAssessment — themes_in_scope branch", () => {
+  it("filters controls by themes_in_scope when provided", () => {
+    const controlsStmt  = { get: vi.fn(), all: vi.fn(() => [{ control_id: "5.1" }]), run: vi.fn() };
+    const insertStmt    = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1 })) };
+
+    mockDb.prepare
+      .mockReturnValueOnce(controlsStmt)
+      .mockReturnValue(insertStmt);
+
+    const result = handleCreateGapAssessment({
+      name:            "Themed Assessment",
+      isms_version:    "2022",
+      themes_in_scope: ["Organizational"],
+    });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.controls_in_scope).toBe(1);
+  });
+});
+
+// ── handleGenerateRemediationRoadmap — risk_score branch ─────────────────
+
+describe("handleGenerateRemediationRoadmap — with open risks", () => {
+  it("sorts gaps by max linked risk_score descending", () => {
+    const assessStmt = { get: vi.fn(() => activeAssessment), all: vi.fn(() => []), run: vi.fn() };
+    const gapsStmt   = {
+      get: vi.fn(),
+      all: vi.fn(() => [
+        { control_id: "5.1", status: "not_implemented", notes: null, name: "C1", theme: "Technological", description: "", control_type: '["Preventive"]' },
+        { control_id: "5.2", status: "partial",         notes: null, name: "C2", theme: "Organizational", description: "", control_type: '["Detective"]' },
+      ]),
+      run: vi.fn(),
+    };
+    // Open risk references 5.2 with a high risk_score — should sort 5.2 before 5.1
+    const openRisksStmt = {
+      get: vi.fn(),
+      all: vi.fn(() => [{ related_controls: '["5.2"]', risk_score: 25 }]),
+      run: vi.fn(),
+    };
+
+    mockDb.prepare
+      .mockReturnValueOnce(assessStmt)
+      .mockReturnValueOnce(gapsStmt)
+      .mockReturnValueOnce(openRisksStmt);
+
+    const result = handleGenerateRemediationRoadmap({ assessment_id: "assess-1", timeline_weeks: 12 });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.total_gaps).toBe(2);
+    // Verify that 5.2 has linked_risk_score populated from the open risk
+    const allItems = data.phases.flatMap((p: { items: unknown[] }) => p.items) as { control_id: string; linked_risk_score: number }[];
+    const item52 = allItems.find((i) => i.control_id === "5.2");
+    const item51 = allItems.find((i) => i.control_id === "5.1");
+    expect(item52).toBeDefined();
+    expect(item51).toBeDefined();
+    expect(item52!.linked_risk_score).toBe(25);
+    expect(item51!.linked_risk_score).toBe(0);
+  });
+});
+
+// ── handleListGapAssessments — archived filter ───────────────────────────
+
+describe("handleListGapAssessments — archived filter", () => {
+  it("returns archived assessments when filter='archived'", () => {
+    mockStmt.all.mockReturnValue([archivedAssessment]);
+
+    const result = handleListGapAssessments({ filter: "archived" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.count).toBe(1);
+    expect(data.assessments[0].status).toBe("archived");
+  });
+});

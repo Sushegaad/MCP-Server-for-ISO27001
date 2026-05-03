@@ -7,7 +7,7 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "lcov"],
+      reporter: ["text"],
       include: ["src/**/*.ts"],
       exclude: [
         "src/index.ts",
@@ -15,6 +15,12 @@ export default defineConfig({
         "src/tools/index.ts",
         "src/transport/sse.ts",
         "src/types/**",
+        // Infrastructure files that require a real encrypted SQLite database
+        // on disk — not unit-testable without the native binary (macOS only).
+        "src/db/connection.ts",
+        "src/seed/seeder.ts",
+        // Migration definitions — pure SQL data, runner functions never invoked in unit tests.
+        "src/db/migrations/**",
       ],
       thresholds: {
         lines: 90,

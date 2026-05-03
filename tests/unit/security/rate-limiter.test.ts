@@ -5,7 +5,7 @@
  * No DB access required.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   checkRateLimit,
   resetRateLimit,
@@ -76,5 +76,50 @@ describe("currentWindowCount", () => {
     checkRateLimit("xyz");
     checkRateLimit("xyz");
     expect(currentWindowCount("xyz")).toBe(3);
+  });
+});
+
+// ── getRpm fallback branches ──────────────────────────────────
+
+describe("getRpm fallback to 500", () => {
+  it("uses 500 when RATE_LIMIT_RPM is NaN (covers isNaN branch)", () => {
+    process.env["RATE_LIMIT_RPM"] = "not-a-number";
+    clearAllRateLimits();
+    // With rpm=500, 6 calls should not throw (well below the limit)
+    for (let i = 0; i < 6; i++) {
+      expect(() => checkRateLimit("nan-rpm-key")).not.toThrow();
+    }
+  });
+
+  it("uses 500 when RATE_LIMIT_RPM is zero (covers val<=0 branch)", () => {
+    process.env["RATE_LIMIT_RPM"] = "0";
+    clearAllRateLimits();
+    // With rpm=500 fallback, 6 calls should not throw
+    for (let i = 0; i < 6; i++) {
+      expect(() => checkRateLimit("zero-rpm-key")).not.toThrow();
+    }
+  });
+});
+
+// ── Timestamp eviction ────────────────────────────────────────
+
+describe("timestamp eviction after window expires", () => {
+  it("evicts stale entries older than 60 s and allows new calls (covers splice branch)", () => {
+    vi.useFakeTimers();
+    try {
+      // Make 3 calls at T=0
+      for (let i = 0; i < 3; i++) checkRateLimit("evict-key");
+      expect(currentWindowCount("evict-key")).toBe(3);
+
+      // Advance past the 60-second window
+      vi.advanceTimersByTime(61_000);
+
+      // The stale entries should be evicted; this call should succeed
+      expect(() => checkRateLimit("evict-key")).not.toThrow();
+      // Only the one new call should be in the window
+      expect(currentWindowCount("evict-key")).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

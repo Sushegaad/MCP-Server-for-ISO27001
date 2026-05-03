@@ -336,3 +336,113 @@ describe("handleListClauseRequirements", () => {
     }
   });
 });
+
+// ── Additional branch-coverage tests ─────────────────────────────────────
+
+describe("handleListControls — new_in_2022 / control_type / cybersecurity_concept filters", () => {
+  it("applies new_in_2022=true filter", () => {
+    const countStmt = { get: vi.fn(() => ({ n: 1 })), all: vi.fn(() => []), run: vi.fn() };
+    const rowsStmt  = { get: vi.fn(), all: vi.fn(() => [{ ...baseControlRow, new_in_2022: 1 }]), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(countStmt).mockReturnValueOnce(rowsStmt);
+
+    const result = handleListControls({ new_in_2022: true });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.total).toBe(1);
+    expect(data.controls[0].new_in_2022).toBe(true);
+  });
+
+  it("applies control_type filter", () => {
+    const countStmt = { get: vi.fn(() => ({ n: 1 })), all: vi.fn(() => []), run: vi.fn() };
+    const rowsStmt  = { get: vi.fn(), all: vi.fn(() => [baseControlRow]), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(countStmt).mockReturnValueOnce(rowsStmt);
+
+    const result = handleListControls({ control_type: "Preventive" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.total).toBe(1);
+  });
+
+  it("applies cybersecurity_concept filter", () => {
+    const countStmt = { get: vi.fn(() => ({ n: 1 })), all: vi.fn(() => []), run: vi.fn() };
+    const rowsStmt  = { get: vi.fn(), all: vi.fn(() => [baseControlRow]), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(countStmt).mockReturnValueOnce(rowsStmt);
+
+    const result = handleListControls({ cybersecurity_concept: "Identify" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.total).toBe(1);
+  });
+});
+
+describe("handleSearchControls — version filter branch", () => {
+  it("applies version filter to FTS query", () => {
+    mockStmt.all.mockReturnValue([baseControlRow]);
+
+    const result = handleSearchControls({ query: "policy", version: "2022", limit: 10 });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.count).toBe(1);
+  });
+});
+
+describe("handleCompareVersions — additional query branches", () => {
+  it("queries with both v2022_id and v2013_id when both are supplied", () => {
+    const mappingRow = {
+      id: "map-1", v2013_id: "A.5.1.1", v2022_id: "5.1",
+      mapping_type: "equivalent", change_summary: "Merged", migration_notes: null,
+    };
+    const mappingStmt       = { get: vi.fn(), all: vi.fn(() => [mappingRow]), run: vi.fn() };
+    const controlDetailStmt = { get: vi.fn(() => null), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare
+      .mockReturnValueOnce(mappingStmt)
+      .mockReturnValueOnce(controlDetailStmt) // enrich v2013
+      .mockReturnValueOnce(controlDetailStmt); // enrich v2022
+
+    const result = handleCompareVersions({ v2022_id: "5.1", v2013_id: "A.5.1.1" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.mappings).toHaveLength(1);
+  });
+
+  it("queries with v2013_id only when v2022_id is absent", () => {
+    const mappingRow = {
+      id: "map-2", v2013_id: "A.5.1.1", v2022_id: null,
+      mapping_type: "removed", change_summary: null, migration_notes: null,
+    };
+    const mappingStmt       = { get: vi.fn(), all: vi.fn(() => [mappingRow]), run: vi.fn() };
+    const controlDetailStmt = { get: vi.fn(() => null), all: vi.fn(() => []), run: vi.fn() };
+    // enrich(null, "2022") returns null immediately — prepare is only called once for v2013
+    mockDb.prepare
+      .mockReturnValueOnce(mappingStmt)
+      .mockReturnValueOnce(controlDetailStmt); // enrich v2013 only
+
+    const result = handleCompareVersions({ v2013_id: "A.5.1.1" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.mappings[0].v2022_details).toBeNull();
+  });
+});
+
+describe("handleGetControlAttributes — null attributes branch", () => {
+  it("returns empty attributes object when row.attributes is null", () => {
+    mockStmt.get.mockReturnValue({
+      control_id: "5.1",
+      version: "2022",
+      name: "Policies for IS",
+      attributes: null,
+    });
+
+    const result = handleGetControlAttributes({ control_id: "5.1" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.attributes).toEqual({});
+  });
+});

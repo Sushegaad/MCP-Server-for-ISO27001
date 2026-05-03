@@ -30,6 +30,7 @@ vi.mock("../../../src/security/secrets.js", () => ({
 
 import { handleGetServerInfo } from "../../../src/tools/server-info.js";
 import { getUptimeSeconds } from "../../../src/db/connection.js";
+import { getEnv } from "../../../src/security/secrets.js";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -126,5 +127,26 @@ describe("handleGetServerInfo", () => {
     expect(result.content).toHaveLength(1);
     expect(result.content[0].type).toBe("text");
     expect(() => JSON.parse(result.content[0].text)).not.toThrow();
+  });
+
+  it("uses npm_package_version env var when set (covers getVersion() true branch)", () => {
+    process.env["npm_package_version"] = "9.9.9";
+    try {
+      const result = handleGetServerInfo();
+      const data = parseResult(result);
+      expect(data.version).toBe("9.9.9");
+    } finally {
+      delete process.env["npm_package_version"];
+    }
+  });
+
+  it("falls back to 500 rpm when RATE_LIMIT_RPM is not a valid number", () => {
+    vi.mocked(getEnv).mockImplementation((key: string, defaultVal: string) => {
+      if (key === "RATE_LIMIT_RPM") return "not-a-number";
+      return defaultVal;
+    });
+    const result = handleGetServerInfo();
+    const data = parseResult(result);
+    expect(data.rate_limit_rpm).toBe(500);
   });
 });
