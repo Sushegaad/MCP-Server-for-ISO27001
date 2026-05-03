@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type BetterSqlite3 from "better-sqlite3";
 import { MIGRATIONS } from "./migrations/index.js";
+import { requireEnv as _requireEnv } from "../security/secrets.js";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Database = require("better-sqlite3-multiple-ciphers") as typeof BetterSqlite3;
@@ -118,15 +119,6 @@ function runMigrations(db: Db): void {
 
 /**
  * Read a required environment variable.
- * Throws a clear error immediately on startup if the variable is absent.
+ * Re-exported from security/secrets.ts for backwards compatibility.
  */
-export function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(
-      `Missing required environment variable: ${name}. ` +
-        `Check your .env file or shell environment.`,
-    );
-  }
-  return value;
-}
+export const requireEnv = _requireEnv;

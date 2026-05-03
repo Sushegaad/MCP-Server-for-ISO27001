@@ -1,57 +1,186 @@
 #!/usr/bin/env node
 /**
- * iso27001-mcp — CLI entry point.
- *
- * Phase 1 stub: validates required env vars, opens the encrypted
- * database, confirms migrations applied, and exits cleanly.
- * Full MCP transport wiring is added in Phase 4.
+ * iso27001-mcp — CLI entry point
  *
  * Usage:
- *   iso27001-mcp --mode local --db ./isms.db
- *   iso27001-mcp keygen --label "Alice" --role analyst
+ *   iso27001-mcp [--mode local|team|ci|hosted] [--db <path>]
+ *   iso27001-mcp keygen  --label <label> --role viewer|analyst|admin [--expires 90d|1y|YYYY-MM-DD]
+ *   iso27001-mcp keys    list
+ *   iso27001-mcp keys    revoke --label <label>
  */
 
+import { loadSecrets } from "./security/secrets.js";
 import { openDb, closeDb } from "./db/connection.js";
 import { seedAll } from "./seed/seeder.js";
+import {
+  generateKey,
+  listKeys,
+  revokeKey,
+  warnAdminExpiry,
+  parseExpiresFlag,
+} from "./auth/api-key.js";
+import type { Role } from "./auth/api-key.js";
+
+// ── Parse argv ────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
-const dbFlag = args.indexOf("--db");
-const dbPath = dbFlag !== -1 ? args[dbFlag + 1] : (process.env["DB_PATH"] ?? "./isms.db");
 
-// Minimal env check before opening the DB
-if (!process.env["DB_ENCRYPTION_KEY"]) {
-  console.error("[iso27001-mcp] ERROR: DB_ENCRYPTION_KEY is not set.");
-  console.error("  Copy .env.example to .env and set the required variables.");
-  process.exit(1);
+function argValue(flag: string): string | undefined {
+  const idx = args.indexOf(flag);
+  return idx !== -1 ? args[idx + 1] : undefined;
 }
 
-if (!process.env["HMAC_SECRET"]) {
-  console.error("[iso27001-mcp] ERROR: HMAC_SECRET is not set.");
-  process.exit(1);
+const subCommand = args[0];  // "keygen" | "keys" | undefined
+const dbPath = argValue("--db") ?? process.env["DB_PATH"] ?? "./isms.db";
+
+// ── Graceful shutdown ─────────────────────────────────────────
+
+function shutdown(): void {
+  closeDb();
+  process.exit(0);
 }
 
-try {
-  const db = openDb(dbPath);
+process.on("SIGTERM", shutdown);
+process.on("SIGINT",  shutdown);
 
-  // Confirm migrations table exists and both migrations are applied
-  const applied = db
-    .prepare("SELECT filename FROM _migrations ORDER BY id")
-    .all() as { filename: string }[];
+// ── Sub-commands ──────────────────────────────────────────────
 
-  console.error(`[iso27001-mcp] Database ready: ${dbPath}`);
-  console.error(`[iso27001-mcp] Applied migrations: ${applied.map((r) => r.filename).join(", ")}`);
+if (subCommand === "keygen") {
+  // iso27001-mcp keygen --label "Alice" --role analyst --expires 90d
+  handleKeygen();
+} else if (subCommand === "keys") {
+  handleKeys();
+} else {
+  // Default: start the server
+  startServer();
+}
 
-  // Phase 2: seed all ISO 27001 reference data (idempotent)
-  seedAll(db);
+// ── keygen ────────────────────────────────────────────────────
 
-  console.error("[iso27001-mcp] Phase 2 complete — seed data ready.");
+function handleKeygen(): void {
+  const label   = argValue("--label");
+  const roleStr = argValue("--role");
+  const expires = argValue("--expires");
 
-  // Graceful shutdown
-  process.on("SIGTERM", () => { closeDb(); process.exit(0); });
-  process.on("SIGINT",  () => { closeDb(); process.exit(0); });
+  if (!label) {
+    console.error("[keygen] ERROR: --label is required");
+    console.error("  Usage: iso27001-mcp keygen --label <label> --role viewer|analyst|admin [--expires 90d]");
+    process.exit(1);
+  }
 
-  // Phase 4: transport.connect(createServer()) goes here
-} catch (err) {
-  console.error("[iso27001-mcp] FATAL startup error:", err);
-  process.exit(1);
+  if (!roleStr || !["viewer", "analyst", "admin"].includes(roleStr)) {
+    console.error("[keygen] ERROR: --role must be viewer, analyst, or admin");
+    process.exit(1);
+  }
+
+  let expiresAt: string | null = null;
+  if (expires) {
+    try {
+      expiresAt = parseExpiresFlag(expires);
+    } catch (err) {
+      console.error("[keygen] ERROR:", (err as Error).message);
+      process.exit(1);
+    }
+  }
+
+  try {
+    loadSecrets();
+    const db = openDb(dbPath);
+    seedAll(db);
+    generateKey(label, roleStr as Role, expiresAt);
+    closeDb();
+  } catch (err) {
+    console.error("[keygen] FATAL:", err);
+    process.exit(1);
+  }
+}
+
+// ── keys ──────────────────────────────────────────────────────
+
+function handleKeys(): void {
+  const action = args[1]; // "list" | "revoke"
+
+  if (action === "list") {
+    try {
+      loadSecrets();
+      const db = openDb(dbPath);
+      seedAll(db);
+      const keys = listKeys();
+      if (keys.length === 0) {
+        console.log("No API keys found. Run: iso27001-mcp keygen --label <label> --role <role>");
+      } else {
+        console.log(`\n${"Label".padEnd(30)} ${"Role".padEnd(10)} ${"Status".padEnd(10)} ${"Expires".padEnd(12)} Last used`);
+        console.log("-".repeat(90));
+        for (const k of keys) {
+          console.log(
+            k.label.padEnd(30) +
+            k.role.padEnd(10) +
+            k.status.padEnd(10) +
+            (k.expires_at ?? "never").padEnd(12) +
+            (k.last_used_at ?? "—"),
+          );
+        }
+        console.log("");
+      }
+      closeDb();
+    } catch (err) {
+      console.error("[keys list] FATAL:", err);
+      process.exit(1);
+    }
+
+  } else if (action === "revoke") {
+    const label = argValue("--label");
+    if (!label) {
+      console.error("[keys revoke] ERROR: --label is required");
+      process.exit(1);
+    }
+    try {
+      loadSecrets();
+      const db = openDb(dbPath);
+      seedAll(db);
+      revokeKey(label);
+      console.log(`[keys] Key '${label}' revoked successfully.`);
+      closeDb();
+    } catch (err) {
+      console.error("[keys revoke] FATAL:", err);
+      process.exit(1);
+    }
+
+  } else {
+    console.error("[keys] ERROR: Unknown action. Use 'list' or 'revoke --label <label>'");
+    process.exit(1);
+  }
+}
+
+// ── Server startup ────────────────────────────────────────────
+
+function startServer(): void {
+  try {
+    // Phase 3: validate all required env vars before opening anything
+    loadSecrets();
+
+    const db = openDb(dbPath);
+
+    // Confirm migrations applied
+    const applied = db
+      .prepare("SELECT filename FROM _migrations ORDER BY id")
+      .all() as { filename: string }[];
+
+    console.error(`[iso27001-mcp] Database ready: ${dbPath}`);
+    console.error(`[iso27001-mcp] Applied migrations: ${applied.map((r) => r.filename).join(", ")}`);
+
+    // Phase 2: seed all ISO 27001 reference data (idempotent)
+    seedAll(db);
+
+    // Phase 3: warn about admin keys with no expiry
+    warnAdminExpiry();
+
+    console.error("[iso27001-mcp] Phase 3 complete — auth & security ready.");
+
+    // Phase 4: transport.connect(createServer()) goes here
+
+  } catch (err) {
+    console.error("[iso27001-mcp] FATAL startup error:", err);
+    process.exit(1);
+  }
 }
