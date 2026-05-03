@@ -9,9 +9,11 @@
  *   iso27001-mcp keys    revoke --label <label>
  */
 
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { loadSecrets } from "./security/secrets.js";
 import { openDb, closeDb } from "./db/connection.js";
 import { seedAll } from "./seed/seeder.js";
+import { createServer } from "./server.js";
 import {
   generateKey,
   listKeys,
@@ -51,8 +53,11 @@ if (subCommand === "keygen") {
 } else if (subCommand === "keys") {
   handleKeys();
 } else {
-  // Default: start the server
-  startServer();
+  // Default: start the server (async — catch top-level rejections)
+  startServer().catch((err) => {
+    console.error("[iso27001-mcp] FATAL:", err);
+    process.exit(1);
+  });
 }
 
 // ── keygen ────────────────────────────────────────────────────
@@ -154,7 +159,7 @@ function handleKeys(): void {
 
 // ── Server startup ────────────────────────────────────────────
 
-function startServer(): void {
+async function startServer(): Promise<void> {
   try {
     // Phase 3: validate all required env vars before opening anything
     loadSecrets();
@@ -175,12 +180,16 @@ function startServer(): void {
     // Phase 3: warn about admin keys with no expiry
     warnAdminExpiry();
 
-    console.error("[iso27001-mcp] Phase 3 complete — auth & security ready.");
+    // Phase 4: build server (registers all 43 tools) and connect stdio transport
+    const server    = createServer();
+    const transport = new StdioServerTransport();
 
-    // Phase 4: transport.connect(createServer()) goes here
+    await server.connect(transport);
+
+    console.error("[iso27001-mcp] Server ready — listening on stdio.");
 
   } catch (err) {
-    console.error("[iso27001-mcp] FATAL startup error:", err);
-    process.exit(1);
+    // Re-throw so the top-level .catch() handler can log and exit
+    throw err;
   }
 }
