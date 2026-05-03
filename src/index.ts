@@ -112,6 +112,7 @@ function handleKeys(): void {
       const db = openDb(dbPath);
       seedAll(db);
       const keys = listKeys();
+      /* eslint-disable no-console */
       if (keys.length === 0) {
         console.log("No API keys found. Run: iso27001-mcp keygen --label <label> --role <role>");
       } else {
@@ -128,6 +129,7 @@ function handleKeys(): void {
         }
         console.log("");
       }
+      /* eslint-enable no-console */
       closeDb();
     } catch (err) {
       console.error("[keys list] FATAL:", err);
@@ -145,6 +147,7 @@ function handleKeys(): void {
       const db = openDb(dbPath);
       seedAll(db);
       revokeKey(label);
+      // eslint-disable-next-line no-console
       console.log(`[keys] Key '${label}' revoked successfully.`);
       closeDb();
     } catch (err) {
@@ -161,43 +164,37 @@ function handleKeys(): void {
 // ── Server startup ────────────────────────────────────────────
 
 async function startServer(): Promise<void> {
-  try {
-    // Phase 3: validate all required env vars before opening anything
-    loadSecrets();
+  // Phase 3: validate all required env vars before opening anything
+  loadSecrets();
 
-    const db = openDb(dbPath);
+  const db = openDb(dbPath);
 
-    // Confirm migrations applied
-    const applied = db
-      .prepare("SELECT filename FROM _migrations ORDER BY id")
-      .all() as { filename: string }[];
+  // Confirm migrations applied
+  const applied = db
+    .prepare("SELECT filename FROM _migrations ORDER BY id")
+    .all() as { filename: string }[];
 
-    console.error(`[iso27001-mcp] Database ready: ${dbPath}`);
-    console.error(`[iso27001-mcp] Applied migrations: ${applied.map((r) => r.filename).join(", ")}`);
+  console.error(`[iso27001-mcp] Database ready: ${dbPath}`);
+  console.error(`[iso27001-mcp] Applied migrations: ${applied.map((r) => r.filename).join(", ")}`);
 
-    // Phase 2: seed all ISO 27001 reference data (idempotent)
-    seedAll(db);
+  // Phase 2: seed all ISO 27001 reference data (idempotent)
+  seedAll(db);
 
-    // Phase 3: warn about admin keys with no expiry
-    warnAdminExpiry();
+  // Phase 3: warn about admin keys with no expiry
+  warnAdminExpiry();
 
-    // Phase 7: select transport based on --mode flag
-    const mode = argValue("--mode") ?? "local";
-    const server = createServer();
+  // Phase 7: select transport based on --mode flag
+  const mode = argValue("--mode") ?? "local";
+  const server = createServer();
 
-    if (mode === "hosted" || mode === "team") {
-      // SSE transport for multi-user modes
-      startSseServer(server);
-      console.error(`[iso27001-mcp] Server ready — SSE mode on port ${process.env["SSE_PORT"] ?? "3000"}.`);
-    } else {
-      // stdio transport for local/CI modes (default)
-      const transport = new StdioServerTransport();
-      await server.connect(transport);
-      console.error("[iso27001-mcp] Server ready — listening on stdio.");
-    }
-
-  } catch (err) {
-    // Re-throw so the top-level .catch() handler can log and exit
-    throw err;
+  if (mode === "hosted" || mode === "team") {
+    // SSE transport for multi-user modes
+    startSseServer(server);
+    console.error(`[iso27001-mcp] Server ready — SSE mode on port ${process.env["SSE_PORT"] ?? "3000"}.`);
+  } else {
+    // stdio transport for local/CI modes (default)
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error("[iso27001-mcp] Server ready — listening on stdio.");
   }
 }

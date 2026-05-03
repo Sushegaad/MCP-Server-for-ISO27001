@@ -19,8 +19,8 @@ import { z } from "zod";
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const date    = z.string().regex(DATE_RE, "must be YYYY-MM-DD");
 const uuid    = z.string().uuid("must be a valid UUID");
-const freeText = (max = 2000) => z.string().min(1).max(max);
-const shortText = (max = 200) => z.string().min(1).max(max);
+const freeText = (max = 2000): z.ZodString => z.string().min(1).max(max);
+const shortText = (max = 200): z.ZodString => z.string().min(1).max(max);
 
 const paginationLimit  = z.number().int().min(1).max(100).optional().default(50);
 const paginationOffset = z.number().int().min(0).optional().default(0);

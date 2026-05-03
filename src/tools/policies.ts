@@ -99,8 +99,8 @@ function stripFrontmatter(raw: string): { template: string; clauseMappings: stri
   let clauseMappings: string[]  = [];
   let controlMappings: string[] = [];
 
-  try { if (clauseMatch)  clauseMappings  = JSON.parse(clauseMatch[1].replace(/'/g, '"')); } catch { /* ignore */ }
-  try { if (controlMatch) controlMappings = JSON.parse(controlMatch[1].replace(/'/g, '"')); } catch { /* ignore */ }
+  try { if (clauseMatch)  clauseMappings  = JSON.parse(clauseMatch[1].replace(/'/g, '"')) as string[]; } catch { /* ignore */ }
+  try { if (controlMatch) controlMappings = JSON.parse(controlMatch[1].replace(/'/g, '"')) as string[]; } catch { /* ignore */ }
 
   return { template, clauseMappings, controlMappings };
 }

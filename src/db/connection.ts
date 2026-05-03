@@ -3,7 +3,7 @@ import type BetterSqlite3 from "better-sqlite3";
 import { MIGRATIONS } from "./migrations/index.js";
 import { requireEnv as _requireEnv } from "../security/secrets.js";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
 const Database = require("better-sqlite3-multiple-ciphers") as typeof BetterSqlite3;
 
 type Db = BetterSqlite3.Database;
@@ -21,7 +21,7 @@ export function openDb(dbPath: string): Db {
   if (_db) return _db;
 
   const key = requireEnv("DB_ENCRYPTION_KEY");
-  const db = new Database(dbPath) as Db;
+  const db = new Database(dbPath);
 
   // Encryption key — must be set before any other operation.
   // Uses SQLite3MultipleCiphers default cipher: sqleet (AES-256-GCM).

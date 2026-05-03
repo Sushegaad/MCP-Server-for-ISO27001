@@ -84,6 +84,7 @@ export function generateKey(
     expiresAt ?? null,
   );
 
+  /* eslint-disable no-console */
   console.log("=".repeat(60));
   console.log("API Key generated (save now — NOT stored in plaintext):");
   console.log("");
@@ -93,6 +94,7 @@ export function generateKey(
   console.log(`  Role:    ${role}`);
   console.log(`  Expires: ${expiresAt ?? "never"}`);
   console.log("=".repeat(60));
+  /* eslint-enable no-console */
 
   return rawKey;
 }
@@ -167,7 +169,7 @@ export function loadRole(keyHash: string): Role {
     // non-fatal
   }
 
-  return row.role as Role;
+  return row.role;
 }
 
 // ── listKeys ──────────────────────────────────────────────────
@@ -222,6 +224,7 @@ export function revokeKey(label: string): void {
   }
 
   db.prepare("UPDATE api_keys SET revoked_at = datetime('now') WHERE id = ?").run(row.id);
+  // eslint-disable-next-line no-console
   console.log(`[auth] Key '${label}' revoked.`);
 }
 

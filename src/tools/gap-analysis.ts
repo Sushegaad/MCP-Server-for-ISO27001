@@ -478,9 +478,15 @@ export function handleGenerateRemediationRoadmap(args: Record<string, unknown>):
 
   const chunkSize = Math.ceil(totalGaps / 3);
 
-  const makeItems = (slice: typeof gaps, phaseStartWeek: number) =>
-    slice.map((g) => {
-      const ctypes = (() => { try { return JSON.parse(g.control_type ?? "[]") as string[]; } catch { return []; } })();
+  const makeItems = (slice: typeof gaps, phaseStartWeek: number): Array<{
+    control_id: string; name: string | null; theme: string | null; current_status: string;
+    linked_risk_score: number; estimated_effort: string; recommended_due_date: string;
+  }> =>
+    slice.map((g): {
+      control_id: string; name: string | null; theme: string | null; current_status: string;
+      linked_risk_score: number; estimated_effort: string; recommended_due_date: string;
+    } => {
+      const ctypes = ((): string[] => { try { return JSON.parse(g.control_type ?? "[]") as string[]; } catch { return []; } })();
       const effort = ctypes.length > 0 ? (effortByType[ctypes[0]] ?? "Medium") : "Medium";
       const dueDate = new Date(startDate);
       dueDate.setDate(dueDate.getDate() + (phaseStartWeek + weeksPerPhase) * 7);

@@ -47,7 +47,7 @@ function getVersion(): string {
   // Fall back to reading package.json if running the compiled binary directly.
   if (process.env.npm_package_version) return process.env.npm_package_version;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
     const pkg = require("../../package.json") as { version?: string };
     return pkg.version ?? "2.0.0";
   } catch {

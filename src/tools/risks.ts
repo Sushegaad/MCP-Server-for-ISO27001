@@ -51,14 +51,14 @@ function ok(data: unknown): ToolResult {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
 }
 
-function shapeRisk(r: RiskRow) {
+function shapeRisk(r: RiskRow): Omit<RiskRow, "related_controls"> & { related_controls: string[] } {
   return {
     ...r,
     related_controls: fromJsonArray<string>(r.related_controls),
   };
 }
 
-function shapeTreatment(t: TreatmentRow) {
+function shapeTreatment(t: TreatmentRow): Omit<TreatmentRow, "controls"> & { controls: string[] } {
   return {
     ...t,
     controls: fromJsonArray<string>(t.controls),

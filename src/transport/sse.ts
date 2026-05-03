@@ -90,6 +90,7 @@ export function startSseServer(server: McpServer): void {
   });
 
   // SSE connection endpoint
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   app.get("/sse", async (_req, res) => {
     const sessionId = randomUUID();
 
@@ -114,6 +115,7 @@ export function startSseServer(server: McpServer): void {
   });
 
   // Message handler endpoint
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   app.post("/messages", async (req, res) => {
     const sessionId = req.query["sessionId"] as string | undefined;
 

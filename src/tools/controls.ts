@@ -55,7 +55,7 @@ function ok(data: unknown): ToolResult {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
 }
 
-function shapeControl(row: ControlRow, includeGuidance = true) {
+function shapeControl(row: ControlRow, includeGuidance = true): Record<string, unknown> {
   return {
     id:               row.id,
     control_id:       row.control_id,
@@ -145,7 +145,7 @@ export function handleListControls(args: Record<string, unknown>): ToolResult {
     total,
     limit,
     offset,
-    controls: rows.map((r) => shapeControl(r, include_guidance as boolean)),
+    controls: rows.map((r) => shapeControl(r, include_guidance)),
   });
 }
 
@@ -227,7 +227,7 @@ export function handleCompareVersions(args: Record<string, unknown>): ToolResult
   }
 
   // Enrich with control details
-  const enrich = (cid: string | null, ver: string) => {
+  const enrich = (cid: string | null, ver: string): { control_id: string; name: string | null; theme: string | null; description: string | null } | null => {
     if (!cid) return null;
     const c = db.prepare(
       "SELECT control_id, name, theme, description FROM controls WHERE control_id = ? AND version = ?"

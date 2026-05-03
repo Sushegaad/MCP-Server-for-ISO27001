@@ -57,7 +57,7 @@ function ok(data: unknown): ToolResult {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
 }
 
-function shapeAudit(r: AuditRow) {
+function shapeAudit(r: AuditRow): Omit<AuditRow, "controls_in_scope" | "clauses_in_scope"> & { controls_in_scope: string[]; clauses_in_scope: string[] } {
   return {
     ...r,
     controls_in_scope: fromJsonArray<string>(r.controls_in_scope),
@@ -65,7 +65,7 @@ function shapeAudit(r: AuditRow) {
   };
 }
 
-function shapeCar(r: CarRow) {
+function shapeCar(r: CarRow): Omit<CarRow, "effectiveness_verified"> & { effectiveness_verified: boolean } {
   return {
     ...r,
     effectiveness_verified: r.effectiveness_verified === 1,
@@ -255,7 +255,7 @@ export function handleGenerateAuditReport(args: Record<string, unknown>): ToolRe
     carsByFinding.set(car.finding_id, existing);
   }
 
-  const countByType = (type: string) => findings.filter((f) => f.type === type).length;
+  const countByType = (type: string): number => findings.filter((f) => f.type === type).length;
 
   if (format === "json") {
     return ok({
