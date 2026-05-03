@@ -19,6 +19,7 @@ Claude ──MCP──► iso27001-mcp ──► encrypted SQLite (isms.db)
 
 ## Table of Contents
 
+- [Quick Start](#quick-start)
 - [Use Cases](#use-cases)
 - [Installation](#installation)
 - [Configuration](#configuration)
@@ -29,6 +30,92 @@ Claude ──MCP──► iso27001-mcp ──► encrypted SQLite (isms.db)
 - [Integrations](#integrations)
 - [Development](#development)
 - [Security](#security)
+
+---
+
+## Quick Start
+
+Get the server connected to Claude Desktop in five minutes.
+
+### Prerequisites
+
+- **Node.js 20** (not 22 — test coverage runs on Node 20; the server itself is also tested on 20)
+
+  ```bash
+  node --version   # should print v20.x
+  ```
+
+  If you're on v22, switch via [nvm](https://github.com/nvm-sh/nvm): `nvm install 20 && nvm use 20`
+
+### Step 1 — Build
+
+```bash
+cd /path/to/iso27001-mcp
+npm install
+npm run build
+```
+
+### Step 2 — Set up secrets
+
+```bash
+cp .env.example .env
+```
+
+Generate two 32-byte hex secrets and paste them into `.env`:
+
+```bash
+openssl rand -hex 32   # → HMAC_SECRET
+openssl rand -hex 32   # → DB_ENCRYPTION_KEY
+```
+
+### Step 3 — Generate an API key
+
+```bash
+node dist/index.js keygen --label "Me" --role admin
+```
+
+The raw key (`iso27001_...`) is printed **once** — copy it immediately.
+
+### Step 4 — Add to Claude Desktop
+
+Open your Claude Desktop config file:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "iso27001": {
+      "command": "node",
+      "args": ["/absolute/path/to/iso27001-mcp/dist/index.js"],
+      "env": {
+        "HMAC_SECRET": "your_hmac_secret",
+        "DB_ENCRYPTION_KEY": "your_db_encryption_key",
+        "MCP_API_KEY": "iso27001_your_key_here",
+        "DB_PATH": "/absolute/path/to/iso27001-mcp/isms.db"
+      }
+    }
+  }
+}
+```
+
+### Step 5 — Restart Claude Desktop and verify
+
+Fully quit and reopen Claude Desktop. Then ask:
+
+> *"Use get_server_info to check the server is running."*
+
+You should get back version, uptime, and database stats confirming all 93 + 114 controls are seeded.
+
+### First things to try
+
+```
+"Create a gap assessment for Acme Ltd covering all ISO 27001:2022 controls."
+"Show me the gap summary for that assessment."
+"Generate a remediation roadmap with a 26-week timeline."
+"Create an information security policy for Acme Ltd. Owner: CISO. Effective from today."
+```
 
 ---
 
