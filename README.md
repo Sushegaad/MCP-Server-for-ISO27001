@@ -334,95 +334,460 @@ iso27001-mcp --mode local
 
 ## Tools Reference
 
-The server exposes **43 tools** across 9 groups. All tools require a valid API key. Role requirements are noted per group.
+The server exposes **43 tools** across 9 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
 
-### Group 1 — Control Registry *(viewer+, read-only)*
+---
 
-| Tool | Description |
-|------|-------------|
-| `get_control` | Fetch a single control by ID and version (2022 or 2013) |
-| `list_controls` | List controls with filters: version, theme, control_type, new_in_2022 |
-| `search_controls` | Full-text search across names, descriptions, and guidance (FTS5) |
-| `get_control_attributes` | Retrieve 2022 attribute taxonomy (cybersecurity concepts, operational capabilities) |
-| `compare_versions` | Show the mapping between a 2013 control and its 2022 equivalent |
-| `get_clause_requirement` | Fetch a clause requirement (4–10) with optional sub-clauses |
-| `list_clause_requirements` | List all clause requirements, optionally filtered by parent |
+### Group 1 — Control Registry *(minimum role: viewer)*
+
+#### `get_control`
+Fetch a single control by ID and version.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `control_id` | ✅ | string | e.g. `5.1`, `A.8.1` |
+| `version` | — | enum | `2022` \| `2013` |
+
+#### `list_controls`
+List controls with optional filters.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `version` | — | enum | `2022` \| `2013` |
+| `theme` | — | string | e.g. `Technological` |
+| `control_type` | — | enum | `Preventive` \| `Detective` \| `Corrective` |
+| `new_in_2022` | — | boolean | Filter to controls added in the 2022 revision |
+| `cybersecurity_concept` | — | enum | `Identify` \| `Protect` \| `Detect` \| `Respond` \| `Recover` |
+| `include_guidance` | — | boolean | Default: `false` |
+| `limit` | — | integer | Default: `50`, max `100` |
+| `offset` | — | integer | Default: `0` |
+
+#### `search_controls`
+Full-text search across control names, descriptions, and guidance (FTS5).
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `query` | ✅ | string | Search terms |
+| `version` | — | enum | `2022` \| `2013` |
+| `limit` | — | integer | Default: `10`, max `50` |
+| `offset` | — | integer | Default: `0` |
+
+#### `get_control_attributes`
+Retrieve 2022 attribute taxonomy (cybersecurity concepts, operational capabilities) for a control.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `control_id` | ✅ | string | 2022 control ID |
+
+#### `compare_versions`
+Show the mapping between a 2013 control and its 2022 equivalent. Provide at least one ID.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `v2013_id` | — | string | ISO 27001:2013 control ID |
+| `v2022_id` | — | string | ISO 27001:2022 control ID |
+
+#### `get_clause_requirement`
+Fetch a clause requirement (clauses 4–10) with optional sub-clauses.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `clause_id` | ✅ | string | e.g. `4.1`, `9.2` |
+| `include_sub_clauses` | — | boolean | Default: `false` |
+
+#### `list_clause_requirements`
+List all clause requirements, optionally filtered by parent.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `parent_id` | — | string | e.g. `9` to list all sub-clauses of clause 9 |
+
+---
 
 ### Group 2 — Gap Analysis *(reads: viewer+, writes: analyst+)*
 
-| Tool | Description |
-|------|-------------|
-| `create_gap_assessment` | Create an assessment; pre-populates all in-scope controls as `not_started` |
-| `update_control_status` | Set a control's status (`implemented`, `partial`, `not_implemented`, `na`, `not_started`) |
-| `get_gap_summary` | Compliance %, counts by status, top-10 remediation priority list |
-| `list_gap_assessments` | List assessments filtered by active / archived / all |
-| `export_gap_report` | Export in markdown, CSV, or JSON |
-| `generate_remediation_roadmap` | Prioritised roadmap with phases, risk linkage, and due dates |
-| `archive_gap_assessment` | Archive a completed assessment |
+#### `create_gap_assessment`
+Create a new gap assessment. Pre-populates all in-scope controls as `not_started`.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `name` | ✅ | string | Assessment name |
+| `scope` | — | string | ISMS scope description |
+| `isms_version` | — | enum | `2022` \| `2013` — default: `2022` |
+| `themes_in_scope` | — | array | e.g. `["Organizational","Technological"]` |
+| `exclude_controls` | — | array | Control IDs to exclude |
+| `exclude_justification` | — | string | Reason for exclusions |
+
+#### `update_control_status`
+Set a control's implementation status within an assessment.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `assessment_id` | ✅ | string (UUID) | |
+| `control_id` | ✅ | string | |
+| `status` | ✅ | enum | `implemented` \| `partial` \| `not_implemented` \| `na` \| `not_started` |
+| `evidence_refs` | — | array | Evidence UUIDs |
+| `notes` | — | string | Implementation notes |
+| `na_justification` | — | string | Required when `status=na` |
+| `assessed_by` | — | string | Assessor name |
+
+#### `get_gap_summary`
+Return compliance %, counts by status, and a top-10 remediation priority list.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `assessment_id` | ✅ | string (UUID) | |
+| `breakdown_by` | — | enum | `theme` \| `control_type` \| `cybersecurity_concept` |
+
+#### `list_gap_assessments`
+List assessments with a status filter.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `filter` | — | enum | `active` \| `archived` \| `all` — default: `active` |
+
+#### `export_gap_report`
+Export a full gap report.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `assessment_id` | ✅ | string (UUID) | |
+| `format` | ✅ | enum | `markdown` \| `csv` \| `json` |
+
+#### `generate_remediation_roadmap`
+Generate a prioritised remediation roadmap with phases, risk linkage, and due dates.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `assessment_id` | ✅ | string (UUID) | |
+| `timeline_weeks` | — | integer | 1–52, default: `12` |
+
+#### `archive_gap_assessment`
+Archive a completed assessment.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `assessment_id` | ✅ | string (UUID) | |
+| `reason` | — | string | Archival reason |
+
+---
 
 ### Group 3 — Risk Management *(reads: viewer+, writes: analyst+)*
 
-| Tool | Description |
-|------|-------------|
-| `create_risk` | Register a risk (asset, threat, vulnerability, likelihood 1–5, impact 1–5) |
-| `get_risk` | Fetch a risk with optional treatment plans |
-| `update_risk` | Update any mutable field; `risk_score` recomputes automatically |
-| `list_risks` | List with filters: risk_level, status, owner |
-| `get_risk_summary` | Aggregates: counts by level, 5×5 heatmap matrix, top 10 by score |
-| `create_treatment_plan` | Create a treatment (mitigate/accept/avoid/transfer) with residual scores |
-| `update_treatment_status` | Update status and link evidence |
-| `generate_risk_register` | Export in markdown, CSV, or JSON |
+#### `create_risk`
+Register a new risk. `risk_score` is computed automatically as `likelihood × impact`.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `asset` | ✅ | string | Asset at risk |
+| `threat` | ✅ | string | Threat description |
+| `vulnerability` | ✅ | string | Vulnerability description |
+| `likelihood` | ✅ | integer | 1–5 |
+| `impact` | ✅ | integer | 1–5 |
+| `owner` | — | string | Risk owner |
+| `related_controls` | — | array | Control IDs |
+| `status` | — | enum | `open` \| `accepted` \| `mitigated` \| `transferred` \| `closed` — default: `open` |
+
+#### `get_risk`
+Fetch a risk record with optional treatment plans.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `risk_id` | ✅ | string (UUID) | |
+| `include_treatments` | — | boolean | Default: `false` |
+
+#### `update_risk`
+Update any mutable field; `risk_score` recomputes automatically.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `risk_id` | ✅ | string (UUID) | |
+| `asset` | — | string | |
+| `threat` | — | string | |
+| `vulnerability` | — | string | |
+| `likelihood` | — | integer | 1–5 |
+| `impact` | — | integer | 1–5 |
+| `owner` | — | string | |
+| `status` | — | enum | `open` \| `accepted` \| `mitigated` \| `transferred` \| `closed` |
+| `related_controls` | — | array | Control IDs |
+
+#### `list_risks`
+List risks with optional filters.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `risk_level` | — | enum | `Low` \| `Medium` \| `High` \| `Critical` |
+| `status` | — | enum | `open` \| `accepted` \| `mitigated` \| `transferred` \| `closed` |
+| `owner` | — | string | |
+| `limit` | — | integer | Default: `50`, max `100` |
+| `offset` | — | integer | Default: `0` |
+
+#### `get_risk_summary`
+Return aggregated stats: counts by level, 5×5 heatmap matrix, top 10 by score. No parameters.
+
+#### `create_treatment_plan`
+Create a risk treatment plan. `mitigate` type requires at least one control reference.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `risk_id` | ✅ | string (UUID) | |
+| `treatment_type` | ✅ | enum | `mitigate` \| `accept` \| `avoid` \| `transfer` |
+| `description` | ✅ | string | |
+| `owner` | ✅ | string | |
+| `due_date` | ✅ | string | `YYYY-MM-DD` |
+| `controls` | — | array | Required for `mitigate` type |
+| `residual_likelihood` | — | integer | 1–5 |
+| `residual_impact` | — | integer | 1–5 |
+| `evidence_ref` | — | string | |
+
+#### `update_treatment_status`
+Update a treatment plan's status and link evidence.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `treatment_id` | ✅ | string (UUID) | |
+| `status` | ✅ | enum | `planned` \| `in_progress` \| `implemented` \| `verified` \| `cancelled` |
+| `evidence_ref` | — | string | |
+| `residual_likelihood` | — | integer | 1–5 |
+| `residual_impact` | — | integer | 1–5 |
+
+#### `generate_risk_register`
+Export the full risk register.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `format` | ✅ | enum | `markdown` \| `csv` \| `json` |
+| `risk_level_filter` | — | enum | `Low` \| `Medium` \| `High` \| `Critical` |
+| `status_filter` | — | enum | `open` \| `accepted` \| `mitigated` \| `transferred` \| `closed` |
+
+---
 
 ### Group 4 — Policy Management *(reads: viewer+, create: analyst+, update: admin)*
 
-| Tool | Description |
-|------|-------------|
-| `create_policy` | Render a policy from a Mustache template with org-specific variables |
-| `get_policy` | Fetch policy content with optional version history |
-| `update_policy` | Archive current version and create a new one (admin only) |
-| `list_policies` | List with filters including `overdue_only` for upcoming reviews |
+#### `create_policy`
+Render a policy from a Mustache template with org-specific variables.
 
-### Group 5 — Statement of Applicability *(analyst+)*
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `type` | ✅ | enum | `information_security` \| `access_control` \| `risk_management` \| `asset_management` \| `incident_response` \| `business_continuity` \| `supplier_security` \| `cryptography` \| `physical_security` \| `acceptable_use` \| `data_classification` \| `secure_development` |
+| `organisation_name` | ✅ | string | |
+| `scope` | ✅ | string | |
+| `owner` | ✅ | string | |
+| `approver` | — | string | |
+| `review_cycle_months` | — | integer | 1–36, default: `12` |
+| `effective_date` | ✅ | string | `YYYY-MM-DD` |
 
-| Tool | Description |
-|------|-------------|
-| `generate_soa` | Create an SoA from an assessment, pre-populating all 93/114 entries |
-| `update_soa_entry` | Update inclusion, justification, status, and responsible party |
-| `export_soa` | Export in markdown or CSV |
+#### `get_policy`
+Fetch a policy with optional version history.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `policy_id` | ✅ | string (UUID) | |
+| `include_versions` | — | boolean | Default: `false` |
+
+#### `update_policy`
+Archive the current version and create a new one. Admin only.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `policy_id` | ✅ | string (UUID) | |
+| `scope` | — | string | |
+| `owner` | — | string | |
+| `approver` | — | string | |
+| `reviewed_by` | ✅ | string | |
+| `change_summary` | ✅ | string | |
+
+#### `list_policies`
+List policies with optional filters.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `status` | — | enum | `draft` \| `active` \| `archived` |
+| `type` | — | enum | Any of the 12 policy types above |
+| `owner` | — | string | |
+| `overdue_only` | — | boolean | Filter to policies past their review date — default: `false` |
+| `limit` | — | integer | Default: `50`, max `100` |
+| `offset` | — | integer | Default: `0` |
+
+---
+
+### Group 5 — Statement of Applicability *(minimum role: analyst)*
+
+#### `generate_soa`
+Create an SoA from an assessment, pre-populating all 93 (2022) or 114 (2013) entries.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `assessment_id` | ✅ | string (UUID) | |
+| `isms_version` | — | enum | `2022` \| `2013` — default: `2022` |
+
+#### `update_soa_entry`
+Update a single SoA entry's inclusion, justification, status, and responsible party.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `soa_id` | ✅ | string (UUID) | |
+| `control_id` | ✅ | string | |
+| `included` | ✅ | boolean | |
+| `justification` | ✅ | string | |
+| `status` | — | enum | `implemented` \| `partial` \| `not_implemented` \| `na` \| `not_started` |
+| `responsible_party` | — | string | |
+
+#### `export_soa`
+Export the Statement of Applicability.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `soa_id` | ✅ | string (UUID) | |
+| `format` | ✅ | enum | `markdown` \| `csv` |
+
+---
 
 ### Group 6 — Audit Management *(reads: viewer+, writes: admin)*
 
-| Tool | Description |
-|------|-------------|
-| `create_audit` | Create an internal audit with auditor, planned date, and scope |
-| `record_finding` | Record a finding: NC (requires severity), observation, or OFI |
-| `create_corrective_action` | Raise a CAR linked to a finding |
-| `update_corrective_action` | Update status and evidence; closing requires `effectiveness_verified: true` |
-| `generate_audit_report` | Export full report (executive summary, findings, CARs) in markdown or JSON |
+#### `create_audit`
+Create an internal audit with auditor, planned date, and scope.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `name` | ✅ | string | Audit name |
+| `scope` | ✅ | string | |
+| `auditor` | ✅ | string | |
+| `planned_date` | ✅ | string | `YYYY-MM-DD` |
+| `controls_in_scope` | — | array | Control IDs |
+| `clauses_in_scope` | — | array | Clause IDs |
+
+#### `record_finding`
+Record a finding. Non-conformities (`nc`) require a severity.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `audit_id` | ✅ | string (UUID) | |
+| `type` | ✅ | enum | `nc` \| `obs` \| `ofi` |
+| `clause_or_control` | ✅ | string | |
+| `description` | ✅ | string | |
+| `objective_evidence` | ✅ | string | |
+| `severity` | — | enum | `major` \| `minor` — required for `type=nc` |
+
+#### `create_corrective_action`
+Raise a Corrective Action Request (CAR) linked to a finding.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `finding_id` | ✅ | string (UUID) | |
+| `description` | ✅ | string | |
+| `owner` | ✅ | string | |
+| `due_date` | ✅ | string | `YYYY-MM-DD` |
+| `root_cause` | — | string | |
+
+#### `update_corrective_action`
+Update CAR status. Closing (`status=closed`) requires `effectiveness_verified: true` (ISO 27001 Clause 10.1).
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `car_id` | ✅ | string (UUID) | |
+| `description` | — | string | |
+| `owner` | — | string | |
+| `due_date` | — | string | `YYYY-MM-DD` |
+| `status` | — | enum | `open` \| `in_progress` \| `implemented` \| `verified` \| `closed` |
+| `root_cause` | — | string | |
+| `effectiveness_verified` | — | boolean | Must be `true` to close the CAR |
+| `evidence_ref` | — | string | |
+
+#### `generate_audit_report`
+Export a full audit report (executive summary, findings, CARs).
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `audit_id` | ✅ | string (UUID) | |
+| `format` | ✅ | enum | `markdown` \| `json` |
+
+---
 
 ### Group 7 — Evidence Tracking *(reads: viewer+, writes: analyst+)*
 
-| Tool | Description |
-|------|-------------|
-| `register_evidence` | Register an artefact (policy, log, screenshot, etc.) for a control |
-| `list_evidence` | List evidence for a control, filtered by status: `current`, `stale`, `expired` |
-| `get_evidence_gaps` | Find implemented/partial controls with no current evidence |
-| `link_jira_ticket` | Link evidence to an existing Jira issue or create a new one |
-| `link_github_issue` | Link evidence to an existing GitHub issue or create a new one |
+#### `register_evidence`
+Register an evidence artefact for a control.
 
-### Group 8 — Server Info *(viewer+)*
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `control_id` | ✅ | string | |
+| `type` | ✅ | enum | `policy` \| `procedure` \| `log` \| `screenshot` \| `report` \| `certificate` \| `configuration` \| `meeting_minutes` \| `training_record` \| `contract` \| `audit_report` \| `test_result` \| `ticket` \| `other` |
+| `description` | ✅ | string | |
+| `source_url` | — | string | URL to the artefact |
+| `collected_by` | ✅ | string | |
+| `collected_date` | ✅ | string | `YYYY-MM-DD` |
+| `expiry_date` | — | string | `YYYY-MM-DD` |
 
-| Tool | Description |
-|------|-------------|
-| `get_server_info` | Version, uptime, DB stats, control counts, rate limit config |
+#### `list_evidence`
+List evidence for a control, optionally filtered by currency.
 
-### Group 9 — Admin & Key Management *(admin only)*
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `control_id` | ✅ | string | |
+| `status` | — | enum | `current` \| `stale` \| `expired` |
 
-| Tool | Description |
-|------|-------------|
-| `query_audit_log` | Query the tamper-evident audit log with date/tool/outcome filters |
-| `list_api_keys` | List all keys with metadata (never returns hashes) |
-| `revoke_api_key` | Immediately revoke a key by label |
+#### `get_evidence_gaps`
+Find controls marked `implemented` or `partial` that have no current evidence.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `assessment_id` | ✅ | string (UUID) | |
+
+#### `link_jira_ticket`
+Link evidence to an existing Jira issue (`jira_key`) or create a new one (`summary`). Provide at least one.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `evidence_id` | ✅ | string (UUID) | |
+| `jira_key` | — | string | e.g. `ISMS-42` — links to existing issue |
+| `summary` | — | string | Creates a new Jira task with this title |
+| `description` | — | string | Body for the new issue |
+
+#### `link_github_issue`
+Link evidence to an existing GitHub issue (`issue_number`) or create a new one (`title`). Provide at least one.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `evidence_id` | ✅ | string (UUID) | |
+| `issue_number` | — | integer | Links to an existing issue |
+| `title` | — | string | Creates a new issue with this title |
+| `body` | — | string | Body for the new issue |
+
+---
+
+### Group 8 — Server Info *(minimum role: viewer)*
+
+#### `get_server_info`
+Return version, uptime, DB stats, control counts, and rate limit config. No parameters.
+
+---
+
+### Group 9 — Admin & Key Management *(minimum role: admin)*
+
+#### `query_audit_log`
+Query the tamper-evident audit log.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `start_date` | — | string | `YYYY-MM-DD` |
+| `end_date` | — | string | `YYYY-MM-DD` |
+| `tool` | — | string | Filter by tool name |
+| `outcome` | — | enum | `success` \| `denied` \| `error` |
+| `role` | — | enum | `viewer` \| `analyst` \| `admin` |
+| `key_hash` | — | string | Filter by API key hash (max 64 chars) |
+| `limit` | — | integer | Default: `50`, max `100` |
+| `offset` | — | integer | Default: `0` |
+
+#### `list_api_keys`
+List all API keys with metadata. Never returns key hashes. No parameters.
+
+#### `revoke_api_key`
+Immediately revoke a key by label.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `label` | ✅ | string | The label assigned at key generation |
 
 ---
 
