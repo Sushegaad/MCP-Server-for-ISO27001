@@ -39,42 +39,54 @@ Get the server connected to Claude Desktop in five minutes.
 
 ### Prerequisites
 
-- **Node.js 20** (not 22 — test coverage runs on Node 20; the server itself is also tested on 20)
+- **Node.js ≥ 20.11.0** — use [nvm](https://github.com/nvm-sh/nvm) or [Volta](https://volta.sh)
 
   ```bash
-  node --version   # should print v20.x
+  node --version   # should print v20.x or higher (not v22 — use v20 LTS)
   ```
 
-  If you're on v22, switch via [nvm](https://github.com/nvm-sh/nvm): `nvm install 20 && nvm use 20`
+- **Build tools** — needed by the encrypted SQLite native module:
+  - **macOS:** `xcode-select --install`
+  - **Ubuntu/Debian:** `sudo apt-get install build-essential python3`
+  - **Windows:** `npm install --global windows-build-tools` (run as Administrator)
 
-### Step 1 — Build
+### Step 1 — Install from npm
 
 ```bash
-cd /path/to/iso27001-mcp
-npm install
-npm run build
+npm install -g iso27001-mcp
 ```
 
-### Step 2 — Set up secrets
+This installs the `iso27001-mcp` command globally. The native SQLite module downloads a prebuilt binary automatically on macOS and Linux x64; it compiles from source on other platforms.
+
+### Step 2 — Generate secrets
+
+Generate two random 32-byte secrets — these encrypt your database and sign your API keys:
 
 ```bash
-cp .env.example .env
-```
-
-Generate two 32-byte hex secrets and paste them into `.env`:
-
-```bash
-openssl rand -hex 32   # → HMAC_SECRET
-openssl rand -hex 32   # → DB_ENCRYPTION_KEY
+openssl rand -hex 32   # → copy as HMAC_SECRET
+openssl rand -hex 32   # → copy as DB_ENCRYPTION_KEY
 ```
 
 ### Step 3 — Generate an API key
 
 ```bash
-node dist/index.js keygen --label "Me" --role admin
+iso27001-mcp keygen --label "Me" --role admin \
+  HMAC_SECRET=<your_hmac_secret> \
+  DB_ENCRYPTION_KEY=<your_db_key> \
+  DB_PATH=$HOME/.iso27001/isms.db
 ```
 
-The raw key (`iso27001_...`) is printed **once** — copy it immediately.
+Or set the env vars in your shell first:
+
+```bash
+export HMAC_SECRET=your_hmac_secret
+export DB_ENCRYPTION_KEY=your_db_encryption_key
+export DB_PATH=$HOME/.iso27001/isms.db
+
+iso27001-mcp keygen --label "Me" --role admin
+```
+
+The raw key (`iso27001_...`) is printed **once** — copy it immediately, it cannot be retrieved again.
 
 ### Step 4 — Add to Claude Desktop
 
@@ -87,13 +99,12 @@ Open your Claude Desktop config file:
 {
   "mcpServers": {
     "iso27001": {
-      "command": "node",
-      "args": ["/absolute/path/to/iso27001-mcp/dist/index.js"],
+      "command": "iso27001-mcp",
       "env": {
         "HMAC_SECRET": "your_hmac_secret",
         "DB_ENCRYPTION_KEY": "your_db_encryption_key",
         "MCP_API_KEY": "iso27001_your_key_here",
-        "DB_PATH": "/absolute/path/to/iso27001-mcp/isms.db"
+        "DB_PATH": "/Users/you/.iso27001/isms.db"
       }
     }
   }
@@ -209,8 +220,12 @@ Every tool call is logged in a tamper-evident audit trail. Admins can query it a
 
 ### Prerequisites
 
-- **Node.js** ≥ 20.11.0 (use [Volta](https://volta.sh) or [nvm](https://github.com/nvm-sh/nvm))
-- **npm** ≥ 10
+- **Node.js ≥ 20.11.0** — use [nvm](https://github.com/nvm-sh/nvm) or [Volta](https://volta.sh)
+- **npm ≥ 10**
+- **Build tools** for the native SQLite module:
+  - macOS: `xcode-select --install`
+  - Ubuntu/Debian: `sudo apt-get install build-essential python3`
+  - Windows: `npm install --global windows-build-tools` (run as Administrator)
 
 ### Step 1 — Install
 
@@ -218,13 +233,16 @@ Every tool call is logged in a tamper-evident audit trail. Admins can query it a
 npm install -g iso27001-mcp
 ```
 
-Or run from source:
+The `iso27001-mcp` command is now available globally. The encrypted SQLite module (`better-sqlite3-multiple-ciphers`) downloads a prebuilt binary on supported platforms; it compiles from source if none is available.
+
+**Run from source** (for development or to get the latest unreleased changes):
 
 ```bash
 git clone https://github.com/your-org/iso27001-mcp
 cd iso27001-mcp
 npm install
 npm run build
+# Use `node dist/index.js` instead of `iso27001-mcp` in all commands below
 ```
 
 ### Step 2 — Set Up Environment Variables
@@ -303,11 +321,11 @@ Add the server to your Claude Desktop MCP configuration file:
   "mcpServers": {
     "iso27001": {
       "command": "iso27001-mcp",
-      "args": ["--mode", "local", "--db", "/path/to/your/isms.db"],
       "env": {
         "HMAC_SECRET": "your_hmac_secret",
         "DB_ENCRYPTION_KEY": "your_db_encryption_key",
-        "MCP_API_KEY": "iso27001_your_api_key_here"
+        "MCP_API_KEY": "iso27001_your_api_key_here",
+        "DB_PATH": "/Users/you/.iso27001/isms.db"
       }
     }
   }
@@ -316,18 +334,22 @@ Add the server to your Claude Desktop MCP configuration file:
 
 Restart Claude Desktop. The ISO 27001 tools will appear in the tools panel.
 
+> **Tip:** Store your `isms.db` in a stable location like `~/.iso27001/isms.db` so it persists across upgrades.
+
 ### Claude Code
 
 ```bash
-# Add to your project
-claude mcp add iso27001 iso27001-mcp -- --mode local --db ./isms.db
+# Add to your project's MCP config
+claude mcp add iso27001 iso27001-mcp
 ```
 
-Or set the env vars and start manually:
+Then set the required env vars in your shell or `.env`:
 
 ```bash
-export HMAC_SECRET=... DB_ENCRYPTION_KEY=... MCP_API_KEY=iso27001_...
-iso27001-mcp --mode local
+export HMAC_SECRET=your_hmac_secret
+export DB_ENCRYPTION_KEY=your_db_encryption_key
+export MCP_API_KEY=iso27001_your_key_here
+export DB_PATH=$HOME/.iso27001/isms.db
 ```
 
 ---

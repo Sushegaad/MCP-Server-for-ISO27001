@@ -1,0 +1,44 @@
+# Source — only dist/ is needed at runtime
+src/
+
+# Tests
+tests/
+coverage/
+vitest.config.ts
+vitest.coverage-only.config.ts
+
+# Build tooling
+scripts/
+tsconfig.json
+tsup.config.ts
+tsup.config.bundled_*.mjs
+.eslintrc.json
+.prettierrc
+
+# Plans / internal docs
+Plans/
+
+# Secrets and local config
+.env
+.env.*
+.env.example
+
+# Database files — users create their own isms.db at runtime
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+audit.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# CI
+.github/

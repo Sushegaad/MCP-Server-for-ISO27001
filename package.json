@@ -1,8 +1,29 @@
 {
   "name": "iso27001-mcp",
   "version": "2.0.0",
-  "description": "Stateful ISO 27001:2022 ISMS management for Claude",
+  "description": "Stateful ISO 27001:2022 ISMS management for Claude — gap analysis, risk register, policies, audits, and evidence tracking via the Model Context Protocol",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/iso27001-mcp.git"
+  },
+  "homepage": "https://github.com/your-org/iso27001-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/your-org/iso27001-mcp/issues"
+  },
+  "keywords": [
+    "iso27001",
+    "iso-27001",
+    "isms",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "compliance",
+    "security",
+    "audit",
+    "gap-analysis",
+    "risk-management"
+  ],
   "engines": {
     "node": ">=20.11.0"
   },
@@ -18,6 +39,10 @@
   ],
   "scripts": {
     "build": "tsup",
+    "postbuild": "cp -r src/seed/policy-templates dist/seed/policy-templates",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build",
+    "postinstall": "node -e \"require('better-sqlite3-multiple-ciphers')\" 2>/dev/null || echo \"\\n⚠️  iso27001-mcp: Native SQLite module failed to load. You may need build tools installed.\\n   macOS: xcode-select --install\\n   Ubuntu/Debian: sudo apt-get install build-essential python3\\n   Windows: npm install --global windows-build-tools\\n   See: https://github.com/your-org/iso27001-mcp#prerequisites\\n\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "test": "vitest run --coverage",
@@ -29,10 +54,12 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
     "better-sqlite3-multiple-ciphers": "12.9.0",
-    "express": "4.22.1",
-    "express-rate-limit": "7.5.1",
     "mustache": "4.2.0",
     "zod": "3.25.76"
+  },
+  "optionalDependencies": {
+    "express": "4.22.1",
+    "express-rate-limit": "7.5.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "7.6.13",
