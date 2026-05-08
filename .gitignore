@@ -8,6 +8,12 @@ node_modules/
 dist/
 build/
 
+# Coverage reports
+coverage/
+
+# tsup temp files (left behind when sandbox filesystem blocks cleanup)
+tsup.config.bundled_*.mjs
+
 # Environment & secrets
 .env
 .env.local
