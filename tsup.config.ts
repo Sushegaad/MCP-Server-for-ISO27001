@@ -8,7 +8,6 @@ export default defineConfig({
   clean: true,
   sourcemap: false,
   minify: false,
-  banner: { js: "#!/usr/bin/env node" },
   // Keep native modules external — .node binaries cannot be bundled by esbuild
   external: ["better-sqlite3-multiple-ciphers"],
   noExternal: [],
