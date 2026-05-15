@@ -2,9 +2,9 @@
  * iso27001-mcp — Test DB fixture
  *
  * Creates an in-memory SQLite database for integration tests.
- * The native better-sqlite3-multiple-ciphers module only works on
- * macOS (where it was compiled), so we guard all usage behind
- * supportsNativeDb so tests can skip gracefully in CI (Linux).
+ * We guard all usage behind supportsNativeDb so tests can skip gracefully
+ * in CI environments where the native better-sqlite3-multiple-ciphers
+ * binary is not available or fails to load.
  */
 
 export let supportsNativeDb = false;
@@ -48,10 +48,6 @@ export function createTestDb(): any {
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   const db = new DatabaseClass(":memory:");
-
-  // Set an empty encryption key for the in-memory test database.
-  // better-sqlite3-multiple-ciphers requires key to be set even for :memory:.
-  db.pragma("key=''");
 
   // Bootstrap migrations tracking table (mirrors connection.ts logic)
   db.exec(`
