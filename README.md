@@ -1,5 +1,7 @@
 # iso27001-mcp
 
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.7.3)](https://socket.dev/npm/package/iso27001-mcp/overview/0.7.3)
+
 A stateful [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that gives Claude a complete ISO 27001:2022 Information Security Management System (ISMS). Ask Claude to run gap assessments, manage risks, generate policies, track evidence, and run audits — all backed by an encrypted SQLite database on your own machine.
 
 ```
