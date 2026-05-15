@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iso27001-mcp — ISO 27001 ISMS for Claude</title>
+<meta name="description" content="A stateful MCP server that gives Claude a complete ISO 27001:2022 ISMS — gap analysis, risk register, policies, audits, and evidence tracking.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sidebar: #0f172a;
+    --sidebar-hover: #1e293b;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #1d4ed8;
+    --accent-light: #eff6ff;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --slate: #64748b;
+    --slate-light: #f1f5f9;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+  }
+
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; font-size: 14px; }
+
+  /* ── Sidebar ── */
+  .sidebar { width: 240px; background: var(--sidebar); display: flex; flex-direction: column; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 10; }
+  .sidebar-logo { padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-logo h1 { color: #f1f5f9; font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+  .sidebar-logo p { color: #94a3b8; font-size: 11px; margin-top: 3px; }
+  .sidebar-badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .sidebar-badge { display: inline-block; color: white; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; }
+  .badge-version { background: #1d4ed8; }
+  .badge-mit { background: #059669; }
+  .sidebar-nav { padding: 12px 0; flex: 1; }
+  .sidebar-section { padding: 12px 16px 4px; color: #475569; font-size: 10px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: #94a3b8; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; font-size: 13px; }
+  .nav-item:hover { background: var(--sidebar-hover); color: #e2e8f0; }
+  .nav-item.active { background: var(--sidebar-hover); color: #f1f5f9; border-left-color: #3b82f6; font-weight: 500; }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+  .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-footer p { color: #475569; font-size: 11px; line-height: 1.6; }
+  .sidebar-footer a { color: #3b82f6; text-decoration: none; }
+  .sidebar-footer a:hover { color: #60a5fa; }
+
+  /* ── Main ── */
+  .main { margin-left: 240px; flex: 1; min-height: 100vh; }
+  .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 5; }
+  .topbar h2 { font-size: 16px; font-weight: 600; }
+  .topbar p { color: var(--muted); font-size: 13px; margin-top: 1px; }
+  .demo-pill { background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; border: 1px solid #fde68a; white-space: nowrap; }
+  .content { padding: 24px 28px; }
+
+  /* ── Hero banner ── */
+  .hero { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border-radius: 12px; padding: 28px 32px; margin-bottom: 24px; color: white; }
+  .hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .hero h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+  .hero p { color: #94a3b8; font-size: 13px; margin-top: 6px; max-width: 520px; line-height: 1.6; }
+  .hero-badges { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .hero-badge { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: #e2e8f0; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px; }
+  .install-box { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 12px 16px; font-family: monospace; font-size: 13px; color: #7dd3fc; display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .install-box span { flex: 1; }
+  .copy-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 4px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; transition: background 0.15s; font-family: -apple-system, sans-serif; }
+  .copy-btn:hover { background: rgba(255,255,255,0.2); }
+
+  /* ── Cards ── */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .card-title { font-size: 14px; font-weight: 600; }
+  .card-sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  /* ── Grid ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+  .col-span-2 { grid-column: span 2; }
+
+  /* ── Badges ── */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-slate { background: var(--slate-light); color: var(--slate); }
+  .badge-blue { background: var(--accent-light); color: var(--accent); }
+  .badge-purple { background: var(--purple-light); color: var(--purple); }
+
+  /* ── Buttons ── */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #1e40af; }
+  .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: #e2e8f0; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* ── Progress ── */
+  .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+
+  /* ── Stat cards ── */
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; }
+  .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-label { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  /* ── Section visibility ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── Gap Assessment ── */
+  .control-list { display: flex; flex-direction: column; gap: 2px; max-height: 480px; overflow-y: auto; }
+  .control-row { display: flex; align-items: center; padding: 10px 14px; border-radius: 7px; cursor: pointer; transition: background 0.1s; gap: 12px; border: 1px solid transparent; }
+  .control-row:hover { background: var(--bg); border-color: var(--border); }
+  .control-id { font-size: 12px; font-weight: 600; color: var(--muted); width: 36px; flex-shrink: 0; }
+  .control-name { flex: 1; font-size: 13px; }
+  .control-theme { font-size: 11px; color: var(--muted); width: 110px; flex-shrink: 0; }
+  .status-btn { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
+  .new-tag { background: var(--purple-light); color: var(--purple); font-size: 10px; font-weight: 600; padding: 1px 5px; border-radius: 4px; flex-shrink: 0; }
+
+  /* ── Heatmap ── */
+  .heatmap { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .heatmap-cell { aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; cursor: default; transition: transform 0.1s; }
+  .heatmap-cell:hover { transform: scale(1.08); }
+  .heat-1 { background: #bbf7d0; color: #166534; }
+  .heat-2 { background: #fef08a; color: #713f12; }
+  .heat-3 { background: #fed7aa; color: #9a3412; }
+  .heat-4 { background: #fca5a5; color: #991b1b; }
+  .heat-5 { background: #b91c1c; color: white; }
+
+  /* ── Risk list ── */
+  .risk-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 7px; border: 1px solid var(--border); margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+  .risk-row:hover { border-color: var(--accent); background: var(--accent-light); }
+  .risk-score-bubble { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .risk-detail { flex: 1; }
+  .risk-asset { font-size: 13px; font-weight: 500; }
+  .risk-threat { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .risk-meta { display: flex; gap: 6px; align-items: center; }
+
+  /* ── Policy ── */
+  .policy-form { display: flex; flex-direction: column; gap: 14px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .form-group input, .form-group select, .form-group textarea { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--card); outline: none; transition: border-color 0.15s; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .policy-output { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 24px; font-family: Georgia, serif; line-height: 1.7; white-space: pre-wrap; font-size: 13px; max-height: 500px; overflow-y: auto; }
+  .policy-output h1 { font-size: 18px; margin-bottom: 8px; }
+  .policy-output h2 { font-size: 14px; margin: 16px 0 6px; color: #1e293b; }
+
+  /* ── Tools explorer ── */
+  .tool-search { width: 100%; border: 1px solid var(--border); border-radius: 7px; padding: 9px 14px; font-size: 13px; outline: none; font-family: inherit; }
+  .tool-search:focus { border-color: var(--accent); }
+  .tool-group-header { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; padding: 14px 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .tool-card { border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+  .tool-card:hover { border-color: var(--accent); background: var(--accent-light); }
+  .tool-card.open { border-color: var(--accent); background: var(--accent-light); }
+  .tool-card-header { display: flex; align-items: center; justify-content: space-between; }
+  .tool-name { font-size: 13px; font-weight: 600; font-family: monospace; color: var(--accent); }
+  .tool-desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .tool-params { margin-top: 12px; display: none; }
+  .tool-card.open .tool-params { display: block; }
+  .param-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .param-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+  .param-table td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  .param-name { font-family: monospace; color: #1e293b; }
+  .param-req { color: var(--green); font-weight: 600; }
+  .example-call { background: #1e293b; color: #e2e8f0; border-radius: 6px; padding: 10px 14px; font-family: monospace; font-size: 11px; margin-top: 10px; overflow-x: auto; white-space: pre; }
+
+  /* ── Roadmap ── */
+  .roadmap-phase { border-left: 3px solid var(--accent); padding-left: 16px; margin-bottom: 20px; }
+  .roadmap-phase-title { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
+  .roadmap-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .roadmap-item:last-child { border-bottom: none; }
+  .roadmap-control-id { font-size: 11px; font-weight: 600; color: var(--muted); width: 32px; flex-shrink: 0; }
+  .roadmap-control-name { font-size: 12px; flex: 1; }
+  .roadmap-weeks { font-size: 11px; color: var(--muted); }
+
+  /* ── Quick Start ── */
+  .qs-step { display: flex; gap: 16px; margin-bottom: 24px; }
+  .qs-num { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .qs-body { flex: 1; }
+  .qs-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .qs-desc { color: var(--muted); font-size: 13px; margin-bottom: 10px; line-height: 1.6; }
+  .code-block { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 14px 18px; font-family: monospace; font-size: 12px; overflow-x: auto; white-space: pre; line-height: 1.6; position: relative; }
+  .code-block .comment { color: #64748b; }
+  .code-block .key { color: #7dd3fc; }
+  .code-block .string { color: #86efac; }
+  .code-block .num { color: #fca5a5; }
+  .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 4px; }
+  .feature-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .feature-icon { font-size: 20px; margin-bottom: 6px; }
+  .feature-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .feature-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .convo-bubble { border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; font-size: 13px; line-height: 1.6; max-width: 90%; }
+  .convo-user { background: var(--accent); color: white; margin-left: auto; border-bottom-right-radius: 3px; }
+  .convo-claude { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+  .convo-label { font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+  .convo-wrap { margin-bottom: 8px; }
+
+  /* ── Misc ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .tag { display: inline-block; background: var(--bg); border: 1px solid var(--border); color: var(--muted); font-size: 11px; padding: 2px 7px; border-radius: 4px; }
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .gap-2 { gap: 8px; }
+  .gap-3 { gap: 12px; }
+  .mt-3 { margin-top: 12px; }
+  .mt-4 { margin-top: 16px; }
+  .mb-4 { margin-bottom: 16px; }
+  .text-muted { color: var(--muted); }
+  .text-sm { font-size: 12px; }
+  .font-mono { font-family: monospace; }
+  .w-full { width: 100%; }
+  .hidden { display: none !important; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Donut chart ── */
+  .donut-wrap { position: relative; width: 140px; height: 140px; }
+  .donut-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .donut-pct { font-size: 24px; font-weight: 700; }
+  .donut-sub { font-size: 11px; color: var(--muted); }
+
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filter-btn { padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--muted); transition: all 0.15s; }
+  .filter-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+
+  .notice { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; color: #1e40af; font-size: 12px; margin-bottom: 20px; }
+  .notice-green { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  SIDEBAR                                                   -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>iso27001-mcp</h1>
+    <p>ISO 27001 ISMS for Claude</p>
+    <div class="sidebar-badges">
+      <span class="sidebar-badge badge-version">v0.7.4</span>
+      <span class="sidebar-badge badge-mit">MIT</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section">Get Started</div>
+    <div class="nav-item active" onclick="showSection('start')">
+      <span class="nav-icon">🚀</span> Quick Start
+    </div>
+    <div class="sidebar-section">Live Demo</div>
+    <div class="nav-item" onclick="showSection('gap')">
+      <span class="nav-icon">📊</span> Gap Assessment
+    </div>
+    <div class="nav-item" onclick="showSection('risk')">
+      <span class="nav-icon">⚠️</span> Risk Register
+    </div>
+    <div class="nav-item" onclick="showSection('policy')">
+      <span class="nav-icon">📄</span> Policy Generator
+    </div>
+    <div class="nav-item" onclick="showSection('tools')">
+      <span class="nav-icon">🔧</span> Tools Explorer
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <p>
+      <a href="https://npmjs.com/package/iso27001-mcp" target="_blank">npm</a> ·
+      <a href="https://github.com/Sushegaad/MCP-Server-for-ISO27001" target="_blank">GitHub</a> ·
+      <a href="https://github.com/Sushegaad/MCP-Server-for-ISO27001/issues" target="_blank">Issues</a>
+    </p>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  MAIN                                                      -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ── Top bar ── -->
+  <div class="topbar">
+    <div>
+      <h2 id="topbar-title">Quick Start</h2>
+      <p id="topbar-sub">Install, configure, and connect to Claude Desktop in 5 minutes</p>
+    </div>
+    <span class="demo-pill" id="demo-pill">📖 Documentation</span>
+  </div>
+
+  <div class="content">
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 0: QUICK START                                  -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-start" class="section active">
+
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hero-top">
+          <div>
+            <h2>iso27001-mcp</h2>
+            <p>A stateful MCP server that gives Claude a complete ISO 27001:2022 ISMS — gap analysis, risk register, 12 policy templates, audit management, and evidence tracking. All backed by an AES-256 encrypted SQLite database on your own machine.</p>
+            <div class="hero-badges">
+              <span class="hero-badge">✅ 43 MCP tools</span>
+              <span class="hero-badge">🔐 AES-256 encrypted DB</span>
+              <span class="hero-badge">📋 93 ISO 27001:2022 controls</span>
+              <span class="hero-badge">📋 114 ISO 27001:2013 controls</span>
+              <span class="hero-badge">🖥 Node.js 20+</span>
+            </div>
+          </div>
+        </div>
+        <div class="install-box">
+          <span id="install-cmd">npx iso27001-mcp</span>
+          <button class="copy-btn" onclick="copyInstall()">Copy</button>
+        </div>
+      </div>
+
+      <!-- Features -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <div class="card-title">What Claude can do with this server</div>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <div class="feature-title">Gap Analysis</div>
+            <div class="feature-desc">Run gap assessments against all 93 ISO 27001:2022 controls, track status per control, and generate prioritised remediation roadmaps.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚠️</div>
+            <div class="feature-title">Risk Register</div>
+            <div class="feature-desc">Register risks with likelihood × impact scoring, create treatment plans (mitigate / accept / avoid / transfer), and export the full register.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📄</div>
+            <div class="feature-title">Policy Generator</div>
+            <div class="feature-desc">Generate 12 ISO 27001-aligned policy documents from Mustache templates, customised with your org name, scope, owner, and effective date.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📋</div>
+            <div class="feature-title">Statement of Applicability</div>
+            <div class="feature-desc">Auto-generate a full SoA from a gap assessment, then update inclusion status, justification, and responsible party for each control.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <div class="feature-title">Audit Management</div>
+            <div class="feature-desc">Create internal audits, record non-conformances and observations, raise corrective action requests, and generate audit reports.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔗</div>
+            <div class="feature-title">Evidence Tracking</div>
+            <div class="feature-desc">Register evidence artefacts per control, track expiry, find evidence gaps, and link to Jira tickets or GitHub issues.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Installation steps -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Installation &amp; Setup</div>
+          <div class="card-sub">Five steps to get Claude running your ISMS</div>
+        </div>
+
+        <!-- Step 1 -->
+        <div class="qs-step">
+          <div class="qs-num">1</div>
+          <div class="qs-body">
+            <div class="qs-title">Install the server</div>
+            <div class="qs-desc">Requires Node.js 20.11 or later. Install globally so <code style="background:var(--bg);padding:1px 5px;border-radius:3px">npx</code> can find it, or use it directly with <code style="background:var(--bg);padding:1px 5px;border-radius:3px">npx iso27001-mcp</code>.</div>
+            <div class="code-block">npm install -g iso27001-mcp</div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="qs-step">
+          <div class="qs-num">2</div>
+          <div class="qs-body">
+            <div class="qs-title">Create your <code style="background:var(--bg);padding:1px 5px;border-radius:3px">.env</code> file</div>
+            <div class="qs-desc">The server requires two secrets — a 32-byte hex encryption key for the SQLite database and an HMAC secret for the audit log chain. Generate them with <code style="background:var(--bg);padding:1px 5px;border-radius:3px">openssl</code>:</div>
+            <div class="code-block"><span class="comment"># Generate secrets</span>
+openssl rand -hex 32  <span class="comment"># → paste as DB_ENCRYPTION_KEY</span>
+openssl rand -hex 32  <span class="comment"># → paste as HMAC_SECRET</span>
+
+<span class="comment"># Create .env in your working directory</span>
+DB_ENCRYPTION_KEY=&lt;64-hex-chars&gt;
+HMAC_SECRET=&lt;64-hex-chars&gt;
+
+<span class="comment"># Optional — choose where the database is stored</span>
+DB_PATH=/Users/you/isms.db</div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="qs-step">
+          <div class="qs-num">3</div>
+          <div class="qs-body">
+            <div class="qs-title">Add to Claude Desktop</div>
+            <div class="qs-desc">Open your Claude Desktop config file at <code style="background:var(--bg);padding:1px 5px;border-radius:3px">~/Library/Application Support/Claude/claude_desktop_config.json</code> (macOS) and add the server:</div>
+            <div class="code-block">{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"iso27001"</span>: {
+      <span class="key">"command"</span>: <span class="string">"npx"</span>,
+      <span class="key">"args"</span>: [<span class="string">"iso27001-mcp"</span>],
+      <span class="key">"env"</span>: {
+        <span class="key">"DB_ENCRYPTION_KEY"</span>: <span class="string">"&lt;your-64-hex-chars&gt;"</span>,
+        <span class="key">"HMAC_SECRET"</span>: <span class="string">"&lt;your-64-hex-chars&gt;"</span>,
+        <span class="key">"DB_PATH"</span>: <span class="string">"/Users/you/isms.db"</span>,
+        <span class="key">"MCP_ROLE"</span>: <span class="string">"admin"</span>
+      }
+    }
+  }
+}</div>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="qs-step">
+          <div class="qs-num">4</div>
+          <div class="qs-body">
+            <div class="qs-title">Restart Claude Desktop</div>
+            <div class="qs-desc">Quit and reopen Claude Desktop. The iso27001-mcp server will appear in the MCP tools panel (hammer icon). You should see 43 tools registered.</div>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="qs-step" style="margin-bottom:0">
+          <div class="qs-num">5</div>
+          <div class="qs-body">
+            <div class="qs-title">Start your first conversation</div>
+            <div class="qs-desc">Try these prompts to get started:</div>
+            <div style="margin-top:10px">
+              <div class="convo-wrap">
+                <div class="convo-label">You</div>
+                <div class="convo-bubble convo-user">Run a gap assessment for Acme Ltd against ISO 27001:2022. Our scope is all cloud infrastructure and the development team.</div>
+              </div>
+              <div class="convo-wrap">
+                <div class="convo-label">Claude</div>
+                <div class="convo-bubble convo-claude">I'll create a gap assessment now. Using <strong>create_gap_assessment</strong> with scope "all cloud infrastructure and development team" against ISO 27001:2022 (93 controls)…<br><br>✅ Assessment created — ID: <code>ga_7f3a...</code><br>All 93 controls are pre-populated as <em>not_started</em>. Which control domains would you like to review first?</div>
+              </div>
+            </div>
+            <div style="margin-top:12px">
+              <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">MORE EXAMPLE PROMPTS</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Register a critical risk: our customer database could be breached via SQL injection — likelihood 4, impact 5."</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Generate an Access Control Policy for Acme Ltd. Owner is the CISO, effective from 1 July 2026."</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Show me the risk heatmap and export our risk register as a CSV."</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Create an internal audit for Q3 covering clause 9.1 — Performance Evaluation."</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /section-start -->
+
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 1: GAP ASSESSMENT                              -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-gap" class="section">
+
+      <div class="notice">
+        💡 Simulates <strong>create_gap_assessment</strong>, <strong>update_control_status</strong>, <strong>get_gap_summary</strong>, and <strong>generate_remediation_roadmap</strong>. Click any control to cycle its status.
+      </div>
+
+      <div class="grid-4 mb-4">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-implemented" style="color: var(--green)">0</div>
+          <div class="stat-label">Implemented</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-partial" style="color: var(--amber)">0</div>
+          <div class="stat-label">Partial</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-not-implemented" style="color: var(--red)">0</div>
+          <div class="stat-label">Not Implemented</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-not-started" style="color: var(--slate)">0</div>
+          <div class="stat-label">Not Started</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Compliance Score</div>
+                <div class="card-sub">Weighted: implemented=100%, partial=50%</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="showRoadmap()">📋 Roadmap</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 24px;">
+              <div class="donut-wrap">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" r="54" fill="none" stroke="#e2e8f0" stroke-width="16"/>
+                  <circle id="donut-arc" cx="70" cy="70" r="54" fill="none" stroke="#059669" stroke-width="16"
+                    stroke-dasharray="339.3" stroke-dashoffset="339.3"
+                    stroke-linecap="round" transform="rotate(-90 70 70)"
+                    style="transition: stroke-dashoffset 0.5s ease;"/>
+                </svg>
+                <div class="donut-label">
+                  <div class="donut-pct" id="donut-pct">0%</div>
+                  <div class="donut-sub">compliant</div>
+                </div>
+              </div>
+              <div style="flex: 1;">
+                <div style="margin-bottom: 10px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;"><span style="color: var(--green)">● Implemented</span><span id="bar-implemented-pct">0%</span></div>
+                  <div class="progress-bar"><div class="progress-fill" id="bar-implemented" style="background: var(--green); width: 0%"></div></div>
+                </div>
+                <div style="margin-bottom: 10px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;"><span style="color: var(--amber)">● Partial</span><span id="bar-partial-pct">0%</span></div>
+                  <div class="progress-bar"><div class="progress-fill" id="bar-partial" style="background: var(--amber); width: 0%"></div></div>
+                </div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;"><span style="color: var(--red)">● Not Implemented</span><span id="bar-not-impl-pct">0%</span></div>
+                  <div class="progress-bar"><div class="progress-fill" id="bar-not-impl" style="background: var(--red); width: 0%"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card hidden" id="roadmap-card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Remediation Roadmap</div>
+                <div class="card-sub">12-week timeline · prioritised by theme</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="hideRoadmap()">✕ Close</button>
+            </div>
+            <div id="roadmap-content"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Controls</div>
+              <div class="card-sub">Click to cycle: not started → partial → implemented → not implemented</div>
+            </div>
+          </div>
+          <div class="filter-bar" id="theme-filters">
+            <button class="filter-btn active" onclick="filterTheme('All', this)">All</button>
+            <button class="filter-btn" onclick="filterTheme('Organizational', this)">Organizational</button>
+            <button class="filter-btn" onclick="filterTheme('People', this)">People</button>
+            <button class="filter-btn" onclick="filterTheme('Physical', this)">Physical</button>
+            <button class="filter-btn" onclick="filterTheme('Technological', this)">Technological</button>
+          </div>
+          <div class="control-list" id="control-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 2: RISK REGISTER                               -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-risk" class="section">
+      <div class="notice">
+        💡 Simulates <strong>create_risk</strong>, <strong>list_risks</strong>, <strong>get_risk_summary</strong>, and <strong>create_treatment_plan</strong>. Risk score = likelihood × impact (1–5 scale). Click any risk for details.
+      </div>
+
+      <div class="grid-2 mb-4">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Risk Heatmap</div>
+              <div class="card-sub">5×5 likelihood × impact matrix</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: flex-start;">
+            <div style="writing-mode: vertical-rl; transform: rotate(180deg); font-size: 11px; color: var(--muted); align-self: center; padding-bottom: 20px;">Likelihood →</div>
+            <div style="flex: 1;">
+              <div class="heatmap" id="heatmap"></div>
+              <div style="display: flex; justify-content: space-between; margin-top: 6px; padding: 0 2px;">
+                <span style="font-size:10px;color:var(--muted)">Low impact</span>
+                <span style="font-size:10px;color:var(--muted)">High impact →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Risk Summary</div>
+          </div>
+          <div class="grid-2" style="gap:10px;margin-bottom:16px">
+            <div class="stat-card"><div class="stat-value" id="rs-critical" style="color:var(--red)">0</div><div class="stat-label">Critical</div></div>
+            <div class="stat-card"><div class="stat-value" id="rs-high" style="color:var(--amber)">0</div><div class="stat-label">High</div></div>
+            <div class="stat-card"><div class="stat-value" id="rs-medium" style="color:#ca8a04">0</div><div class="stat-label">Medium</div></div>
+            <div class="stat-card"><div class="stat-value" id="rs-low" style="color:var(--green)">0</div><div class="stat-label">Low</div></div>
+          </div>
+          <div class="card-sub" style="margin-bottom:8px">Highest risk</div>
+          <div id="top-risk-display"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Risk Register</div>
+          </div>
+          <select id="risk-filter" onchange="filterRisks()" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12px;margin-bottom:12px;font-family:inherit;color:var(--text)">
+            <option value="all">All levels</option>
+            <option value="Critical">Critical only</option>
+            <option value="High">High only</option>
+            <option value="Medium">Medium only</option>
+            <option value="Low">Low only</option>
+          </select>
+          <div id="risk-list"></div>
+        </div>
+
+        <div class="card hidden" id="risk-detail-card">
+          <div class="card-header">
+            <div>
+              <div class="card-title" id="rd-title"></div>
+              <div class="card-sub" id="rd-sub"></div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="closeRiskDetail()">✕</button>
+          </div>
+          <div id="risk-detail-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 3: POLICY GENERATOR                            -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-policy" class="section">
+      <div class="notice">
+        💡 Simulates the <strong>create_policy</strong> tool. The real server renders 12 Mustache templates server-side and stores the output in the encrypted database.
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Policy Details</div>
+            <div class="card-sub">Fill in your organisation details</div>
+          </div>
+          <div class="policy-form">
+            <div class="form-group">
+              <label>Policy Type</label>
+              <select id="policy-type">
+                <option value="information_security">Information Security Policy</option>
+                <option value="access_control">Access Control Policy</option>
+                <option value="risk_management">Risk Management Policy</option>
+                <option value="asset_management">Asset Management Policy</option>
+                <option value="incident_response">Incident Response Policy</option>
+                <option value="business_continuity">Business Continuity Policy</option>
+                <option value="supplier_security">Supplier Security Policy</option>
+                <option value="cryptography">Cryptography Policy</option>
+                <option value="acceptable_use">Acceptable Use Policy</option>
+                <option value="data_classification">Data Classification Policy</option>
+                <option value="secure_development">Secure Development Policy</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Organisation Name</label>
+                <input id="org-name" type="text" placeholder="Acme Financial Services">
+              </div>
+              <div class="form-group">
+                <label>Policy Owner</label>
+                <input id="policy-owner" type="text" placeholder="CISO">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Approver</label>
+                <input id="policy-approver" type="text" placeholder="CEO">
+              </div>
+              <div class="form-group">
+                <label>Effective Date</label>
+                <input id="policy-date" type="date" value="2026-07-01">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Scope</label>
+              <textarea id="policy-scope" placeholder="All cloud infrastructure, SaaS systems, and personnel handling customer data."></textarea>
+            </div>
+            <button class="btn btn-primary w-full" id="gen-btn" onclick="generatePolicy()">✨ Generate Policy</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Generated Policy</div>
+            <div class="card-sub">ISO 27001:2022 aligned · ready to review and sign</div>
+          </div>
+          <div id="policy-output-area" class="policy-output text-muted text-sm" style="font-family:inherit">
+            Fill in the form and click Generate Policy to preview the document. In the real server, this is stored in your encrypted ISMS database with full version history.
+          </div>
+          <div id="policy-actions" style="display:none;gap:8px;margin-top:12px">
+            <button class="btn btn-secondary btn-sm" onclick="copyPolicy()">📋 Copy</button>
+            <button class="btn btn-secondary btn-sm" onclick="downloadPolicy()">⬇ Download .md</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 4: TOOLS EXPLORER                              -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-tools" class="section">
+      <div class="notice">
+        💡 All 43 tools are fully implemented in v0.7.4. Each tool requires a valid <strong>API key</strong> (set via <code>MCP_ROLE</code> env) and goes through input validation, role-based access control, and tamper-evident audit logging.
+      </div>
+      <div class="card">
+        <input class="tool-search" type="text" placeholder="Search tools, parameters, or descriptions…" oninput="filterTools(this.value)">
+        <div id="tools-container" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════════════
+
+const CONTROLS = [
+  { id:'5.1',  name:'Policies for information security',       theme:'Organizational', new22:false },
+  { id:'5.2',  name:'Information security roles & responsibilities', theme:'Organizational', new22:false },
+  { id:'5.7',  name:'Threat intelligence',                     theme:'Organizational', new22:true },
+  { id:'5.23', name:'Information security for cloud services', theme:'Organizational', new22:true },
+  { id:'5.30', name:'ICT readiness for business continuity',   theme:'Organizational', new22:true },
+  { id:'6.1',  name:'Screening',                               theme:'People',         new22:false },
+  { id:'6.3',  name:'Information security awareness, education & training', theme:'People', new22:false },
+  { id:'6.8',  name:'Information security event reporting',    theme:'People',         new22:true },
+  { id:'7.1',  name:'Physical security perimeters',            theme:'Physical',       new22:false },
+  { id:'7.4',  name:'Physical security monitoring',            theme:'Physical',       new22:true },
+  { id:'8.2',  name:'Privileged access rights',                theme:'Technological',  new22:false },
+  { id:'8.4',  name:'Access to source code',                   theme:'Technological',  new22:false },
+  { id:'8.7',  name:'Protection against malware',              theme:'Technological',  new22:false },
+  { id:'8.8',  name:'Management of technical vulnerabilities', theme:'Technological',  new22:false },
+  { id:'8.9',  name:'Configuration management',                theme:'Technological',  new22:true },
+  { id:'8.10', name:'Information deletion',                    theme:'Technological',  new22:true },
+  { id:'8.11', name:'Data masking',                            theme:'Technological',  new22:true },
+  { id:'8.12', name:'Data leakage prevention',                 theme:'Technological',  new22:true },
+  { id:'8.15', name:'Logging',                                 theme:'Technological',  new22:false },
+  { id:'8.16', name:'Monitoring activities',                   theme:'Technological',  new22:true },
+  { id:'8.20', name:'Networks security',                       theme:'Technological',  new22:false },
+  { id:'8.23', name:'Web filtering',                           theme:'Technological',  new22:true },
+  { id:'8.24', name:'Use of cryptography',                     theme:'Technological',  new22:false },
+  { id:'8.28', name:'Secure coding',                           theme:'Technological',  new22:true },
+];
+
+const STATUS_CYCLE  = ['not_started','partial','implemented','not_implemented'];
+const STATUS_COLORS = {
+  implemented:     { bg:'#d1fae5', color:'#065f46', label:'Implemented' },
+  partial:         { bg:'#fef3c7', color:'#92400e', label:'Partial' },
+  not_implemented: { bg:'#fee2e2', color:'#991b1b', label:'Not Implemented' },
+  not_started:     { bg:'#f1f5f9', color:'#475569', label:'Not Started' },
+};
+const controlStatus = {};
+
+const RISKS = [
+  { id:1, asset:'Customer Database',   threat:'SQL Injection',         vuln:'Unparameterised queries in legacy API',              likelihood:4, impact:5, owner:'Head of Engineering', controls:['8.28','8.8'],  status:'open',     treatment:'Migrate all queries to parameterised statements. Add SAST scanning to CI pipeline. Block direct DB access from app layer.' },
+  { id:2, asset:'Employee Laptops',    threat:'Ransomware infection',  vuln:'Inconsistent patch management across fleet',          likelihood:3, impact:4, owner:'IT Operations',       controls:['8.7','8.8'],   status:'mitigated',treatment:'Deployed Jamf Pro for fleet management. Automated OS and AV updates enforced. USB ports blocked on all managed devices.' },
+  { id:3, asset:'Cloud Storage (S3)',  threat:'Data exfiltration',     vuln:'Overly permissive IAM roles and public bucket ACLs',  likelihood:3, impact:5, owner:'Cloud Security Lead', controls:['5.23','8.2'],  status:'open',     treatment:'Enforce bucket-level SCPs. Implement least-privilege IAM review (quarterly). Enable Macie for sensitive data discovery.' },
+  { id:4, asset:'Email System',        threat:'Phishing / BEC',        vuln:'No DMARC enforcement; low security awareness',        likelihood:5, impact:3, owner:'Security Engineer',   controls:['6.3','8.7'],   status:'mitigated',treatment:'DMARC p=reject enforced. Mandatory phishing simulation quarterly. All staff completed awareness training (May 2026).' },
+  { id:5, asset:'Third-party APIs',    threat:'Supply chain attack',   vuln:'No SBOM or dependency audit process',                 likelihood:3, impact:4, owner:'Head of Engineering', controls:['5.23','8.8'],  status:'mitigated',treatment:'Implemented Dependabot alerts and monthly SBOM audit. Verified by security team.' },
+  { id:6, asset:'Audit Logs',          threat:'Log tampering',         vuln:'Logs stored on same server as application',           likelihood:2, impact:3, owner:'Security Engineer',   controls:['8.15'],        status:'open',     treatment:'Ship logs to immutable SIEM (Splunk Cloud) within 60 seconds. Read-only access enforced.' },
+];
+
+const TOOLS = [
+  { group:'Group 1 — Control Registry', role:'viewer', tools:[
+    { name:'get_control',             desc:'Retrieve a single ISO 27001 control by control_id and optional version (2022 or 2013).',
+      params:[['control_id','✅','string','e.g. 8.28'],['version','—','enum','2022 | 2013']],
+      example:'{ "control_id": "8.28", "version": "2022" }' },
+    { name:'list_controls',           desc:'List ISO 27001 controls with optional filters: version, theme, control_type, new_in_2022, cybersecurity_concept, and pagination.',
+      params:[['version','—','enum','2022 | 2013'],['theme','—','string','e.g. Technological'],['new_in_2022','—','boolean',''],['limit','—','integer','default 50']],
+      example:'{ "version": "2022", "theme": "Technological", "new_in_2022": true }' },
+    { name:'search_controls',         desc:'Full-text search across control names, descriptions, and guidance using the FTS5 index.',
+      params:[['query','✅','string','search terms'],['version','—','enum','2022 | 2013'],['limit','—','integer','default 10']],
+      example:'{ "query": "encryption key management" }' },
+    { name:'get_control_attributes',  desc:'Retrieve the 2022 attribute tags for a control: information_security_properties, cybersecurity_concepts, operational_capabilities, security_domains.',
+      params:[['control_id','✅','string','2022 control ID']],
+      example:'{ "control_id": "8.24" }' },
+    { name:'compare_versions',        desc:'Show the mapping relationship between a 2013 control and its 2022 equivalent(s), or vice versa.',
+      params:[['v2013_id','—','string','ISO 2013 ID'],['v2022_id','—','string','ISO 2022 ID']],
+      example:'{ "v2013_id": "A.10.1.1" }' },
+    { name:'get_clause_requirement',  desc:'Fetch a single ISO 27001:2022 clause requirement by clause_id, optionally including sub-clauses.',
+      params:[['clause_id','✅','string','e.g. 9.2'],['include_sub_clauses','—','boolean','default false']],
+      example:'{ "clause_id": "9.2", "include_sub_clauses": true }' },
+    { name:'list_clause_requirements',desc:'List ISO 27001:2022 clause requirements (clauses 4–10), optionally filtered by parent clause.',
+      params:[['parent_id','—','string','e.g. 9']],
+      example:'{ "parent_id": "9" }' },
+  ]},
+  { group:'Group 2 — Gap Analysis', role:'analyst', tools:[
+    { name:'create_gap_assessment',       desc:'Create a new gap assessment against ISO 27001:2022 or 2013 controls for a defined ISMS scope.',
+      params:[['name','✅','string','assessment name'],['scope','—','string',''],['isms_version','—','enum','2022 | 2013'],['themes_in_scope','—','array','']],
+      example:'{ "name": "2026 Certification Audit", "isms_version": "2022", "scope": "Cloud infrastructure and development" }' },
+    { name:'update_control_status',       desc:'Set the implementation status of a control within a gap assessment (implemented, partial, not_implemented, na, not_started).',
+      params:[['assessment_id','✅','uuid',''],['control_id','✅','string',''],['status','✅','enum','implemented | partial | not_implemented | na | not_started'],['notes','—','string','']],
+      example:'{ "assessment_id": "uuid", "control_id": "8.28", "status": "partial", "notes": "Secure coding standard drafted, not yet enforced" }' },
+    { name:'get_gap_summary',             desc:'Return aggregate compliance statistics for a gap assessment, optionally broken down by theme, control_type, or cybersecurity_concept.',
+      params:[['assessment_id','✅','uuid',''],['breakdown_by','—','enum','theme | control_type | cybersecurity_concept']],
+      example:'{ "assessment_id": "uuid", "breakdown_by": "theme" }' },
+    { name:'list_gap_assessments',        desc:'List gap assessments filtered by status (active, archived, all).',
+      params:[['filter','—','enum','active | archived | all']],
+      example:'{ "filter": "active" }' },
+    { name:'export_gap_report',           desc:'Export a full gap assessment report in markdown, CSV, or JSON format.',
+      params:[['assessment_id','✅','uuid',''],['format','✅','enum','markdown | csv | json']],
+      example:'{ "assessment_id": "uuid", "format": "markdown" }' },
+    { name:'generate_remediation_roadmap',desc:'Generate a prioritised remediation roadmap from a gap assessment, grouped by risk level and theme.',
+      params:[['assessment_id','✅','uuid',''],['timeline_weeks','—','integer','1–52, default 12']],
+      example:'{ "assessment_id": "uuid", "timeline_weeks": 26 }' },
+    { name:'archive_gap_assessment',      desc:'Archive a completed or superseded gap assessment with an optional reason.',
+      params:[['assessment_id','✅','uuid',''],['reason','—','string','']],
+      example:'{ "assessment_id": "uuid", "reason": "Certification achieved" }' },
+  ]},
+  { group:'Group 3 — Risk Management', role:'analyst', tools:[
+    { name:'create_risk',           desc:'Register a new information security risk with asset, threat, vulnerability, likelihood (1–5), and impact (1–5).',
+      params:[['asset','✅','string',''],['threat','✅','string',''],['vulnerability','✅','string',''],['likelihood','✅','integer','1–5'],['impact','✅','integer','1–5'],['owner','—','string',''],['status','—','enum','open | accepted | mitigated | transferred | closed']],
+      example:'{ "asset": "Customer DB", "threat": "SQL Injection", "vulnerability": "Unparameterised queries", "likelihood": 4, "impact": 5 }' },
+    { name:'get_risk',              desc:'Retrieve a risk record by ID, optionally including its treatment plans.',
+      params:[['risk_id','✅','uuid',''],['include_treatments','—','boolean','default false']],
+      example:'{ "risk_id": "uuid", "include_treatments": true }' },
+    { name:'update_risk',           desc:'Update mutable fields of an existing risk (asset, threat, vulnerability, likelihood, impact, owner, status, related_controls).',
+      params:[['risk_id','✅','uuid',''],['likelihood','—','integer','1–5'],['impact','—','integer','1–5'],['status','—','enum','open | accepted | mitigated | transferred | closed']],
+      example:'{ "risk_id": "uuid", "status": "mitigated" }' },
+    { name:'list_risks',            desc:'List risks with optional filters: risk_level, status, owner, and pagination.',
+      params:[['risk_level','—','enum','Low | Medium | High | Critical'],['status','—','enum','open | accepted | mitigated | transferred | closed'],['limit','—','integer','default 50']],
+      example:'{ "risk_level": "Critical", "status": "open" }' },
+    { name:'get_risk_summary',      desc:'Return aggregate risk statistics: count by level, status, and treatment type.',
+      params:[], example:'{}' },
+    { name:'create_treatment_plan', desc:'Create a risk treatment plan (mitigate, accept, avoid, or transfer) with owner, due date, and optionally residual risk scores.',
+      params:[['risk_id','✅','uuid',''],['treatment_type','✅','enum','mitigate | accept | avoid | transfer'],['description','✅','string',''],['owner','✅','string',''],['due_date','✅','string','YYYY-MM-DD'],['controls','—','array','required for mitigate']],
+      example:'{ "risk_id": "uuid", "treatment_type": "mitigate", "description": "Implement parameterised queries", "owner": "Head of Engineering", "due_date": "2026-09-30" }' },
+    { name:'update_treatment_status',desc:'Update the status and evidence reference for an existing risk treatment plan.',
+      params:[['treatment_id','✅','uuid',''],['status','✅','enum','planned | in_progress | implemented | verified | cancelled'],['evidence_ref','—','string','']],
+      example:'{ "treatment_id": "uuid", "status": "implemented", "evidence_ref": "PR-4821-merged" }' },
+    { name:'generate_risk_register',desc:'Export the full risk register in markdown, CSV, or JSON format with optional level/status filters.',
+      params:[['format','✅','enum','markdown | csv | json'],['risk_level_filter','—','enum','Low | Medium | High | Critical'],['status_filter','—','enum','open | accepted | mitigated | transferred | closed']],
+      example:'{ "format": "csv", "risk_level_filter": "Critical" }' },
+  ]},
+  { group:'Group 4 — Policy Management', role:'analyst', tools:[
+    { name:'create_policy', desc:'Generate a new ISMS policy document from a Mustache template using organisation_name, scope, owner, and effective_date.',
+      params:[['type','✅','enum','information_security | access_control | risk_management | …'],['organisation_name','✅','string',''],['scope','✅','string',''],['owner','✅','string',''],['effective_date','✅','string','YYYY-MM-DD']],
+      example:'{ "type": "information_security", "organisation_name": "Acme Ltd", "scope": "All cloud systems", "owner": "CISO", "effective_date": "2026-06-01" }' },
+    { name:'get_policy',    desc:'Retrieve a policy record by ID, optionally including version history.',
+      params:[['policy_id','✅','uuid',''],['include_versions','—','boolean','default false']],
+      example:'{ "policy_id": "uuid", "include_versions": true }' },
+    { name:'update_policy', desc:'Create a new version of an existing policy with scope/owner changes, reviewed_by, and change_summary. Requires admin role.',
+      params:[['policy_id','✅','uuid',''],['reviewed_by','✅','string',''],['change_summary','✅','string',''],['scope','—','string','']],
+      example:'{ "policy_id": "uuid", "reviewed_by": "CISO", "change_summary": "Updated cloud scope to include GCP" }' },
+    { name:'list_policies', desc:'List policies with optional filters: status, type, owner, overdue_only, and pagination.',
+      params:[['status','—','enum','draft | active | archived'],['overdue_only','—','boolean','default false'],['limit','—','integer','default 50']],
+      example:'{ "overdue_only": true }' },
+  ]},
+  { group:'Group 5 — Statement of Applicability', role:'analyst', tools:[
+    { name:'generate_soa',    desc:'Generate a Statement of Applicability from a gap assessment, pre-populating inclusion/exclusion for all controls.',
+      params:[['assessment_id','✅','uuid',''],['isms_version','—','enum','2022 | 2013']],
+      example:'{ "assessment_id": "uuid", "isms_version": "2022" }' },
+    { name:'update_soa_entry',desc:'Update an SoA entry\'s inclusion status, justification, implementation status, and responsible party.',
+      params:[['soa_id','✅','uuid',''],['control_id','✅','string',''],['included','✅','boolean',''],['justification','✅','string','']],
+      example:'{ "soa_id": "uuid", "control_id": "8.1", "included": true, "justification": "All staff use managed endpoints" }' },
+    { name:'export_soa',      desc:'Export the Statement of Applicability in markdown or CSV format.',
+      params:[['soa_id','✅','uuid',''],['format','✅','enum','markdown | csv']],
+      example:'{ "soa_id": "uuid", "format": "csv" }' },
+  ]},
+  { group:'Group 6 — Audit Management', role:'admin', tools:[
+    { name:'create_audit',            desc:'Create an internal ISMS audit record with auditor, planned date, and controls/clauses in scope.',
+      params:[['name','✅','string',''],['scope','✅','string',''],['auditor','✅','string',''],['planned_date','✅','string','YYYY-MM-DD'],['controls_in_scope','—','array','']],
+      example:'{ "name": "Q2 Access Control Audit", "scope": "Access control and cryptography", "auditor": "Jane Smith", "planned_date": "2026-06-15" }' },
+    { name:'record_finding',          desc:'Record an audit finding (NC, observation, or OFI) against a clause or control.',
+      params:[['audit_id','✅','uuid',''],['type','✅','enum','nc | obs | ofi'],['clause_or_control','✅','string',''],['description','✅','string',''],['objective_evidence','✅','string',''],['severity','—','enum','major | minor — required for nc']],
+      example:'{ "audit_id": "uuid", "type": "nc", "clause_or_control": "9.1", "description": "No evidence of monitoring", "objective_evidence": "No KPI reports found for Q1-Q2", "severity": "major" }' },
+    { name:'create_corrective_action',desc:'Create a corrective action request (CAR) linked to an audit finding with owner and due date.',
+      params:[['finding_id','✅','uuid',''],['description','✅','string',''],['owner','✅','string',''],['due_date','✅','string','YYYY-MM-DD']],
+      example:'{ "finding_id": "uuid", "description": "Establish quarterly security KPI dashboard", "owner": "Compliance Manager", "due_date": "2026-07-31" }' },
+    { name:'update_corrective_action',desc:'Update a corrective action\'s status, root cause, evidence reference, or effectiveness verification.',
+      params:[['car_id','✅','uuid',''],['status','—','enum','open | in_progress | implemented | verified | closed'],['effectiveness_verified','—','boolean','must be true to close'],['evidence_ref','—','string','']],
+      example:'{ "car_id": "uuid", "status": "closed", "effectiveness_verified": true, "evidence_ref": "dashboard-review-aug26" }' },
+    { name:'generate_audit_report',   desc:'Export an audit report including findings and CAR status in markdown or JSON format.',
+      params:[['audit_id','✅','uuid',''],['format','✅','enum','markdown | json']],
+      example:'{ "audit_id": "uuid", "format": "markdown" }' },
+  ]},
+  { group:'Group 7 — Evidence Tracking', role:'analyst', tools:[
+    { name:'register_evidence', desc:'Register an evidence artefact linked to a control with type, source URL, collector, and optional expiry date.',
+      params:[['control_id','✅','string',''],['type','✅','enum','policy | procedure | log | screenshot | report | certificate | configuration | …'],['description','✅','string',''],['collected_by','✅','string',''],['collected_date','✅','string','YYYY-MM-DD'],['expiry_date','—','string','YYYY-MM-DD']],
+      example:'{ "control_id": "8.20", "type": "screenshot", "description": "Firewall config screenshot", "collected_by": "Ops team", "collected_date": "2026-05-07", "expiry_date": "2027-05-07" }' },
+    { name:'list_evidence',     desc:'List evidence records for a control, optionally filtered by status (current, stale, expired).',
+      params:[['control_id','✅','string',''],['status','—','enum','current | stale | expired']],
+      example:'{ "control_id": "8.20", "status": "current" }' },
+    { name:'get_evidence_gaps', desc:'Return a list of controls in a gap assessment that have no current evidence records.',
+      params:[['assessment_id','✅','uuid','']],
+      example:'{ "assessment_id": "uuid" }' },
+    { name:'link_jira_ticket',  desc:'Link an evidence record to an existing Jira ticket by key, or create a new ticket from a summary.',
+      params:[['evidence_id','✅','uuid',''],['jira_key','—','string','links existing issue, e.g. ISMS-42'],['summary','—','string','creates new issue']],
+      example:'{ "evidence_id": "uuid", "summary": "Firewall config screenshot — annual review" }' },
+    { name:'link_github_issue', desc:'Link an evidence record to an existing GitHub issue by number, or create a new issue from a title and body.',
+      params:[['evidence_id','✅','uuid',''],['issue_number','—','integer','links existing'],['title','—','string','creates new']],
+      example:'{ "evidence_id": "uuid", "title": "Track annual firewall review evidence" }' },
+  ]},
+  { group:'Group 8 — Server Info', role:'viewer', tools:[
+    { name:'get_server_info', desc:'Return server version, build provenance, control data checksums, and live database statistics.',
+      params:[], example:'{}' },
+  ]},
+  { group:'Group 9 — Admin & Key Management', role:'admin', tools:[
+    { name:'query_audit_log',desc:'Query the tamper-evident audit log with optional filters: date range, tool, outcome, role, key_hash.',
+      params:[['start_date','—','string','YYYY-MM-DD'],['end_date','—','string','YYYY-MM-DD'],['tool','—','string','tool name'],['outcome','—','enum','success | denied | error'],['role','—','enum','viewer | analyst | admin'],['limit','—','integer','default 50']],
+      example:'{ "start_date": "2026-05-01", "outcome": "error", "limit": 100 }' },
+    { name:'list_api_keys',  desc:'List all API keys with their metadata (label, role, status, expiry). Never returns key hashes.',
+      params:[], example:'{}' },
+    { name:'revoke_api_key', desc:'Revoke an API key by label, preventing all future use.',
+      params:[['label','✅','string','the label assigned at key generation']],
+      example:'{ "label": "Alice" }' },
+  ]},
+];
+
+const POLICY_TEMPLATES = {
+  information_security: (d) => `# Information Security Policy
+
+**Organisation:** ${d.org}
+**Version:** 1.0  **Owner:** ${d.owner}  **Approver:** ${d.approver}
+**Effective Date:** ${d.date}  **Review Cycle:** Annual
+
+---
+
+## 1. Purpose
+
+This Information Security Policy establishes the management direction and support for information security in accordance with ISO/IEC 27001:2022 and applicable legal, regulatory, and contractual requirements.
+
+${d.org} is committed to protecting the confidentiality, integrity, and availability of all information assets — whether held on paper, stored electronically, or transmitted across networks.
+
+## 2. Scope
+
+${d.scope}
+
+## 3. Policy Statement
+
+The Board of Directors and senior management of ${d.org} are committed to:
+
+- Establishing, implementing, maintaining, and continually improving an ISMS aligned with ISO/IEC 27001:2022.
+- Setting measurable information security objectives consistent with the organisation's strategic direction.
+- Integrating information security requirements into business processes and projects from inception.
+- Protecting information assets against all internal, external, deliberate, or accidental threats.
+- Meeting all applicable legal, regulatory, and contractual security obligations.
+
+## 4. Responsibilities
+
+**${d.owner}** is accountable for the overall ISMS and this policy. All managers are responsible for implementing the policy within their areas. All personnel must comply and report suspected incidents immediately.
+
+## 5. Review
+
+This policy shall be reviewed annually or following significant changes to the organisation's risk profile, business operations, or regulatory environment.
+
+---
+
+*Approved by: ${d.approver} | Effective: ${d.date}*
+*Aligned with ISO/IEC 27001:2022 Clause 5.2 and controls 5.1, 5.36.*`,
+
+  access_control: (d) => `# Access Control Policy
+
+**Organisation:** ${d.org}
+**Owner:** ${d.owner}  **Approver:** ${d.approver}
+**Effective Date:** ${d.date}
+
+---
+
+## 1. Purpose
+
+To ensure that access to ${d.org}'s information assets is appropriately controlled, authorised, and reviewed to protect against unauthorised access, disclosure, or misuse.
+
+## 2. Scope
+
+${d.scope}
+
+## 3. Principles
+
+All access shall be granted on the basis of:
+
+- **Least privilege** — users receive only the access rights necessary for their role.
+- **Need to know** — sensitive information access is restricted to those with a legitimate business need.
+- **Separation of duties** — conflicting functions are separated to reduce risk of unauthorised modification.
+
+## 4. User Access Management
+
+Access requests must be formally approved by the relevant data owner. Access rights shall be reviewed at minimum every six months and immediately upon role change or departure.
+
+## 5. Authentication Requirements
+
+All users must authenticate using strong credentials. Multi-factor authentication (MFA) is mandatory for all remote access, privileged accounts, and access to systems handling sensitive or personal data.
+
+## 6. Privileged Access
+
+Privileged access rights shall be allocated on a time-limited, just-in-time basis wherever technically feasible. All use of privileged accounts is logged and subject to regular review.
+
+---
+
+*Aligned with ISO/IEC 27001:2022 controls 5.15, 5.18, 8.2, 8.5.*`,
+
+  risk_management: (d) => `# Risk Management Policy
+
+**Organisation:** ${d.org}
+**Owner:** ${d.owner}  **Approver:** ${d.approver}
+**Effective Date:** ${d.date}
+
+---
+
+## 1. Purpose
+
+To define ${d.org}'s approach to identifying, assessing, treating, and monitoring information security risks in a systematic and consistent manner, aligned with ISO/IEC 27001:2022 Clause 6.
+
+## 2. Scope
+
+${d.scope}
+
+## 3. Risk Assessment Methodology
+
+Information security risks are assessed using a 5×5 likelihood and impact matrix. Risk scores are computed as likelihood × impact (1–25). Risks are classified as:
+
+| Score | Level    |
+|-------|----------|
+| 1–4   | Low      |
+| 5–9   | Medium   |
+| 10–14 | High     |
+| 15–25 | Critical |
+
+## 4. Risk Appetite
+
+${d.org} accepts a residual risk level of Medium (score ≤ 8) for operational risks, and Low (score ≤ 4) for risks involving personal data or financial systems.
+
+## 5. Treatment Options
+
+Risks may be treated by: mitigating (applying controls), accepting (documented and approved), avoiding (ceasing the risky activity), or transferring (insurance or third-party agreements).
+
+## 6. Review Frequency
+
+The risk register shall be reviewed quarterly and after significant changes, incidents, or audit findings.
+
+---
+
+*Aligned with ISO/IEC 27001:2022 Clauses 6.1.2 and 8.2–8.3.*`,
+};
+
+const defaultPolicyTemplate = (type, d) => {
+  const titles = {
+    asset_management:'Asset Management Policy', incident_response:'Incident Response Policy',
+    business_continuity:'Business Continuity Policy', supplier_security:'Supplier Security Policy',
+    cryptography:'Cryptography Policy', acceptable_use:'Acceptable Use Policy',
+    data_classification:'Data Classification Policy', secure_development:'Secure Development Policy',
+  };
+  return `# ${titles[type] || 'Security Policy'}
+
+**Organisation:** ${d.org}
+**Owner:** ${d.owner}  **Approver:** ${d.approver}
+**Effective Date:** ${d.date}
+
+---
+
+## 1. Purpose
+
+This policy establishes ${d.org}'s requirements and management direction for ${(titles[type]||'').replace(' Policy','').toLowerCase()}, in alignment with ISO/IEC 27001:2022.
+
+## 2. Scope
+
+${d.scope}
+
+## 3. Policy Statement
+
+${d.org} is committed to maintaining appropriate controls and practices in this domain. All personnel within scope are required to comply with this policy and its associated procedures.
+
+## 4. Responsibilities
+
+**${d.owner}** is responsible for implementing and maintaining this policy. All employees and contractors within scope must adhere to its requirements.
+
+## 5. Compliance and Review
+
+This policy will be reviewed annually and upon significant changes to the business environment, threat landscape, or regulatory requirements.
+
+---
+
+*Approved by: ${d.approver} | Effective: ${d.date}*`;
+};
+
+
+// ══════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════════
+const SECTION_META = {
+  start:  { title:'Quick Start',        sub:'Install, configure, and connect to Claude Desktop in 5 minutes', pill:'📖 Documentation' },
+  gap:    { title:'Gap Assessment',     sub:'Acme Financial Services · ISO 27001:2022 · 24 controls shown',   pill:'⚡ Simulated Demo' },
+  risk:   { title:'Risk Register',      sub:'6 risks across all levels · click any risk to view treatment plan', pill:'⚡ Simulated Demo' },
+  policy: { title:'Policy Generator',   sub:'12 ISO 27001-aligned policy templates · rendered with your org details', pill:'⚡ Simulated Demo' },
+  tools:  { title:'Tools Explorer',     sub:'43 MCP tools across 9 groups · all fully implemented in v0.7.4',  pill:'📦 v0.7.4' },
+};
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  const navMap = { start:0, gap:1, risk:2, policy:3, tools:4 };
+  document.querySelectorAll('.nav-item')[navMap[id]]?.classList.add('active');
+  const meta = SECTION_META[id];
+  document.getElementById('topbar-title').textContent = meta.title;
+  document.getElementById('topbar-sub').textContent   = meta.sub;
+  document.getElementById('demo-pill').textContent    = meta.pill;
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  QUICK START
+// ══════════════════════════════════════════════════════════════
+function copyInstall() {
+  navigator.clipboard.writeText('npx iso27001-mcp').then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1800);
+  });
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  GAP ASSESSMENT
+// ══════════════════════════════════════════════════════════════
+let activeThemeFilter = 'All';
+
+function renderControls() {
+  const list = document.getElementById('control-list');
+  const filtered = activeThemeFilter === 'All' ? CONTROLS : CONTROLS.filter(c => c.theme === activeThemeFilter);
+  list.innerHTML = filtered.map(c => {
+    const st = controlStatus[c.id] || 'not_started';
+    const sc = STATUS_COLORS[st];
+    return `<div class="control-row" onclick="cycleStatus('${c.id}')">
+      <span class="control-id">${c.id}</span>
+      <span class="control-name">${c.name}</span>
+      <span class="control-theme">${c.theme}</span>
+      ${c.new22 ? '<span class="new-tag">NEW \'22</span>' : ''}
+      <button class="status-btn" style="background:${sc.bg};color:${sc.color}">${sc.label}</button>
+    </div>`;
+  }).join('');
+  updateStats();
+}
+
+function cycleStatus(id) {
+  const cur = controlStatus[id] || 'not_started';
+  const idx = STATUS_CYCLE.indexOf(cur);
+  controlStatus[id] = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+  renderControls();
+}
+
+function filterTheme(theme, btn) {
+  activeThemeFilter = theme;
+  document.querySelectorAll('#theme-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderControls();
+}
+
+function updateStats() {
+  const counts = { implemented: 0, partial: 0, not_implemented: 0, not_started: 0 };
+  CONTROLS.forEach(c => { counts[controlStatus[c.id] || 'not_started']++; });
+  const total = CONTROLS.length;
+
+  document.getElementById('stat-implemented').textContent   = counts.implemented;
+  document.getElementById('stat-partial').textContent       = counts.partial;
+  document.getElementById('stat-not-implemented').textContent = counts.not_implemented;
+  document.getElementById('stat-not-started').textContent   = counts.not_started;
+
+  const score = Math.round((counts.implemented * 100 + counts.partial * 50) / total);
+  document.getElementById('donut-pct').textContent = score + '%';
+  const circumference = 339.3;
+  document.getElementById('donut-arc').style.strokeDashoffset = circumference - (circumference * score / 100);
+
+  const pct = (n) => Math.round(n * 100 / total) + '%';
+  document.getElementById('bar-implemented').style.width    = pct(counts.implemented);
+  document.getElementById('bar-partial').style.width        = pct(counts.partial);
+  document.getElementById('bar-not-impl').style.width       = pct(counts.not_implemented);
+  document.getElementById('bar-implemented-pct').textContent = pct(counts.implemented);
+  document.getElementById('bar-partial-pct').textContent    = pct(counts.partial);
+  document.getElementById('bar-not-impl-pct').textContent   = pct(counts.not_implemented);
+}
+
+function showRoadmap() {
+  const notImpl = CONTROLS.filter(c => ['not_implemented','partial','not_started'].includes(controlStatus[c.id] || 'not_started') && controlStatus[c.id] !== 'not_started' || ['partial','not_implemented'].includes(controlStatus[c.id] || ''));
+  const needs = CONTROLS.filter(c => ['not_implemented','partial'].includes(controlStatus[c.id] || 'not_started'));
+  if (needs.length === 0) {
+    alert('All controls are implemented or not started. Mark some as partial or not_implemented first.');
+    return;
+  }
+  const byTheme = {};
+  const order = ['Technological','Organizational','People','Physical'];
+  needs.forEach(c => { (byTheme[c.theme] = byTheme[c.theme] || []).push(c); });
+
+  let html = '';
+  let week = 1;
+  order.forEach(theme => {
+    if (!byTheme[theme]) return;
+    html += `<div class="roadmap-phase">
+      <div class="roadmap-phase-title">Phase: ${theme} Controls (Weeks ${week}–${week + 3})</div>`;
+    byTheme[theme].forEach(c => {
+      const status = controlStatus[c.id];
+      const effort = status === 'partial' ? '1–2 weeks' : '2–4 weeks';
+      html += `<div class="roadmap-item">
+        <span class="roadmap-control-id">${c.id}</span>
+        <span class="roadmap-control-name">${c.name}</span>
+        <span class="badge ${status === 'partial' ? 'badge-amber' : 'badge-red'}" style="font-size:10px">${STATUS_COLORS[status].label}</span>
+        <span class="roadmap-weeks">${effort}</span>
+      </div>`;
+    });
+    html += '</div>';
+    week += 4;
+  });
+
+  document.getElementById('roadmap-content').innerHTML = html;
+  document.getElementById('roadmap-card').classList.remove('hidden');
+}
+
+function hideRoadmap() {
+  document.getElementById('roadmap-card').classList.add('hidden');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  RISK REGISTER
+// ══════════════════════════════════════════════════════════════
+function riskLevel(score) {
+  if (score >= 15) return 'Critical';
+  if (score >= 10) return 'High';
+  if (score >= 5)  return 'Medium';
+  return 'Low';
+}
+function riskColor(level) {
+  return { Critical:'#dc2626', High:'#d97706', Medium:'#ca8a04', Low:'#059669' }[level];
+}
+function riskBg(level) {
+  return { Critical:'#fee2e2', High:'#fed7aa', Medium:'#fef3c7', Low:'#d1fae5' }[level];
+}
+
+function renderHeatmap() {
+  const scores = {};
+  RISKS.forEach(r => { scores[`${r.likelihood}-${r.impact}`] = (scores[`${r.likelihood}-${r.impact}`] || 0) + 1; });
+  let html = '';
+  for (let l = 5; l >= 1; l--) {
+    for (let i = 1; i <= 5; i++) {
+      const s = l * i;
+      const cnt = scores[`${l}-${i}`] || 0;
+      const heatClass = s >= 15 ? 'heat-5' : s >= 10 ? 'heat-4' : s >= 6 ? 'heat-3' : s >= 3 ? 'heat-2' : 'heat-1';
+      html += `<div class="heatmap-cell ${heatClass}" title="L${l} × I${i} = ${s}">${cnt > 0 ? cnt : ''}</div>`;
+    }
+  }
+  document.getElementById('heatmap').innerHTML = html;
+}
+
+function renderRiskSummary() {
+  const counts = { Critical:0, High:0, Medium:0, Low:0 };
+  RISKS.forEach(r => counts[riskLevel(r.likelihood * r.impact)]++);
+  document.getElementById('rs-critical').textContent = counts.Critical;
+  document.getElementById('rs-high').textContent     = counts.High;
+  document.getElementById('rs-medium').textContent   = counts.Medium;
+  document.getElementById('rs-low').textContent      = counts.Low;
+  const top = [...RISKS].sort((a,b) => (b.likelihood*b.impact) - (a.likelihood*a.impact))[0];
+  const topScore = top.likelihood * top.impact;
+  const topLevel = riskLevel(topScore);
+  document.getElementById('top-risk-display').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;background:${riskBg(topLevel)};border-radius:8px;">
+      <div style="width:36px;height:36px;border-radius:50%;background:${riskColor(topLevel)};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;">${topScore}</div>
+      <div><div style="font-size:13px;font-weight:500;">${top.asset}</div><div style="font-size:12px;color:var(--muted)">${top.threat}</div></div>
+      <span class="badge" style="margin-left:auto;background:${riskBg(topLevel)};color:${riskColor(topLevel)}">${topLevel}</span>
+    </div>`;
+}
+
+function renderRiskList(filter = 'all') {
+  const list = document.getElementById('risk-list');
+  const risks = filter === 'all' ? RISKS : RISKS.filter(r => riskLevel(r.likelihood * r.impact) === filter);
+  list.innerHTML = risks.map(r => {
+    const score = r.likelihood * r.impact;
+    const level = riskLevel(score);
+    return `<div class="risk-row" onclick="showRiskDetail(${r.id})">
+      <div class="risk-score-bubble" style="background:${riskColor(level)};color:white">${score}</div>
+      <div class="risk-detail">
+        <div class="risk-asset">${r.asset}</div>
+        <div class="risk-threat">${r.threat} — ${r.vuln}</div>
+      </div>
+      <div class="risk-meta">
+        <span class="badge" style="background:${riskBg(level)};color:${riskColor(level)}">${level}</span>
+        <span class="badge ${r.status === 'mitigated' ? 'badge-green' : 'badge-slate'}">${r.status}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterRisks() {
+  const val = document.getElementById('risk-filter').value;
+  renderRiskList(val);
+}
+
+function showRiskDetail(id) {
+  const r = RISKS.find(x => x.id === id);
+  const score = r.likelihood * r.impact;
+  const level = riskLevel(score);
+  document.getElementById('rd-title').textContent = `${r.asset} — ${r.threat}`;
+  document.getElementById('rd-sub').textContent   = `Score: ${score} · ${level} · Owner: ${r.owner}`;
+  document.getElementById('risk-detail-content').innerHTML = `
+    <div class="grid-2 mt-3" style="gap:12px">
+      <div><div class="text-sm text-muted">Vulnerability</div><div style="margin-top:4px;font-size:13px">${r.vuln}</div></div>
+      <div><div class="text-sm text-muted">Related Controls</div><div style="margin-top:4px">${r.controls.map(c => `<span class="tag">${c}</span>`).join(' ')}</div></div>
+    </div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div class="text-sm text-muted mb-4">Treatment Plan</div>
+      <div style="background:var(--bg);border-radius:8px;padding:14px;font-size:13px;line-height:1.6">${r.treatment}</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <div style="flex:1;background:var(--bg);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;color:var(--muted)">Likelihood</div>
+        <div style="font-size:20px;font-weight:700;color:${riskColor(level)}">${r.likelihood}/5</div>
+      </div>
+      <div style="flex:1;background:var(--bg);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;color:var(--muted)">Impact</div>
+        <div style="font-size:20px;font-weight:700;color:${riskColor(level)}">${r.impact}/5</div>
+      </div>
+      <div style="flex:1;background:${riskBg(level)};border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;color:var(--muted)">Risk Score</div>
+        <div style="font-size:20px;font-weight:700;color:${riskColor(level)}">${score}</div>
+      </div>
+    </div>`;
+  document.getElementById('risk-detail-card').classList.remove('hidden');
+  document.getElementById('risk-detail-card').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function closeRiskDetail() {
+  document.getElementById('risk-detail-card').classList.add('hidden');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  POLICY GENERATOR
+// ══════════════════════════════════════════════════════════════
+let lastPolicyText = '';
+
+function generatePolicy() {
+  const btn = document.getElementById('gen-btn');
+  btn.innerHTML = '<span class="spinner"></span> Generating…';
+  btn.disabled = true;
+  setTimeout(() => {
+    const type = document.getElementById('policy-type').value;
+    const d = {
+      org:      document.getElementById('org-name').value      || 'Your Organisation',
+      owner:    document.getElementById('policy-owner').value  || 'CISO',
+      approver: document.getElementById('policy-approver').value || 'CEO',
+      scope:    document.getElementById('policy-scope').value  || 'All systems and personnel.',
+      date:     document.getElementById('policy-date').value   || '2026-07-01',
+    };
+    const fn = POLICY_TEMPLATES[type];
+    lastPolicyText = fn ? fn(d) : defaultPolicyTemplate(type, d);
+    const area = document.getElementById('policy-output-area');
+    area.innerHTML = renderMarkdown(lastPolicyText);
+    document.getElementById('policy-actions').style.display = 'flex';
+    btn.innerHTML = '✨ Generate Policy';
+    btn.disabled = false;
+  }, 700);
+}
+
+function renderMarkdown(md) {
+  return md
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^---$/gm, '<hr>')
+    .replace(/^\| (.+) \|$/gm, (m) => {
+      if (m.includes('---')) return '';
+      const cells = m.slice(2,-2).split(' | ');
+      return '<tr>' + cells.map(c => `<td style="padding:4px 8px;border:1px solid #e2e8f0">${c}</td>`).join('') + '</tr>';
+    })
+    .replace(/(<tr>.*<\/tr>\n?)+/gs, (t) => `<table style="border-collapse:collapse;width:100%;margin:10px 0">${t}</table>`)
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(.+)$/gm, (m) => m.startsWith('<') ? m : `<p>${m}</p>`);
+}
+
+function copyPolicy() {
+  navigator.clipboard.writeText(lastPolicyText);
+}
+
+function downloadPolicy() {
+  const type = document.getElementById('policy-type').value;
+  const blob = new Blob([lastPolicyText], { type:'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = type + '-policy.md';
+  a.click();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  TOOLS EXPLORER
+// ══════════════════════════════════════════════════════════════
+function renderTools(query = '') {
+  const container = document.getElementById('tools-container');
+  const q = query.toLowerCase();
+  const roleColors = { viewer:'badge-blue', analyst:'badge-green', admin:'badge-red' };
+  let html = '';
+
+  TOOLS.forEach(group => {
+    const matchingTools = group.tools.filter(t =>
+      !q || t.name.includes(q) || t.desc.toLowerCase().includes(q) ||
+      t.params.some(p => p[0].includes(q))
+    );
+    if (matchingTools.length === 0) return;
+    html += `<div class="tool-group-header">${group.group} <span class="badge ${roleColors[group.role]}" style="font-size:10px;margin-left:8px">${group.role}+</span></div>`;
+    matchingTools.forEach(t => {
+      const safeId = t.name.replace(/_/g, '-');
+      html += `<div class="tool-card" id="tc-${safeId}" onclick="toggleTool('${safeId}')">
+        <div class="tool-card-header">
+          <div>
+            <div class="tool-name">${t.name}</div>
+            <div class="tool-desc">${t.desc}</div>
+          </div>
+          <span style="color:var(--muted);font-size:12px" id="tc-arrow-${safeId}">▶</span>
+        </div>
+        <div class="tool-params" id="tp-${safeId}">
+          ${t.params.length > 0 ? `
+          <table class="param-table">
+            <thead><tr><th>Parameter</th><th>Req</th><th>Type</th><th>Notes</th></tr></thead>
+            <tbody>${t.params.map(p => `<tr>
+              <td class="param-name">${p[0]}</td>
+              <td class="${p[1]==='✅'?'param-req':'text-muted'}">${p[1]}</td>
+              <td class="text-muted">${p[2]}</td>
+              <td class="text-muted">${p[3]}</td>
+            </tr>`).join('')}</tbody>
+          </table>` : '<div class="text-sm text-muted">No parameters required.</div>'}
+          <div class="example-call">// Example\n${t.name}(${t.example})</div>
+        </div>
+      </div>`;
+    });
+  });
+  container.innerHTML = html || '<div class="text-muted text-sm" style="padding:20px 0">No tools match your search.</div>';
+}
+
+function toggleTool(id) {
+  const card  = document.getElementById('tc-' + id);
+  const arrow = document.getElementById('tc-arrow-' + id);
+  card.classList.toggle('open');
+  arrow.textContent = card.classList.contains('open') ? '▼' : '▶';
+}
+
+function filterTools(q) { renderTools(q); }
+
+
+// ══════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════
+renderControls();
+renderHeatmap();
+renderRiskSummary();
+renderRiskList();
+renderTools();
+</script>
+</body>
+</html>
