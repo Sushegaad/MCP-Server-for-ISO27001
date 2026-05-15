@@ -2,9 +2,9 @@
 
 [![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.7.4)](https://socket.dev/npm/package/iso27001-mcp/overview/0.7.4)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
-[![Live Demo](https://img.shields.io/badge/demo-live-blue)](https://sushegaad.github.io/MCP-Server-for-ISO27001/)
+[![Live Demo](https://img.shields.io/badge/demo-live-blue)](https://sushegaad.github.io/MCP-server-for-ISO27001/)
 
-**[▶ Live Interactive Demo](https://sushegaad.github.io/MCP-Server-for-ISO27001/)**
+**[▶ Live Interactive Demo](https://sushegaad.github.io/MCP-server-for-ISO27001/)**
 
 A stateful [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that gives Claude a complete ISO 27001:2022 Information Security Management System (ISMS). Ask Claude to run gap assessments, manage risks, generate policies, track evidence, and run audits — all backed by an encrypted SQLite database on your own machine.
 
