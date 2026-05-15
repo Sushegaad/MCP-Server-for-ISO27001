@@ -33,6 +33,7 @@
   "bin": {
     "iso27001-mcp": "./dist/index.js"
   },
+  "browser": false,
   "main": "./dist/index.js",
   "files": [
     "dist"
