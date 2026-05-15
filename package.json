@@ -5,11 +5,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/iso27001-mcp.git"
+    "url": "https://github.com/Sushegaad/MCP-Server-for-ISO27001.git"
   },
-  "homepage": "https://github.com/your-org/iso27001-mcp#readme",
+  "homepage": "https://github.com/Sushegaad/MCP-Server-for-ISO27001#readme",
   "bugs": {
-    "url": "https://github.com/your-org/iso27001-mcp/issues"
+    "url": "https://github.com/Sushegaad/MCP-Server-for-ISO27001/issues"
   },
   "keywords": [
     "iso27001",
@@ -42,7 +42,7 @@
     "postbuild": "cp -r src/seed/policy-templates dist/seed/policy-templates",
     "prepack": "npm run build",
     "prepublishOnly": "npm run typecheck && npm test && npm run build",
-    "postinstall": "node -e \"require('better-sqlite3-multiple-ciphers')\" 2>/dev/null || echo \"\\n⚠️  iso27001-mcp: Native SQLite module failed to load. You may need build tools installed.\\n   macOS: xcode-select --install\\n   Ubuntu/Debian: sudo apt-get install build-essential python3\\n   Windows: npm install --global windows-build-tools\\n   See: https://github.com/your-org/iso27001-mcp#prerequisites\\n\"",
+    "postinstall": "node -e \"require('better-sqlite3-multiple-ciphers')\" 2>/dev/null || echo \"\\n⚠️  iso27001-mcp: Native SQLite module failed to load. You may need build tools installed.\\n   macOS: xcode-select --install\\n   Ubuntu/Debian: sudo apt-get install build-essential python3\\n   Windows: npm install --global windows-build-tools\\n   See: https://github.com/Sushegaad/MCP-Server-for-ISO27001#prerequisites\\n\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "test": "vitest run --coverage",
@@ -68,7 +68,7 @@
     "@types/node": "20.19.39",
     "@typescript-eslint/eslint-plugin": "7.18.0",
     "@typescript-eslint/parser": "7.18.0",
-    "@vitest/coverage-istanbul": "^1.6.1",
+    "@vitest/coverage-istanbul": "1.6.1",
     "@vitest/coverage-v8": "1.6.1",
     "eslint": "8.57.1",
     "tsup": "8.4.0",

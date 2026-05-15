@@ -238,7 +238,7 @@ The `iso27001-mcp` command is now available globally. The encrypted SQLite modul
 **Run from source** (for development or to get the latest unreleased changes):
 
 ```bash
-git clone https://github.com/your-org/iso27001-mcp
+git clone https://github.com/Sushegaad/MCP-Server-for-ISO27001
 cd iso27001-mcp
 npm install
 npm run build
