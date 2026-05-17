@@ -1,6 +1,6 @@
 # iso27001-mcp
 
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.7.5)](https://socket.dev/npm/package/iso27001-mcp/overview/0.7.5)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.7.7)](https://socket.dev/npm/package/iso27001-mcp/overview/0.7.7)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![Live Demo](https://img.shields.io/badge/demo-live-blue)](https://sushegaad.github.io/MCP-server-for-ISO27001/)
 
