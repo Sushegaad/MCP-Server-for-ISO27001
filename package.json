@@ -1,6 +1,6 @@
 {
   "name": "iso27001-mcp",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "description": "Stateful ISO 27001:2022 ISMS management for Claude — gap analysis, risk register, policies, audits, and evidence tracking via the Model Context Protocol",
   "license": "MIT",
   "repository": {
