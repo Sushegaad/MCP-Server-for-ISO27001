@@ -247,7 +247,7 @@
     <h1>iso27001-mcp</h1>
     <p>ISO 27001 ISMS for Claude</p>
     <div class="sidebar-badges">
-      <span class="sidebar-badge badge-version">v0.7.4</span>
+      <span class="sidebar-badge badge-version">v0.7.8</span>
       <span class="sidebar-badge badge-mit">MIT</span>
     </div>
   </div>
@@ -288,7 +288,7 @@
   <div class="topbar">
     <div>
       <h2 id="topbar-title">Quick Start</h2>
-      <p id="topbar-sub">Install, configure, and connect to Claude Desktop in 5 minutes</p>
+      <p id="topbar-sub">Install, generate secrets, create an API key, and connect to Claude Desktop</p>
     </div>
     <span class="demo-pill" id="demo-pill">📖 Documentation</span>
   </div>
@@ -316,7 +316,7 @@
           </div>
         </div>
         <div class="install-box">
-          <span id="install-cmd">npx iso27001-mcp</span>
+          <span id="install-cmd">npm install -g iso27001-mcp</span>
           <button class="copy-btn" onclick="copyInstall()">Copy</button>
         </div>
       </div>
@@ -372,7 +372,7 @@
           <div class="qs-num">1</div>
           <div class="qs-body">
             <div class="qs-title">Install the server</div>
-            <div class="qs-desc">Requires Node.js 20.11 or later. Install globally so <code style="background:var(--bg);padding:1px 5px;border-radius:3px">npx</code> can find it, or use it directly with <code style="background:var(--bg);padding:1px 5px;border-radius:3px">npx iso27001-mcp</code>.</div>
+            <div class="qs-desc">Requires <strong>Node.js 20.11 or later</strong>. Install globally to make the <code style="background:var(--bg);padding:1px 5px;border-radius:3px">iso27001-mcp</code> command available system-wide. macOS/Linux users may need build tools: run <code style="background:var(--bg);padding:1px 5px;border-radius:3px">xcode-select --install</code> (macOS) or <code style="background:var(--bg);padding:1px 5px;border-radius:3px">sudo apt-get install build-essential python3</code> (Ubuntu/Debian).</div>
             <div class="code-block">npm install -g iso27001-mcp</div>
           </div>
         </div>
@@ -381,18 +381,10 @@
         <div class="qs-step">
           <div class="qs-num">2</div>
           <div class="qs-body">
-            <div class="qs-title">Create your <code style="background:var(--bg);padding:1px 5px;border-radius:3px">.env</code> file</div>
-            <div class="qs-desc">The server requires two secrets — a 32-byte hex encryption key for the SQLite database and an HMAC secret for the audit log chain. Generate them with <code style="background:var(--bg);padding:1px 5px;border-radius:3px">openssl</code>:</div>
-            <div class="code-block"><span class="comment"># Generate secrets</span>
-openssl rand -hex 32  <span class="comment"># → paste as DB_ENCRYPTION_KEY</span>
-openssl rand -hex 32  <span class="comment"># → paste as HMAC_SECRET</span>
-
-<span class="comment"># Create .env in your working directory</span>
-DB_ENCRYPTION_KEY=&lt;64-hex-chars&gt;
-HMAC_SECRET=&lt;64-hex-chars&gt;
-
-<span class="comment"># Optional — choose where the database is stored</span>
-DB_PATH=/Users/you/isms.db</div>
+            <div class="qs-title">Generate your secrets</div>
+            <div class="qs-desc">Two secrets are required: one encrypts the SQLite database (AES-256), the other signs API keys. Generate them with <code style="background:var(--bg);padding:1px 5px;border-radius:3px">openssl</code> and save both values — you'll need them in Steps 3 and 4.</div>
+            <div class="code-block">openssl rand -hex 32  <span class="comment"># → save as DB_ENCRYPTION_KEY</span>
+openssl rand -hex 32  <span class="comment"># → save as HMAC_SECRET</span></div>
           </div>
         </div>
 
@@ -400,22 +392,17 @@ DB_PATH=/Users/you/isms.db</div>
         <div class="qs-step">
           <div class="qs-num">3</div>
           <div class="qs-body">
-            <div class="qs-title">Add to Claude Desktop</div>
-            <div class="qs-desc">Open your Claude Desktop config file at <code style="background:var(--bg);padding:1px 5px;border-radius:3px">~/Library/Application Support/Claude/claude_desktop_config.json</code> (macOS) and add the server:</div>
-            <div class="code-block">{
-  <span class="key">"mcpServers"</span>: {
-    <span class="key">"iso27001"</span>: {
-      <span class="key">"command"</span>: <span class="string">"npx"</span>,
-      <span class="key">"args"</span>: [<span class="string">"iso27001-mcp"</span>],
-      <span class="key">"env"</span>: {
-        <span class="key">"DB_ENCRYPTION_KEY"</span>: <span class="string">"&lt;your-64-hex-chars&gt;"</span>,
-        <span class="key">"HMAC_SECRET"</span>: <span class="string">"&lt;your-64-hex-chars&gt;"</span>,
-        <span class="key">"DB_PATH"</span>: <span class="string">"/Users/you/isms.db"</span>,
-        <span class="key">"MCP_ROLE"</span>: <span class="string">"admin"</span>
-      }
-    }
-  }
-}</div>
+            <div class="qs-title">Generate an API key</div>
+            <div class="qs-desc">The server authenticates every tool call with an API key. Set your secrets as environment variables first, then run the keygen command. The raw key is printed <strong>once only</strong> — copy it before closing the terminal.</div>
+            <div class="code-block"><span class="comment"># Set secrets in your shell</span>
+export HMAC_SECRET=<span class="string">&lt;your_hmac_secret&gt;</span>
+export DB_ENCRYPTION_KEY=<span class="string">&lt;your_db_encryption_key&gt;</span>
+export DB_PATH=<span class="string">~/.iso27001/isms.db</span>
+
+<span class="comment"># Generate an admin key (all 43 tools)</span>
+iso27001-mcp keygen --label <span class="string">"Me"</span> --role admin
+
+<span class="comment"># Prints: iso27001_xxxxxxxxxxxxxxxxxxxxxxxx  ← copy this</span></div>
           </div>
         </div>
 
@@ -423,14 +410,38 @@ DB_PATH=/Users/you/isms.db</div>
         <div class="qs-step">
           <div class="qs-num">4</div>
           <div class="qs-body">
-            <div class="qs-title">Restart Claude Desktop</div>
-            <div class="qs-desc">Quit and reopen Claude Desktop. The iso27001-mcp server will appear in the MCP tools panel (hammer icon). You should see 43 tools registered.</div>
+            <div class="qs-title">Add to Claude Desktop</div>
+            <div class="qs-desc">Open your Claude Desktop config file — <code style="background:var(--bg);padding:1px 5px;border-radius:3px">~/Library/Application Support/Claude/claude_desktop_config.json</code> on macOS or <code style="background:var(--bg);padding:1px 5px;border-radius:3px">%APPDATA%\Claude\claude_desktop_config.json</code> on Windows — and add the block below, substituting your values from Steps 2 and 3.</div>
+            <div class="code-block">{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"iso27001"</span>: {
+      <span class="key">"command"</span>: <span class="string">"iso27001-mcp"</span>,
+      <span class="key">"env"</span>: {
+        <span class="key">"HMAC_SECRET"</span>: <span class="string">"your_hmac_secret"</span>,
+        <span class="key">"DB_ENCRYPTION_KEY"</span>: <span class="string">"your_db_encryption_key"</span>,
+        <span class="key">"MCP_API_KEY"</span>: <span class="string">"iso27001_your_api_key_here"</span>,
+        <span class="key">"DB_PATH"</span>: <span class="string">"/Users/you/.iso27001/isms.db"</span>
+      }
+    }
+  }
+}</div>
           </div>
         </div>
 
         <!-- Step 5 -->
-        <div class="qs-step" style="margin-bottom:0">
+        <div class="qs-step">
           <div class="qs-num">5</div>
+          <div class="qs-body">
+            <div class="qs-title">Restart Claude Desktop and verify</div>
+            <div class="qs-desc">Fully quit and reopen Claude Desktop. You should see <strong>43 tools</strong> in the MCP tools panel (🔨 hammer icon). Ask Claude to verify the server is running:</div>
+            <div class="code-block" style="margin-bottom:12px">"Use get_server_info to confirm the server is running."</div>
+            <div class="qs-desc">Claude will call <code style="background:var(--bg);padding:1px 5px;border-radius:3px">get_server_info</code> and return the version, uptime, and database stats — confirming all 93 ISO 27001:2022 and 114 ISO 27001:2013 controls are seeded and ready.</div>
+          </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="qs-step" style="margin-bottom:0">
+          <div class="qs-num">6</div>
           <div class="qs-body">
             <div class="qs-title">Start your first conversation</div>
             <div class="qs-desc">Try these prompts to get started:</div>
@@ -447,10 +458,11 @@ DB_PATH=/Users/you/isms.db</div>
             <div style="margin-top:12px">
               <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">MORE EXAMPLE PROMPTS</div>
               <div style="display:flex;flex-direction:column;gap:6px">
-                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Register a critical risk: our customer database could be breached via SQL injection — likelihood 4, impact 5."</div>
-                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Generate an Access Control Policy for Acme Ltd. Owner is the CISO, effective from 1 July 2026."</div>
-                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Show me the risk heatmap and export our risk register as a CSV."</div>
-                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Create an internal audit for Q3 covering clause 9.1 — Performance Evaluation."</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Show me the gap summary and generate a remediation roadmap with a 26-week timeline."</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Register a risk: our customer database could be breached via SQL injection — likelihood 4, impact 5. Create a mitigate treatment plan linked to controls 8.26 and 8.28."</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Generate an Access Control Policy for Acme Ltd. Owner: CISO. Effective from 1 July 2026."</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Create an internal audit for Q3 covering clause 9.1. Auditor: Jane Smith. Record a major non-conformity and raise a corrective action."</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-size:12px;color:var(--text)">"Generate a Statement of Applicability from our gap assessment and export it as CSV for the auditors."</div>
               </div>
             </div>
           </div>

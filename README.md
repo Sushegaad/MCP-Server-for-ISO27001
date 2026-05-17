@@ -41,43 +41,43 @@ Claude ──MCP──► iso27001-mcp ──► encrypted SQLite (isms.db)
 
 ## Quick Start
 
-Get the server connected to Claude Desktop in five minutes.
+Get the server connected to Claude Desktop in five steps.
 
 ### Prerequisites
 
-- **Node.js ≥ 20.11.0** — use [nvm](https://github.com/nvm-sh/nvm) or [Volta](https://volta.sh)
+- **Node.js 20.11.0 or later** — download from [nodejs.org](https://nodejs.org) or use [nvm](https://github.com/nvm-sh/nvm) / [Volta](https://volta.sh)
 
   ```bash
-  node --version   # must be v20.x LTS — do not publish from Node 22/24
+  node --version   # should print v20.x.x or higher
   ```
 
-  > ⚠️ **Always publish from Node 20.** The native `better-sqlite3-multiple-ciphers` module is compiled against a specific Node ABI. Publishing from Node 24 produces a binary that may fail to load for users on Node 20.
-
-- **Build tools** — needed by the encrypted SQLite native module:
+- **Build tools** — required by the encrypted SQLite native module:
   - **macOS:** `xcode-select --install`
   - **Ubuntu/Debian:** `sudo apt-get install build-essential python3`
   - **Windows:** Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) → "Build Tools for Visual Studio" → check "Desktop development with C++"
 
-### Step 1 — Install from npm
+### Step 1 — Install
 
 ```bash
 npm install -g iso27001-mcp
 ```
 
-This installs the `iso27001-mcp` command globally. The native SQLite module downloads a prebuilt binary automatically on macOS and Linux x64; it compiles from source on other platforms.
+This installs the `iso27001-mcp` command globally. The encrypted SQLite module downloads a prebuilt binary on macOS and Linux x64 automatically; it compiles from source on other platforms.
 
-### Step 2 — Generate secrets
+### Step 2 — Generate your secrets
 
-Generate two random 32-byte secrets — these encrypt your database and sign your API keys:
+Two secrets are required: one encrypts your database, the other signs API keys. Generate them with `openssl`:
 
 ```bash
-openssl rand -hex 32   # → copy as HMAC_SECRET
-openssl rand -hex 32   # → copy as DB_ENCRYPTION_KEY
+openssl rand -hex 32   # → save this as your DB_ENCRYPTION_KEY
+openssl rand -hex 32   # → save this as your HMAC_SECRET
 ```
+
+Keep these values — you'll need them in Steps 3 and 4.
 
 ### Step 3 — Generate an API key
 
-Set the environment variables first, then run keygen:
+The server uses API keys to authenticate and authorise every tool call. Set your secrets as environment variables first, then run the keygen command:
 
 ```bash
 export HMAC_SECRET=<your_hmac_secret>
@@ -87,7 +87,9 @@ export DB_PATH=$HOME/.iso27001/isms.db
 iso27001-mcp keygen --label "Me" --role admin
 ```
 
-The raw key (`iso27001_...`) is printed **once** — copy it immediately, it cannot be retrieved again.
+The raw key (`iso27001_...`) is printed **once** and never stored in plaintext. Copy it immediately.
+
+> Three roles are available: `viewer` (22 read-only tools), `analyst` (35 tools), `admin` (all 43 tools). Use `admin` for your personal key.
 
 ### Step 4 — Add to Claude Desktop
 
@@ -95,6 +97,8 @@ Open your Claude Desktop config file:
 
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+Add the following block, substituting your values from Steps 2 and 3:
 
 ```json
 {
@@ -104,7 +108,7 @@ Open your Claude Desktop config file:
       "env": {
         "HMAC_SECRET": "your_hmac_secret",
         "DB_ENCRYPTION_KEY": "your_db_encryption_key",
-        "MCP_API_KEY": "iso27001_your_key_here",
+        "MCP_API_KEY": "iso27001_your_api_key_here",
         "DB_PATH": "/Users/you/.iso27001/isms.db"
       }
     }
@@ -112,21 +116,24 @@ Open your Claude Desktop config file:
 }
 ```
 
+> **Tip:** Store `isms.db` in a stable location like `~/.iso27001/isms.db` so it persists across package upgrades.
+
 ### Step 5 — Restart Claude Desktop and verify
 
-Fully quit and reopen Claude Desktop. Then ask:
+Fully quit and reopen Claude Desktop. You should see 43 tools in the MCP tools panel (hammer icon). Then ask Claude:
 
 > *"Use get_server_info to check the server is running."*
 
-You should get back version, uptime, and database stats confirming all 93 + 114 controls are seeded.
+Claude will call `get_server_info` and return the version, uptime, and database stats — confirming all 93 ISO 27001:2022 and 114 ISO 27001:2013 controls are seeded and ready.
 
 ### First things to try
 
 ```
 "Create a gap assessment for Acme Ltd covering all ISO 27001:2022 controls."
-"Show me the gap summary for that assessment."
-"Generate a remediation roadmap with a 26-week timeline."
-"Create an information security policy for Acme Ltd. Owner: CISO. Effective from today."
+"Show me the gap summary and generate a remediation roadmap with a 26-week timeline."
+"Register a new risk: our customer database is exposed to SQL injection — likelihood 4, impact 5."
+"Generate an Access Control Policy for Acme Ltd. Owner: CISO. Effective from 1 July 2026."
+"Create an internal audit for Q3 covering clause 9.1 — Performance Evaluation."
 ```
 
 ---
