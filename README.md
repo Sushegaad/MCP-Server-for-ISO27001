@@ -48,13 +48,15 @@ Get the server connected to Claude Desktop in five minutes.
 - **Node.js ≥ 20.11.0** — use [nvm](https://github.com/nvm-sh/nvm) or [Volta](https://volta.sh)
 
   ```bash
-  node --version   # should print v20.x or higher (not v22 — use v20 LTS)
+  node --version   # must be v20.x LTS — do not publish from Node 22/24
   ```
+
+  > ⚠️ **Always publish from Node 20.** The native `better-sqlite3-multiple-ciphers` module is compiled against a specific Node ABI. Publishing from Node 24 produces a binary that may fail to load for users on Node 20.
 
 - **Build tools** — needed by the encrypted SQLite native module:
   - **macOS:** `xcode-select --install`
   - **Ubuntu/Debian:** `sudo apt-get install build-essential python3`
-  - **Windows:** `npm install --global windows-build-tools` (run as Administrator)
+  - **Windows:** Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) → "Build Tools for Visual Studio" → check "Desktop development with C++"
 
 ### Step 1 — Install from npm
 
@@ -75,18 +77,11 @@ openssl rand -hex 32   # → copy as DB_ENCRYPTION_KEY
 
 ### Step 3 — Generate an API key
 
-```bash
-iso27001-mcp keygen --label "Me" --role admin \
-  HMAC_SECRET=<your_hmac_secret> \
-  DB_ENCRYPTION_KEY=<your_db_key> \
-  DB_PATH=$HOME/.iso27001/isms.db
-```
-
-Or set the env vars in your shell first:
+Set the environment variables first, then run keygen:
 
 ```bash
-export HMAC_SECRET=your_hmac_secret
-export DB_ENCRYPTION_KEY=your_db_encryption_key
+export HMAC_SECRET=<your_hmac_secret>
+export DB_ENCRYPTION_KEY=<your_db_key>
 export DB_PATH=$HOME/.iso27001/isms.db
 
 iso27001-mcp keygen --label "Me" --role admin
@@ -231,7 +226,7 @@ Every tool call is logged in a tamper-evident audit trail. Admins can query it a
 - **Build tools** for the native SQLite module:
   - macOS: `xcode-select --install`
   - Ubuntu/Debian: `sudo apt-get install build-essential python3`
-  - Windows: `npm install --global windows-build-tools` (run as Administrator)
+  - Windows: Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) → "Build Tools for Visual Studio" → check "Desktop development with C++"
 
 ### Step 1 — Install
 
