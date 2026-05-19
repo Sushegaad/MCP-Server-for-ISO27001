@@ -269,12 +269,16 @@
     <div class="nav-item" onclick="showSection('tools')">
       <span class="nav-icon">🔧</span> Tools Explorer
     </div>
+    <div class="sidebar-section">More</div>
+    <div class="nav-item" onclick="showSection('resources')">
+      <span class="nav-icon">📎</span> Resources
+    </div>
   </nav>
   <div class="sidebar-footer">
     <p>
       <a href="https://npmjs.com/package/iso27001-mcp" target="_blank">npm</a> ·
-      <a href="https://github.com/Sushegaad/MCP-server-for-ISO27001" target="_blank">GitHub</a> ·
-      <a href="https://github.com/Sushegaad/MCP-server-for-ISO27001/issues" target="_blank">Issues</a>
+      <a href="https://github.com/Sushegaad/MCP-Server-for-ISO27001" target="_blank">GitHub</a> ·
+      <a href="https://github.com/Sushegaad/MCP-Server-for-ISO27001/issues" target="_blank">Issues</a>
     </p>
   </div>
 </aside>
@@ -723,13 +727,166 @@ iso27001-mcp keygen --label <span class="string">"Me"</span> --role admin
     <!-- ════════════════════════════════════════════════════════ -->
     <div id="section-tools" class="section">
       <div class="notice">
-        💡 All 43 tools are fully implemented in v0.7.4. Each tool requires a valid <strong>API key</strong> (set via <code>MCP_ROLE</code> env) and goes through input validation, role-based access control, and tamper-evident audit logging.
+        💡 All 43 tools are fully implemented in v0.7.8. Each tool requires a valid <strong>API key</strong> (set via <code>MCP_API_KEY</code> env) and goes through input validation, role-based access control, and tamper-evident audit logging.
       </div>
       <div class="card">
         <input class="tool-search" type="text" placeholder="Search tools, parameters, or descriptions…" oninput="filterTools(this.value)">
         <div id="tools-container" style="margin-top:16px"></div>
       </div>
     </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 5: RESOURCES                                    -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-resources" class="section">
+
+      <!-- Author -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <div class="card-title">Author</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:22px;color:white;flex-shrink:0;">HN</div>
+          <div style="flex:1;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Hemant Naik</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
+              <a href="https://www.linkedin.com/in/tanaji-naik/" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent);font-size:13px;text-decoration:none;font-weight:500;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                LinkedIn
+              </a>
+              <a href="mailto:hemant.naik@gmail.com" style="display:inline-flex;align-items:center;gap:5px;color:var(--accent);font-size:13px;text-decoration:none;font-weight:500;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                hemant.naik@gmail.com
+              </a>
+            </div>
+            <div style="font-size:12px;color:var(--muted);">Built March 2026 · ISO 27001:2022 ISMS automation via the Model Context Protocol</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GitHub Repository -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <div class="card-title">GitHub Repository</div>
+        </div>
+        <a href="https://github.com/Sushegaad/MCP-Server-for-ISO27001" target="_blank" style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text);transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="var(--text)"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;">Sushegaad / MCP-Server-for-ISO27001</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">github.com/Sushegaad/MCP-Server-for-ISO27001</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+          <a href="https://github.com/Sushegaad/MCP-Server-for-ISO27001/issues" target="_blank" class="btn btn-secondary btn-sm">🐛 Report an Issue</a>
+          <a href="https://github.com/Sushegaad/MCP-Server-for-ISO27001/releases" target="_blank" class="btn btn-secondary btn-sm">📦 All Releases</a>
+          <a href="https://npmjs.com/package/iso27001-mcp" target="_blank" class="btn btn-secondary btn-sm">npm Package</a>
+        </div>
+      </div>
+
+      <!-- Release Notes -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Release Notes</div>
+          <span class="badge badge-green">Latest: v0.7.8</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:0;">
+
+          <!-- v0.7.8 -->
+          <div style="padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              <span style="font-size:14px;font-weight:700;font-family:monospace;">v0.7.8</span>
+              <span class="badge badge-green">Latest</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:auto;">May 2026</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+              Fixed vitest worker hang in CI (<code style="background:var(--bg);padding:1px 4px;border-radius:3px;">pool: "forks"</code> in vitest.config.ts). Updated all GitHub Pages and repository URLs to use correct casing. Improved README Quick Start with cleaner keygen flow and role guidance.
+            </div>
+          </div>
+
+          <!-- v0.7.7 -->
+          <div style="padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              <span style="font-size:14px;font-weight:700;font-family:monospace;">v0.7.7</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:auto;">May 2026</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+              Added <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">pool: "forks"</code> to vitest config to prevent hanging CI workers caused by open fetch handles in evidence-tracking tests. Version bump only; no functional changes.
+            </div>
+          </div>
+
+          <!-- v0.7.6 -->
+          <div style="padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              <span style="font-size:14px;font-weight:700;font-family:monospace;">v0.7.6</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:auto;">May 2026</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+              Pinned CI and release workflows to Node 20.11.0 to prevent ABI mismatch between build and runtime environments. Fixed npm publish with SLSA provenance via GitHub Actions Granular Access Token.
+            </div>
+          </div>
+
+          <!-- v0.7.5 -->
+          <div style="padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              <span style="font-size:14px;font-weight:700;font-family:monospace;">v0.7.5</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:auto;">May 2026</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+              Fixed double-nested policy templates in <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">dist/seed/</code> caused by dual build invocation. Fixed broken keygen command (removed positional KEY= form). Replaced deprecated <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">windows-build-tools</code> with Visual Studio Build Tools link. Added Node ABI compatibility warning.
+            </div>
+          </div>
+
+          <!-- v0.7.4 -->
+          <div style="padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              <span style="font-size:14px;font-weight:700;font-family:monospace;">v0.7.4</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:auto;">May 2026</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+              Added <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">"browser": false</code> to package.json to fix bundlephobia analysis. Added <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">fast-uri ≥3.1.2</code> override to resolve HIGH CVE from MCP SDK transitive dependency. Launched GitHub Pages interactive demo site.
+            </div>
+          </div>
+
+          <!-- v0.7.3 -->
+          <div style="padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              <span style="font-size:14px;font-weight:700;font-family:monospace;">v0.7.3</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:auto;">May 2026</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+              Added Socket security badge and npm version badge to README. Fixed postbuild script to use <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">rm -rf dist/seed</code> before copy, ensuring a clean slate on every build in CI.
+            </div>
+          </div>
+
+          <!-- v0.7.2 -->
+          <div style="padding:16px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              <span style="font-size:14px;font-weight:700;font-family:monospace;">v0.7.2</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:auto;">April 2026</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+              Fixed double-shebang <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">SyntaxError</code> on install caused by tsup banner prepending a second <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">#!/usr/bin/env node</code> line. Removed <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">db.pragma("key=''")</code> from test fixtures causing SQLiteError on macOS.
+            </div>
+          </div>
+
+          <!-- v0.7.0 -->
+          <div style="padding:16px 0;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+              <span style="font-size:14px;font-weight:700;font-family:monospace;">v0.7.0</span>
+              <span class="badge badge-slate">Initial release</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:auto;">March 2026</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+              First public release. 43 MCP tools across 9 groups covering gap analysis, risk register, policy generation, Statement of Applicability, audit management, and evidence tracking. AES-256 encrypted SQLite, HMAC-signed API keys, 3-tier RBAC, tamper-evident audit log, Jira and GitHub integrations. 93 ISO 27001:2022 and 114 ISO 27001:2013 controls seeded with SHA-256 checksum verification.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /section-resources -->
 
   </div><!-- /content -->
 </div><!-- /main -->
@@ -1102,18 +1259,19 @@ This policy will be reviewed annually and upon significant changes to the busine
 //  NAVIGATION
 // ══════════════════════════════════════════════════════════════
 const SECTION_META = {
-  start:  { title:'Quick Start',        sub:'Install, configure, and connect to Claude Desktop in 5 minutes', pill:'📖 Documentation' },
-  gap:    { title:'Gap Assessment',     sub:'Acme Financial Services · ISO 27001:2022 · 24 controls shown',   pill:'⚡ Simulated Demo' },
-  risk:   { title:'Risk Register',      sub:'6 risks across all levels · click any risk to view treatment plan', pill:'⚡ Simulated Demo' },
-  policy: { title:'Policy Generator',   sub:'12 ISO 27001-aligned policy templates · rendered with your org details', pill:'⚡ Simulated Demo' },
-  tools:  { title:'Tools Explorer',     sub:'43 MCP tools across 9 groups · all fully implemented in v0.7.4',  pill:'📦 v0.7.4' },
+  start:     { title:'Quick Start',        sub:'Install, generate secrets, create an API key, and connect to Claude Desktop', pill:'📖 Documentation' },
+  gap:       { title:'Gap Assessment',     sub:'Acme Financial Services · ISO 27001:2022 · 24 controls shown',               pill:'⚡ Simulated Demo' },
+  risk:      { title:'Risk Register',      sub:'6 risks across all levels · click any risk to view treatment plan',           pill:'⚡ Simulated Demo' },
+  policy:    { title:'Policy Generator',   sub:'12 ISO 27001-aligned policy templates · rendered with your org details',      pill:'⚡ Simulated Demo' },
+  tools:     { title:'Tools Explorer',     sub:'43 MCP tools across 9 groups · all fully implemented in v0.7.8',              pill:'📦 v0.7.8' },
+  resources: { title:'Resources',          sub:'Author, repository, and release notes',                                       pill:'📎 Resources' },
 };
 
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('section-' + id).classList.add('active');
-  const navMap = { start:0, gap:1, risk:2, policy:3, tools:4 };
+  const navMap = { start:0, gap:1, risk:2, policy:3, tools:4, resources:5 };
   document.querySelectorAll('.nav-item')[navMap[id]]?.classList.add('active');
   const meta = SECTION_META[id];
   document.getElementById('topbar-title').textContent = meta.title;
