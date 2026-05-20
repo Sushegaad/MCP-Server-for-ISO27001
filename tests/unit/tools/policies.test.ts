@@ -123,7 +123,8 @@ describe("handleCreatePolicy", () => {
       effective_date: "2025-01-01",
     });
 
-    expect(mockDb.prepare).toHaveBeenCalledTimes(1);
+    // prepare is called twice: once by loadOrgProfileDefaults() and once for the INSERT
+    expect(mockDb.prepare).toHaveBeenCalledTimes(2);
     expect(mockStmt.run).toHaveBeenCalledTimes(1);
   });
 });

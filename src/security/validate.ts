@@ -1,5 +1,5 @@
 /**
- * iso27001-mcp — Zod input schemas for all 43 tools
+ * iso27001-mcp — Zod input schemas for all 50 tools
  *
  * One named schema per tool. Used in the 11-step pipeline (step 7: Zod parse)
  * before sanitisation and business logic run.
@@ -250,8 +250,8 @@ export const GenerateRiskRegisterSchema = z.object({
 
 export const CreatePolicySchema = z.object({
   type:                 policyTypeEnum,
-  organisation_name:    shortText(200),
-  scope:                freeText(2000),
+  organisation_name:    shortText(200).optional(),   // falls back to org profile if omitted
+  scope:                freeText(2000).optional(),    // falls back to org profile if omitted
   owner:                shortText(200),
   approver:             shortText(200).optional(),
   review_cycle_months:  z.number().int().min(1).max(36).optional().default(12),
@@ -410,6 +410,87 @@ export const RevokeApiKeySchema = z.object({
   label: shortText(200),
 });
 
+// ── Group 10: Organization Profile ───────────────────────────
+
+export const SetOrganizationProfileSchema = z.object({
+  legal_entity_name:       shortText(200),
+  registered_jurisdiction: shortText(200),
+  regulatory_licences:     z.array(shortText(200)).optional(),
+  in_scope_activities:     freeText(2000),
+  isms_scope_statement:    freeText(2000),
+  declared_exclusions:     freeText(2000).optional(),
+  raci_roles: z.object({
+    ciso:              shortText(200).optional(),
+    dpo:               shortText(200).optional(),
+    data_owner:        shortText(200).optional(),
+    isms_manager:      shortText(200).optional(),
+    internal_auditor:  shortText(200).optional(),
+  }).optional(),
+  review_cadence_months: z.number().int().min(1).max(36).optional().default(12),
+});
+
+export const GetOrganizationProfileSchema = z.object({});
+
+// ── Group 11: Procedure Management ───────────────────────────
+
+const procedureTypeEnum = z.enum([
+  "access_provisioning",
+  "incident_handling",
+  "change_management",
+  "backup_restore",
+  "vulnerability_management",
+  "supplier_onboarding",
+  "cryptographic_key_management",
+  "data_classification_handling",
+  "secure_development_workflow",
+  "bcp_testing",
+  "asset_onboarding_offboarding",
+  "audit_log_review",
+]);
+
+const procedureStatusEnum = z.enum(["draft", "active", "archived"]);
+
+export const CreateProcedureSchema = z.object({
+  type:                 procedureTypeEnum,
+  organisation_name:    shortText(200).optional(),   // falls back to org profile
+  scope:                freeText(2000).optional(),    // falls back to org profile
+  owner:                shortText(200),
+  approver:             shortText(200).optional(),
+  policy_id:            uuid.optional(),
+  related_controls:     z.array(z.string().max(20)).optional(),
+  review_cycle_months:  z.number().int().min(1).max(36).optional().default(12),
+  effective_date:       date,
+});
+
+export const GetProcedureSchema = z.object({
+  procedure_id:     uuid,
+  include_versions: z.boolean().optional().default(false),
+});
+
+export const UpdateProcedureSchema = z.object({
+  procedure_id:     uuid,
+  scope:            freeText(2000).optional(),
+  owner:            shortText(200).optional(),
+  approver:         shortText(200).optional(),
+  related_controls: z.array(z.string().max(20)).optional(),
+  reviewed_by:      shortText(200),
+  change_summary:   freeText(500),
+});
+
+export const ListProceduresSchema = z.object({
+  procedure_type: procedureTypeEnum.optional(),
+  status:         procedureStatusEnum.optional(),
+  policy_id:      uuid.optional(),
+  overdue_only:   z.boolean().optional().default(false),
+  limit:          paginationLimit,
+  offset:         paginationOffset,
+});
+
+export const ExportProcedureSchema = z.object({
+  procedure_id: uuid,
+  format:       formatMarkdownJson,
+});
+
 // ── Registry: tool name → schema ─────────────────────────────
 
 export const TOOL_SCHEMAS: Record<string, z.ZodTypeAny> = {
@@ -465,6 +546,15 @@ export const TOOL_SCHEMAS: Record<string, z.ZodTypeAny> = {
   query_audit_log: QueryAuditLogSchema,
   list_api_keys:   ListApiKeysSchema,
   revoke_api_key:  RevokeApiKeySchema,
+  // Group 10
+  set_organization_profile: SetOrganizationProfileSchema,
+  get_organization_profile: GetOrganizationProfileSchema,
+  // Group 11
+  create_procedure: CreateProcedureSchema,
+  get_procedure:    GetProcedureSchema,
+  update_procedure: UpdateProcedureSchema,
+  list_procedures:  ListProceduresSchema,
+  export_procedure: ExportProcedureSchema,
 };
 
 // ── validateToolInput ─────────────────────────────────────────

@@ -23,13 +23,14 @@ describe.skipIf(!!process.env.CI || !supportsNativeDb)("DB operations — migrat
 
   // ── Migration integrity ────────────────────────────────────
 
-  it("migrations create the _migrations table with exactly 2 rows", () => {
+  it("migrations create the _migrations table with exactly 3 rows", () => {
     const rows = db
       .prepare("SELECT filename FROM _migrations ORDER BY id")
       .all() as { filename: string }[];
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
     expect(rows[0].filename).toBe("0001_initial.sql");
     expect(rows[1].filename).toBe("0002_fts_index.sql");
+    expect(rows[2].filename).toBe("0003_org_profile_procedures.sql");
   });
 
   it("all expected core tables exist after migration", () => {
@@ -39,6 +40,8 @@ describe.skipIf(!!process.env.CI || !supportsNativeDb)("DB operations — migrat
       "risks", "risk_treatments", "policies", "policy_versions",
       "soa", "soa_entries", "audits", "findings", "corrective_actions",
       "evidence", "audit_log",
+      // Migration 0003
+      "organization_profile", "procedures", "procedure_versions",
     ];
     for (const table of tables) {
       const row = db

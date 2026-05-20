@@ -8,12 +8,12 @@
  * update_policy archives the current version and increments version number.
  */
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import Mustache from "mustache";
 import { getDb } from "../db/connection.js";
 import { newId, now, addMonths, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
+import { loadTemplate, stripFrontmatter } from "./template-utils.js";
+import { loadOrgProfileDefaults } from "./org-profile.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -55,56 +55,6 @@ function ok(data: unknown): ToolResult {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
 }
 
-// ── Template loader ───────────────────────────────────────────
-
-// Resolve path to policy-templates/ relative to this file's location.
-// In the compiled dist/ the relative structure matches: dist/tools → src/tools,
-// but the templates are in src/seed/policy-templates. We look them up via __dirname
-// equivalents, falling back to the dist bundle path.
-
-function loadTemplate(policyType: string): string {
-  // __dirname is the compiled dist/tools/ directory in CJS output.
-  // Templates are copied into dist/seed/policy-templates/ by tsc.
-  const candidates = [
-    // dist/tools → dist/seed (compiled output)
-    join(__dirname, "../seed/policy-templates", `${policyType}.md`),
-    // Running tests or scripts directly from source root
-    join(process.cwd(), "src/seed/policy-templates", `${policyType}.md`),
-    // Running from project root after npm run build
-    join(process.cwd(), "dist/seed/policy-templates", `${policyType}.md`),
-  ];
-
-  for (const candidate of candidates) {
-    try {
-      return readFileSync(candidate, "utf8");
-    } catch {
-      // try next
-    }
-  }
-
-  throw businessRule("policy_type", `Template file not found for policy type '${policyType}'.`);
-}
-
-// Strip YAML frontmatter (--- ... ---) from template before rendering
-function stripFrontmatter(raw: string): { template: string; clauseMappings: string[]; controlMappings: string[] } {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  if (!match) return { template: raw, clauseMappings: [], controlMappings: [] };
-
-  const frontmatter = match[1];
-  const template    = match[2];
-
-  const clauseMatch   = frontmatter.match(/clause_mappings:\s*(\[.*?\])/);
-  const controlMatch  = frontmatter.match(/control_mappings:\s*(\[.*?\])/);
-
-  let clauseMappings: string[]  = [];
-  let controlMappings: string[] = [];
-
-  try { if (clauseMatch)  clauseMappings  = JSON.parse(clauseMatch[1].replace(/'/g, '"')) as string[]; } catch { /* ignore */ }
-  try { if (controlMatch) controlMappings = JSON.parse(controlMatch[1].replace(/'/g, '"')) as string[]; } catch { /* ignore */ }
-
-  return { template, clauseMappings, controlMappings };
-}
-
 // ── create_policy ─────────────────────────────────────────────
 
 export function handleCreatePolicy(args: Record<string, unknown>): ToolResult {
@@ -112,23 +62,36 @@ export function handleCreatePolicy(args: Record<string, unknown>): ToolResult {
     type, organisation_name, scope, owner, approver,
     review_cycle_months = 12, effective_date,
   } = args as {
-    type: string; organisation_name: string; scope: string;
+    type: string; organisation_name?: string; scope?: string;
     owner: string; approver?: string;
     review_cycle_months?: number; effective_date: string;
   };
 
+  // Auto-inject org profile defaults when caller omits organisation_name / scope
+  const db = getDb();
+  const profileDefaults = loadOrgProfileDefaults(db);
+  const resolvedOrgName = organisation_name ?? profileDefaults?.organisation_name;
+  const resolvedScope   = scope           ?? profileDefaults?.scope;
+
+  if (!resolvedOrgName || !resolvedScope) {
+    throw businessRule(
+      "organisation_name",
+      "organisation_name and scope are required — supply them explicitly or call set_organization_profile first.",
+    );
+  }
+
   const id             = newId();
-  const next_review    = addMonths(new Date(effective_date), review_cycle_months);
+  const next_review    = addMonths(new Date(effective_date), review_cycle_months as number);
   const ts             = now();
 
   // Load and render Mustache template
-  const raw                                      = loadTemplate(type);
+  const raw                                      = loadTemplate(type, "policy-templates");
   const { template, clauseMappings, controlMappings } = stripFrontmatter(raw);
 
   const rendered = Mustache.render(template, {
     policy_id:         id,
-    organisation_name,
-    scope,
+    organisation_name: resolvedOrgName,
+    scope:             resolvedScope,
     owner,
     approver:          approver ?? "TBD",
     effective_date,
@@ -136,14 +99,14 @@ export function handleCreatePolicy(args: Record<string, unknown>): ToolResult {
     version:           "1.0",
   });
 
-  getDb().prepare(`
+  db.prepare(`
     INSERT INTO policies
       (id, type, organisation_name, scope, owner, approver, status, version,
        content, clause_mappings, control_mappings, review_cycle_months,
        effective_date, next_review_date, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, 'draft', 1, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
-    id, type, organisation_name, scope, owner, approver ?? null,
+    id, type, resolvedOrgName, resolvedScope, owner, approver ?? null,
     rendered,
     JSON.stringify(clauseMappings), JSON.stringify(controlMappings),
     review_cycle_months, effective_date, next_review, ts, ts,
@@ -152,7 +115,7 @@ export function handleCreatePolicy(args: Record<string, unknown>): ToolResult {
   return ok({
     id,
     type,
-    organisation_name,
+    organisation_name: resolvedOrgName,
     version: 1,
     status: "draft",
     effective_date,
@@ -218,7 +181,7 @@ export function handleUpdatePolicy(args: Record<string, unknown>): ToolResult {
   `).run(newId(), policy_id, current.version, current.content, change_summary, reviewed_by, ts);
 
   // Rebuild content from updated fields
-  const raw = loadTemplate(current.type);
+  const raw = loadTemplate(current.type, "policy-templates");
   const { template, clauseMappings, controlMappings } = stripFrontmatter(raw);
 
   const newScope = scope ?? current.scope;

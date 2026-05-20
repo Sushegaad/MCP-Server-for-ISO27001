@@ -1,7 +1,7 @@
 /**
  * iso27001-mcp — Tool registry & execution pipeline
  *
- * registerAllTools(server) wires all 43 tools into the MCP server with the
+ * registerAllTools(server) wires all 50 tools into the MCP server with the
  * full security pipeline per §6 of the spec:
  *
  *   1. Extract API key from request meta or MCP_API_KEY env var
@@ -69,6 +69,17 @@ import {
   handleRegisterEvidence, handleListEvidence, handleGetEvidenceGaps,
   handleLinkJiraTicket, handleLinkGithubIssue,
 } from "./evidence-tracking.js";
+
+// ── Group 10: Organization Profile ───────────────────────────
+import {
+  handleSetOrganizationProfile, handleGetOrganizationProfile,
+} from "./org-profile.js";
+
+// ── Group 11: Procedure Management ───────────────────────────
+import {
+  handleCreateProcedure, handleGetProcedure, handleUpdateProcedure,
+  handleListProcedures, handleExportProcedure,
+} from "./procedures.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -207,6 +218,24 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
     "List all API keys with their metadata (label, role, status, expiry). Never returns key hashes.",
   revoke_api_key:
     "Revoke an API key by label, preventing all future use.",
+
+  // Group 10 — Organization Profile
+  set_organization_profile:
+    "Upsert the singleton organization profile (legal name, jurisdiction, ISMS scope, RACI roles). Used by create_policy and create_procedure to auto-inject org defaults.",
+  get_organization_profile:
+    "Retrieve the organization profile. Returns { profile: null } if no profile has been set yet.",
+
+  // Group 11 — Procedure Management (reads: viewer+, create: analyst+, update: admin)
+  create_procedure:
+    "Generate a new ISMS procedure document from a Mustache template. Optionally links to a parent policy. Falls back to org profile for organisation_name and scope if not supplied.",
+  get_procedure:
+    "Retrieve a procedure record by ID, optionally including version history.",
+  update_procedure:
+    "Archive the current procedure version and re-render with updated fields, incrementing the version number. Requires admin role.",
+  list_procedures:
+    "List procedures with optional filters: procedure_type, status, policy_id, overdue_only, and pagination.",
+  export_procedure:
+    "Export a procedure as a markdown document (with related controls appended) or as structured JSON.",
 };
 
 // ── TOOL_HANDLERS ─────────────────────────────────────────────
@@ -314,12 +343,23 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     revokeKey(label);
     return ok({ revoked: true, label });
   },
+
+  // ── Group 10: Organization Profile ───────────────────────────
+  set_organization_profile: handleSetOrganizationProfile,
+  get_organization_profile: handleGetOrganizationProfile,
+
+  // ── Group 11: Procedure Management ───────────────────────────
+  create_procedure: handleCreateProcedure,
+  get_procedure:    handleGetProcedure,
+  update_procedure: handleUpdateProcedure,
+  list_procedures:  handleListProcedures,
+  export_procedure: handleExportProcedure,
 };
 
 // ── registerAllTools ──────────────────────────────────────────
 
 /**
- * Register all 43 ISO 27001 MCP tools with the server.
+ * Register all 50 ISO 27001 MCP tools with the server.
  * Each tool callback runs the full security pipeline.
  */
 export function registerAllTools(server: McpServer): void {

@@ -1,7 +1,7 @@
 /**
  * iso27001-mcp — Role-Based Access Control
  *
- * Permission matrix covering all 43 tools × 3 roles.
+ * Permission matrix covering all 50 tools × 3 roles.
  * Roles are hierarchical: admin ⊇ analyst ⊇ viewer.
  *
  * checkPermission(role, toolName) — returns true if allowed
@@ -92,6 +92,17 @@ const TOOL_MIN_ROLE: Record<string, Role> = {
   query_audit_log: "admin",
   list_api_keys:   "admin",
   revoke_api_key:  "admin",
+
+  // ── Group 10: Organization Profile ──────────────────────
+  set_organization_profile: "admin",
+  get_organization_profile: "viewer",
+
+  // ── Group 11: Procedure Management ──────────────────────
+  create_procedure: "analyst",
+  get_procedure:    "viewer",
+  update_procedure: "admin",
+  list_procedures:  "viewer",
+  export_procedure: "analyst",
 };
 
 // ── Public API ────────────────────────────────────────────────
@@ -134,5 +145,5 @@ export function toolsForRole(role: Role): string[] {
     .sort();
 }
 
-/** Total registered tool count — must equal 43. */
+/** Total registered tool count — must equal 50. */
 export const TOTAL_TOOLS = Object.keys(TOOL_MIN_ROLE).length;

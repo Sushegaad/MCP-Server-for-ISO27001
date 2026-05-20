@@ -2,7 +2,7 @@
  * iso27001-mcp — MCP protocol: tool registration tests
  *
  * Verifies that TOOL_SCHEMAS and TOOL_MIN_ROLE registries are consistent
- * and contain exactly 43 entries. Does NOT require native SQLite.
+ * and contain exactly 50 entries. Does NOT require native SQLite.
  */
 
 import { describe, it, expect } from "vitest";
@@ -10,16 +10,16 @@ import { TOOL_SCHEMAS } from "../../src/security/validate.js";
 import { TOTAL_TOOLS, toolsForRole } from "../../src/auth/rbac.js";
 
 describe("MCP protocol — tool registration", () => {
-  it("TOOL_SCHEMAS contains exactly 43 entries", () => {
-    expect(Object.keys(TOOL_SCHEMAS).length).toBe(43);
+  it("TOOL_SCHEMAS contains exactly 50 entries", () => {
+    expect(Object.keys(TOOL_SCHEMAS).length).toBe(50);
   });
 
-  it("TOTAL_TOOLS constant equals 43", () => {
-    expect(TOTAL_TOOLS).toBe(43);
+  it("TOTAL_TOOLS constant equals 50", () => {
+    expect(TOTAL_TOOLS).toBe(50);
   });
 
-  it("toolsForRole('admin') returns exactly 43 tool names", () => {
-    expect(toolsForRole("admin").length).toBe(43);
+  it("toolsForRole('admin') returns exactly 50 tool names", () => {
+    expect(toolsForRole("admin").length).toBe(50);
   });
 
   it("every tool in TOOL_SCHEMAS has a Zod .parse function", () => {

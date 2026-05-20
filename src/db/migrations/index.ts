@@ -376,12 +376,90 @@ CREATE INDEX IF NOT EXISTS idx_clause_req_parent
   ON clause_requirements(parent_id);
 `;
 
+const MIGRATION_0003 = `-- ============================================================
+-- iso27001-mcp  Migration 0003 — Organization Profile & Procedures
+-- Adds: organization_profile (singleton), procedures, procedure_versions
+-- ============================================================
+
+-- ── Organization Profile (singleton) ─────────────────────────
+-- Application enforces singleton semantics via a fixed UUID.
+-- INSERT OR REPLACE with ORG_PROFILE_ID is the only write path.
+
+CREATE TABLE IF NOT EXISTS organization_profile (
+  id                       TEXT PRIMARY KEY NOT NULL,
+  legal_entity_name        TEXT NOT NULL,
+  registered_jurisdiction  TEXT NOT NULL,
+  regulatory_licences      TEXT,          -- JSON array of strings
+  in_scope_activities      TEXT NOT NULL,
+  isms_scope_statement     TEXT NOT NULL,
+  declared_exclusions      TEXT,          -- free text or JSON array
+  raci_roles               TEXT NOT NULL DEFAULT '{}', -- JSON: {ciso,dpo,data_owner,isms_manager,internal_auditor}
+  review_cadence_months    INTEGER NOT NULL DEFAULT 12,
+  created_at               TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at               TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── Procedures ────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS procedures (
+  id                  TEXT PRIMARY KEY NOT NULL,
+  procedure_type      TEXT NOT NULL CHECK (procedure_type IN (
+                        'access_provisioning','incident_handling','change_management',
+                        'backup_restore','vulnerability_management','supplier_onboarding',
+                        'cryptographic_key_management','data_classification_handling',
+                        'secure_development_workflow','bcp_testing',
+                        'asset_onboarding_offboarding','audit_log_review'
+                      )),
+  policy_id           TEXT REFERENCES policies(id) ON DELETE SET NULL,
+  organisation_name   TEXT NOT NULL,
+  scope               TEXT NOT NULL,
+  owner               TEXT NOT NULL,
+  approver            TEXT,
+  status              TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','active','archived')),
+  version             INTEGER NOT NULL DEFAULT 1,
+  content             TEXT NOT NULL,
+  clause_mappings     TEXT,              -- JSON array
+  control_mappings    TEXT,              -- JSON array (from template frontmatter)
+  related_controls    TEXT,             -- JSON array (caller-supplied override)
+  review_cycle_months INTEGER NOT NULL DEFAULT 12,
+  effective_date      TEXT NOT NULL,
+  next_review_date    TEXT NOT NULL,
+  reviewed_by         TEXT,
+  approved_by         TEXT,
+  created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── Procedure Version History ─────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS procedure_versions (
+  id             TEXT PRIMARY KEY NOT NULL,
+  procedure_id   TEXT NOT NULL REFERENCES procedures(id) ON DELETE CASCADE,
+  version        INTEGER NOT NULL,
+  content        TEXT NOT NULL,
+  change_summary TEXT,
+  reviewed_by    TEXT,
+  archived_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(procedure_id, version)
+);
+
+-- ── Performance Indexes ───────────────────────────────────────
+
+CREATE INDEX IF NOT EXISTS idx_procedures_policy
+  ON procedures(policy_id);
+CREATE INDEX IF NOT EXISTS idx_procedures_review
+  ON procedures(next_review_date, status);
+CREATE INDEX IF NOT EXISTS idx_procedures_type
+  ON procedures(procedure_type, status);
+`;
+
 /**
  * All migrations in application order.
  * The runner applies them sequentially, skipping already-applied ones.
  * Never reorder or remove entries — add new entries at the end only.
  */
 export const MIGRATIONS: Migration[] = [
-  { filename: "0001_initial.sql",    sql: MIGRATION_0001 },
-  { filename: "0002_fts_index.sql",  sql: MIGRATION_0002 },
+  { filename: "0001_initial.sql",               sql: MIGRATION_0001 },
+  { filename: "0002_fts_index.sql",             sql: MIGRATION_0002 },
+  { filename: "0003_org_profile_procedures.sql", sql: MIGRATION_0003 },
 ];
