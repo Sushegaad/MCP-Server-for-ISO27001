@@ -14,6 +14,7 @@ export default defineConfig({
         "src/index.ts",
         "src/server.ts",
         "src/tools/index.ts",
+        "src/resources/index.ts",
         "src/transport/sse.ts",
         "src/types/**",
         // Infrastructure files that require a real encrypted SQLite database
