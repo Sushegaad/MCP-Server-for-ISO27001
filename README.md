@@ -1,6 +1,6 @@
 # iso27001-mcp
 
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.7.8)](https://socket.dev/npm/package/iso27001-mcp/overview/0.7.8)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.7.9)](https://socket.dev/npm/package/iso27001-mcp/overview/0.7.9)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![Live Demo](https://img.shields.io/badge/demo-live-blue)](https://sushegaad.github.io/MCP-Server-for-ISO27001/)
 
@@ -15,7 +15,7 @@ Claude ──MCP──► iso27001-mcp ──► encrypted SQLite (isms.db)
                     ├── 114 ISO 27001:2013 controls (seeded)
                     ├── Gap assessments & remediation roadmaps
                     ├── Risk register & treatment plans
-                    ├── Policy documents (Mustache templates)
+                    ├── Policy & procedure documents (Mustache templates)
                     ├── Statement of Applicability
                     ├── Audit findings & corrective actions
                     └── Evidence tracking (+ Jira / GitHub)
@@ -31,6 +31,7 @@ Claude ──MCP──► iso27001-mcp ──► encrypted SQLite (isms.db)
 - [Configuration](#configuration)
 - [Connecting to Claude](#connecting-to-claude)
 - [Tools Reference](#tools-reference)
+- [MCP Resources](#mcp-resources)
 - [Architecture](#architecture)
 - [Modes](#modes)
 - [Integrations](#integrations)
@@ -89,7 +90,7 @@ iso27001-mcp keygen --label "Me" --role admin
 
 The raw key (`iso27001_...`) is printed **once** and never stored in plaintext. Copy it immediately.
 
-> Three roles are available: `viewer` (22 read-only tools), `analyst` (35 tools), `admin` (all 43 tools). Use `admin` for your personal key.
+> Three roles are available: `viewer` (25 read-only tools), `analyst` (40 tools), `admin` (all 50 tools). Use `admin` for your personal key.
 
 ### Step 4 — Add to Claude Desktop
 
@@ -120,7 +121,7 @@ Add the following block, substituting your values from Steps 2 and 3:
 
 ### Step 5 — Restart Claude Desktop and verify
 
-Fully quit and reopen Claude Desktop. You should see 43 tools in the MCP tools panel (hammer icon). Then ask Claude:
+Fully quit and reopen Claude Desktop. You should see 50 tools in the MCP tools panel (hammer icon). Then ask Claude:
 
 > *"Use get_server_info to check the server is running."*
 
@@ -132,7 +133,9 @@ Claude will call `get_server_info` and return the version, uptime, and database 
 "Create a gap assessment for Acme Ltd covering all ISO 27001:2022 controls."
 "Show me the gap summary and generate a remediation roadmap with a 26-week timeline."
 "Register a new risk: our customer database is exposed to SQL injection — likelihood 4, impact 5."
+"Set our organisation profile: Acme Ltd, scope: all cloud-hosted systems and remote employees."
 "Generate an Access Control Policy for Acme Ltd. Owner: CISO. Effective from 1 July 2026."
+"Create an Incident Handling Procedure linked to our Information Security Policy."
 "Create an internal audit for Q3 covering clause 9.1 — Performance Evaluation."
 ```
 
@@ -168,15 +171,23 @@ Risk scores are computed automatically (likelihood × impact) and reflected in s
 
 ---
 
-### 3 — Generate ISMS Policies
+### 3 — Generate ISMS Policies and Procedures
 
-Generate a full suite of ISO 27001-aligned policy documents in seconds.
+Generate a full suite of ISO 27001-aligned policy and procedure documents in seconds.
 
-> *"Generate an information security policy for Acme Ltd. Scope: all cloud-hosted systems and remote employees. Owner: CISO. Effective from 1 June 2026."*
+> *"Set our organisation profile: Acme Ltd. ISMS scope: all cloud-hosted systems and remote employees."*
 
-Policies are rendered from Mustache templates with automatic ISO clause and control mappings. Twelve policy types are included out of the box:
+> *"Generate an information security policy. Owner: CISO. Effective from 1 June 2026."*
 
+> *"Create an Incident Handling Procedure linked to our Information Security Policy."*
+
+Policies and procedures are rendered from Mustache templates with automatic ISO clause and control mappings. Once the organisation profile is set, `organisation_name` and `scope` are injected automatically — no need to repeat them on every call.
+
+**12 policy types:**
 `information_security` · `access_control` · `risk_management` · `asset_management` · `incident_response` · `business_continuity` · `supplier_security` · `cryptography` · `physical_security` · `acceptable_use` · `data_classification` · `secure_development`
+
+**12 procedure types:**
+`incident_handling` · `access_provisioning` · `asset_onboarding_offboarding` · `audit_log_review` · `backup_restore` · `bcp_testing` · `change_management` · `cryptographic_key_management` · `data_classification_handling` · `secure_development_workflow` · `supplier_onboarding` · `vulnerability_management`
 
 ---
 
@@ -293,13 +304,13 @@ Full variable reference:
 The server requires an API key on every tool call. Generate one for yourself:
 
 ```bash
-# Viewer — read-only access to 22 tools
+# Viewer — read-only access to 25 tools
 iso27001-mcp keygen --label "Alice" --role viewer
 
-# Analyst — read + write for gap/risk/policy/evidence tools (35 tools)
+# Analyst — read + write for gap/risk/policy/procedure/evidence tools (40 tools)
 iso27001-mcp keygen --label "Bob" --role analyst --expires 90d
 
-# Admin — all 43 tools including audit log and key management
+# Admin — all 50 tools including audit log and key management
 iso27001-mcp keygen --label "CISO" --role admin --expires 1y
 ```
 
@@ -364,7 +375,7 @@ export DB_PATH=$HOME/.iso27001/isms.db
 
 ## Tools Reference
 
-The server exposes **43 tools** across 9 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
+The server exposes **50 tools** across 11 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
 
 ---
 
@@ -600,8 +611,8 @@ Render a policy from a Mustache template with org-specific variables.
 | Parameter | Req | Type | Values / Notes |
 |-----------|-----|------|----------------|
 | `type` | ✅ | enum | `information_security` \| `access_control` \| `risk_management` \| `asset_management` \| `incident_response` \| `business_continuity` \| `supplier_security` \| `cryptography` \| `physical_security` \| `acceptable_use` \| `data_classification` \| `secure_development` |
-| `organisation_name` | ✅ | string | |
-| `scope` | ✅ | string | |
+| `organisation_name` | — | string | Auto-injected from org profile if set |
+| `scope` | — | string | Auto-injected from org profile if set |
 | `owner` | ✅ | string | |
 | `approver` | — | string | |
 | `review_cycle_months` | — | integer | 1–36, default: `12` |
@@ -821,14 +832,143 @@ Immediately revoke a key by label.
 
 ---
 
+### Group 10 — Organisation Profile *(minimum role: admin for writes, viewer for reads)*
+
+#### `set_organization_profile`
+Upsert the singleton organisation profile. Used to auto-inject `organisation_name` and `scope` into `create_policy` and `create_procedure`.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `legal_entity_name` | ✅ | string | Registered legal name |
+| `registered_jurisdiction` | ✅ | string | e.g. `England and Wales` |
+| `in_scope_activities` | ✅ | string | Activities within ISMS scope |
+| `isms_scope_statement` | ✅ | string | Formal scope statement (used as `scope` default) |
+| `regulatory_licences` | — | array | Applicable licences or regulations |
+| `declared_exclusions` | — | string | Out-of-scope exclusions and justifications |
+| `raci_roles` | — | object | Keys: `ciso`, `dpo`, `data_owner`, `isms_manager`, `internal_auditor` |
+| `review_cadence_months` | — | integer | Default: `12` |
+
+#### `get_organization_profile`
+Retrieve the singleton organisation profile. Returns `{ profile: null }` if not yet set. No parameters.
+
+---
+
+### Group 11 — Procedure Management *(reads: viewer+, create/export: analyst+, update: admin)*
+
+#### `create_procedure`
+Render a procedure from a Mustache template and store it in the database.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `type` | ✅ | enum | `incident_handling` \| `access_provisioning` \| `asset_onboarding_offboarding` \| `audit_log_review` \| `backup_restore` \| `bcp_testing` \| `change_management` \| `cryptographic_key_management` \| `data_classification_handling` \| `secure_development_workflow` \| `supplier_onboarding` \| `vulnerability_management` |
+| `owner` | ✅ | string | |
+| `effective_date` | ✅ | string | `YYYY-MM-DD` |
+| `organisation_name` | — | string | Auto-injected from org profile if set |
+| `scope` | — | string | Auto-injected from org profile if set |
+| `approver` | — | string | Defaults to `TBD` |
+| `policy_id` | — | string (UUID) | Link to a parent policy (must be active) |
+| `related_controls` | — | array | Control IDs |
+| `review_cycle_months` | — | integer | 1–36, default: `12` |
+
+#### `get_procedure`
+Fetch a procedure by ID, optionally including archived version history.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `procedure_id` | ✅ | string (UUID) | |
+| `include_versions` | — | boolean | Default: `false` |
+
+#### `list_procedures`
+List procedures with optional filters, sorted by upcoming review date.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `procedure_type` | — | enum | Any of the 12 procedure types above |
+| `status` | — | enum | `draft` \| `active` \| `archived` |
+| `policy_id` | — | string (UUID) | Filter to procedures linked to a specific policy |
+| `overdue_only` | — | boolean | Filter to active procedures past their review date — default: `false` |
+| `limit` | — | integer | Default: `50`, max `100` |
+| `offset` | — | integer | Default: `0` |
+
+#### `update_procedure`
+Archive the current version and re-render with updated fields. Admin only.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `procedure_id` | ✅ | string (UUID) | |
+| `reviewed_by` | ✅ | string | |
+| `change_summary` | ✅ | string | |
+| `scope` | — | string | |
+| `owner` | — | string | |
+| `approver` | — | string | |
+| `related_controls` | — | array | Control IDs |
+
+#### `export_procedure`
+Export a procedure as Markdown or JSON.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `procedure_id` | ✅ | string (UUID) | |
+| `format` | ✅ | enum | `markdown` \| `json` |
+
+---
+
+## MCP Resources
+
+In addition to tools, the server exposes ISMS artefacts as browseable **MCP Resources** under the `iso27001://` URI scheme. Claude can reference these directly without a tool call — ideal for inline document review, cross-referencing controls, and long-context analysis.
+
+Resources are read-only. Write operations always go through tools (which enforce the security pipeline and audit log).
+
+### Resource URI Scheme
+
+| Resource | URI pattern | Auth |
+|----------|-------------|------|
+| `iso27001-control` | `iso27001://control/{control_id}` | Public |
+| `iso27001-control-versioned` | `iso27001://control/{control_id}/version/{version}` | Public |
+| `iso27001-clause` | `iso27001://clause/{clause_id}` | Public |
+| `iso27001-org-profile` | `iso27001://org/profile` | Viewer |
+| `iso27001-policy` | `iso27001://policy/{policy_id}` | Viewer |
+| `iso27001-policy-versioned` | `iso27001://policy/{policy_id}/version/{n}` | Viewer |
+| `iso27001-procedure` | `iso27001://procedure/{procedure_id}` | Viewer |
+| `iso27001-procedure-versioned` | `iso27001://procedure/{procedure_id}/version/{n}` | Viewer |
+| `iso27001-risk` | `iso27001://risk/{risk_id}` | Viewer |
+| `iso27001-assessment` | `iso27001://assessment/{assessment_id}` | Viewer |
+| `iso27001-soa` | `iso27001://soa/{soa_id}` | Viewer |
+| `iso27001-audit` | `iso27001://audit/{audit_id}` | Viewer |
+
+### Resource Formats
+
+**Controls and clauses** (`application/json`) — full control record including `control_type`, `attributes`, `related_controls`, and ISO clause refs.
+
+**Policies and procedures** (`text/markdown`) — rendered document body with a YAML frontmatter envelope containing `uri`, `procedure_type` / policy `type`, version, owner, clause and control mappings, and review dates.
+
+**Risks** (`application/json`) — risk record with nested `treatments` array.
+
+**Assessments** (`application/json`) — assessment record with `control_status_summary` (counts by status).
+
+**Statement of Applicability** (`application/json`) — SoA record with nested `entries` array (boolean `included` field).
+
+**Audits** (`application/json`) — audit record with nested `findings` array, each containing its `corrective_actions`.
+
+### Example
+
+```
+"Read iso27001://policy/pol-abc123 and compare it against control 5.1."
+"List all open risks from iso27001://risk and summarise which controls are most often cited."
+"Review the SoA at iso27001://soa/soa-xyz789 and identify excluded controls."
+```
+
+---
+
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                     Claude (LLM)                        │
-└──────────────────────────┬──────────────────────────────┘
-                           │  MCP (stdio or SSE)
-┌──────────────────────────▼──────────────────────────────┐
+└──────────┬───────────────────────────────┬──────────────┘
+           │  MCP Tools (read/write)        │  MCP Resources (read-only)
+           │  50 tools, RBAC enforced       │  12 iso27001:// URIs
+┌──────────▼───────────────────────────────▼──────────────┐
 │                   iso27001-mcp server                   │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐    │
@@ -846,14 +986,14 @@ Immediately revoke a key by label.
 │  └─────────────────────────────────────────────────┘    │
 │                                                         │
 │  ┌─────────────┐  ┌──────────┐  ┌────────────────────┐  │
-│  │  Controls   │  │  Risks   │  │      Policies      │  │
-│  │  Gap Assess │  │ Register │  │  (Mustache tmpl)   │  │
-│  │  SoA        │  │ Treatmts │  │  Version history   │  │
+│  │  Controls   │  │  Risks   │  │  Policies &        │  │
+│  │  Gap Assess │  │ Register │  │  Procedures        │  │
+│  │  SoA        │  │ Treatmts │  │  (Mustache tmpl)   │  │
 │  └─────────────┘  └──────────┘  └────────────────────┘  │
 │  ┌─────────────┐  ┌──────────┐  ┌────────────────────┐  │
-│  │   Audits    │  │ Evidence │  │    Audit Log       │  │
-│  │  Findings   │  │  Jira/GH │  │  (tamper-evident)  │  │
-│  │  CARs       │  │  Gaps    │  │                    │  │
+│  │   Audits    │  │ Evidence │  │  Org Profile &     │  │
+│  │  Findings   │  │  Jira/GH │  │  Audit Log         │  │
+│  │  CARs       │  │  Gaps    │  │  (tamper-evident)  │  │
 │  └─────────────┘  └──────────┘  └────────────────────┘  │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐    │
@@ -866,10 +1006,11 @@ Immediately revoke a key by label.
 
 ### Database
 
-All data is stored in a single encrypted SQLite file (`isms.db`) using AES-256 via `better-sqlite3-multiple-ciphers`. The schema is managed by two SQL migrations applied automatically on first startup:
+All data is stored in a single encrypted SQLite file (`isms.db`) using AES-256 via `better-sqlite3-multiple-ciphers`. The schema is managed by three SQL migrations applied automatically on first startup:
 
 - `0001_initial.sql` — 17 tables covering every ISMS domain (controls, gap assessments, risks, policies, audits, evidence, API keys, audit log, and more)
 - `0002_fts_index.sql` — FTS5 full-text search index on controls, plus 12 performance indexes
+- `0003_org_profile_procedures.sql` — `organization_profile` singleton table, `procedures` table, and `procedure_versions` history table
 
 ### Seed Data
 
@@ -903,9 +1044,9 @@ Three roles with strict hierarchy. A key can only call tools at or below its ass
 
 | Role | Tools available | Typical user |
 |------|----------------|--------------|
-| `viewer` | 22 (all read-only tools) | Auditor, stakeholder |
-| `analyst` | 35 (reads + gap/risk/policy/evidence writes) | ISMS practitioner, consultant |
-| `admin` | 43 (all tools, including audit log and key management) | CISO, ISMS owner |
+| `viewer` | 25 (all read-only tools) | Auditor, stakeholder |
+| `analyst` | 40 (reads + gap/risk/policy/procedure/evidence writes) | ISMS practitioner, consultant |
+| `admin` | 50 (all tools, including org profile, audit log and key management) | CISO, ISMS owner |
 
 ---
 
@@ -982,7 +1123,7 @@ npm run typecheck
 # Build dist/
 npm run build
 
-# Run all tests (183 unit + integration tests)
+# Run all tests (404 unit + integration tests)
 npm test
 
 # Watch mode
@@ -1003,28 +1144,29 @@ npm run dev
 ```
 src/
 ├── index.ts                  CLI entry (keygen, keys, server startup)
-├── server.ts                 McpServer factory
+├── server.ts                 McpServer factory — registers tools + resources
 ├── auth/
 │   ├── api-key.ts            Key generation, HMAC validation, expiry, revocation
-│   └── rbac.ts               Permission matrix (43 tools × 3 roles)
+│   └── rbac.ts               Permission matrix (50 tools × 3 roles)
 ├── security/
 │   ├── sanitise.ts           Prompt-injection stripping for free-text fields
 │   ├── rate-limiter.ts       Sliding-window RPM counter per key hash
 │   ├── secrets.ts            Env var validation (fail-fast on startup)
-│   └── validate.ts           Zod schemas for all 43 tool inputs
+│   └── validate.ts           Zod schemas for all 50 tool inputs
 ├── audit/
 │   └── logger.ts             Tamper-evident audit event writer
 ├── db/
 │   ├── connection.ts         Encrypted SQLite open/close/migrate
-│   ├── dal.ts                Shared helpers: newId, now, toJson, computeEvidenceStatus
-│   └── migrations/           0001_initial.sql, 0002_fts_index.sql
+│   ├── dal.ts                Shared helpers: newId, now, toJson, fromJsonArray, computeEvidenceStatus
+│   └── migrations/           0001_initial.sql, 0002_fts_index.sql, 0003_org_profile_procedures.sql
 ├── seed/
 │   ├── seeder.ts             Idempotent seed runner with checksum verification
 │   ├── controls-2022.json    93 ISO 27001:2022 Annex A controls
 │   ├── controls-2013.json    114 ISO 27001:2013 controls
 │   ├── version-mapping.json  125 cross-version mappings
 │   ├── clause-requirements.json  41 clause requirements (clauses 4–10)
-│   └── policy-templates/     12 Mustache .md policy templates
+│   ├── policy-templates/     12 Mustache .md policy templates
+│   └── procedure-templates/  12 Mustache .md procedure templates
 ├── tools/
 │   ├── index.ts              Tool registry and security pipeline
 │   ├── controls.ts           Group 1: Control Registry (7 tools)
@@ -1034,7 +1176,19 @@ src/
 │   ├── soa.ts                Group 5: Statement of Applicability (3 tools)
 │   ├── audit-management.ts   Group 6: Audit Management (5 tools)
 │   ├── evidence-tracking.ts  Group 7: Evidence Tracking (5 tools)
-│   └── server-info.ts        Group 8: Server Info (1 tool)
+│   ├── server-info.ts        Group 8: Server Info (1 tool)
+│   ├── org-profile.ts        Group 10: Organisation Profile (2 tools) + loadOrgProfileDefaults helper
+│   ├── procedures.ts         Group 11: Procedure Management (5 tools)
+│   └── template-utils.ts     Shared loadTemplate / stripFrontmatter helpers
+├── resources/
+│   ├── index.ts              Registers all 12 MCP Resources
+│   ├── resource-auth.ts      Slim auth helper for resource callbacks
+│   ├── controls.ts           iso27001-control, iso27001-control-versioned, iso27001-clause
+│   ├── org-profile.ts        iso27001-org-profile (static URI)
+│   ├── policies.ts           iso27001-policy, iso27001-policy-versioned
+│   ├── procedures.ts         iso27001-procedure, iso27001-procedure-versioned
+│   ├── risks.ts              iso27001-risk (with nested treatments)
+│   └── assessments.ts        iso27001-assessment, iso27001-soa, iso27001-audit
 └── transport/
     └── sse.ts                Express SSE server for team/hosted modes
 
@@ -1046,7 +1200,8 @@ tests/
 │   ├── auth/                 api-key, rbac
 │   ├── security/             sanitise, rate-limiter
 │   ├── audit/                logger
-│   └── tools/                One file per handler module
+│   ├── tools/                One file per handler module
+│   └── resources/            One file per resource module (controls, policies, procedures, risks, assessments)
 └── integration/
     ├── mcp-protocol.test.ts  Schema and registration validation
     ├── db-operations.test.ts Migrations, seed counts, FTS5 (macOS only)

@@ -529,7 +529,7 @@
     <!-- ════════════════════════════════════════════════════════ -->
     <div id="section-tools" class="section">
       <div class="notice">
-        💡 All 43 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only), analyst (writes), admin (all tools).
+        💡 All 50 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 25 tools), analyst (writes, 40 tools), admin (all 50 tools).
       </div>
 
       <div class="card">
@@ -746,6 +746,30 @@ const TOOLS = [
       params:[['label','✅','string','the label assigned at key generation']],
       example:'{ "label": "Alice" }' },
   ]},
+  { group:'Group 10 — Organisation Profile', role:'admin', tools:[
+    { name:'set_organization_profile', desc:'Upsert the singleton org profile. Once set, organisation_name and scope are auto-injected into create_policy and create_procedure.',
+      params:[['legal_entity_name','✅','string',''],['registered_jurisdiction','✅','string',''],['in_scope_activities','✅','string',''],['isms_scope_statement','✅','string','becomes scope default'],['raci_roles','—','object','ciso, dpo, isms_manager, etc.'],['review_cadence_months','—','integer','default 12']],
+      example:'{ "legal_entity_name": "Acme Ltd", "registered_jurisdiction": "England and Wales", "in_scope_activities": "Cloud SaaS", "isms_scope_statement": "All cloud-hosted systems and remote employees" }' },
+    { name:'get_organization_profile', desc:'Retrieve the singleton organisation profile. Returns { profile: null } if not yet set.',
+      params:[], example:'{}' },
+  ]},
+  { group:'Group 11 — Procedure Management', role:'analyst', tools:[
+    { name:'create_procedure', desc:'Render a procedure from a Mustache template. 12 types available. organisation_name and scope auto-injected from org profile if set.',
+      params:[['type','✅','enum','incident_handling | access_provisioning | backup_restore | change_management | vulnerability_management | …'],['owner','✅','string',''],['effective_date','✅','string','YYYY-MM-DD'],['policy_id','—','uuid','link to parent policy'],['related_controls','—','array','']],
+      example:'{ "type": "incident_handling", "owner": "CISO", "effective_date": "2026-07-01" }' },
+    { name:'get_procedure', desc:'Fetch a procedure by ID with optional version history.',
+      params:[['procedure_id','✅','uuid',''],['include_versions','—','boolean','default false']],
+      example:'{ "procedure_id": "uuid", "include_versions": true }' },
+    { name:'list_procedures', desc:'List procedures with filters: type, status, policy linkage, overdue flag.',
+      params:[['procedure_type','—','enum','any type'],['status','—','enum','draft | active | archived'],['overdue_only','—','boolean',''],['limit','—','integer','default 50']],
+      example:'{ "status": "active", "overdue_only": true }' },
+    { name:'update_procedure', desc:'Archive current version, re-render with changes. Admin only.',
+      params:[['procedure_id','✅','uuid',''],['reviewed_by','✅','string',''],['change_summary','✅','string','']],
+      example:'{ "procedure_id": "uuid", "reviewed_by": "CISO", "change_summary": "Updated scope" }' },
+    { name:'export_procedure', desc:'Export procedure as Markdown or JSON.',
+      params:[['procedure_id','✅','uuid',''],['format','✅','enum','markdown | json']],
+      example:'{ "procedure_id": "uuid", "format": "markdown" }' },
+  ]},
 ];
 
 const POLICY_TEMPLATES = {
@@ -937,7 +961,7 @@ const SECTION_META = {
   gap:    { title:'Gap Assessment',    sub:'Acme Financial Services · ISO 27001:2022 · 24 controls shown' },
   risk:   { title:'Risk Register',     sub:'6 risks across all levels · click any risk to view treatment plan' },
   policy: { title:'Policy Generator',  sub:'12 ISO 27001-aligned policy templates · rendered with your org details' },
-  tools:  { title:'Tools Explorer',    sub:'43 MCP tools across 9 groups · all require a valid API key' },
+  tools:  { title:'Tools Explorer',    sub:'50 MCP tools across 11 groups · all require a valid API key' },
 };
 
 function showSection(id) {
