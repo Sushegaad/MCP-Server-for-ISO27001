@@ -49,10 +49,10 @@ export function registerOrgProfileResource(server: McpServer): void {
       description: "Singleton ISMS organization profile. Fields: legal_entity_name, registered_jurisdiction, regulatory_licences, in_scope_activities, isms_scope_statement, declared_exclusions, raci_roles, review_cadence_months. Use set_organization_profile to update.",
       mimeType:    "application/json",
     },
-    async (
+    (
       uri: URL,
       extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
-    ): Promise<ReadResourceResult> => {
+    ): ReadResourceResult => {
       assertResourceAuth(extra);
 
       const row = getDb()

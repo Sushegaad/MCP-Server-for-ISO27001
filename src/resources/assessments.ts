@@ -198,7 +198,7 @@ export function registerAssessmentResources(server: McpServer): void {
       description: "ISO 27001 gap assessment record with control-status summary counts. Fields: id, name, scope, isms_version, status, themes_in_scope, exclude_controls, control_status_summary (object of status → count).",
       mimeType:    "application/json",
     },
-    async (uri, variables, extra): Promise<ReadResourceResult> => {
+    (uri, variables, extra): ReadResourceResult => {
       assertResourceAuth(extra);
 
       const { assessment_id } = variables as { assessment_id: string };
@@ -262,7 +262,7 @@ export function registerAssessmentResources(server: McpServer): void {
       description: "ISO 27001 Statement of Applicability with all control entries. Fields: id, assessment_id, isms_version, created_at, entries[] (control_id, included, justification, status, evidence_count, responsible_party).",
       mimeType:    "application/json",
     },
-    async (uri, variables, extra): Promise<ReadResourceResult> => {
+    (uri, variables, extra): ReadResourceResult => {
       assertResourceAuth(extra);
 
       const { soa_id } = variables as { soa_id: string };
@@ -321,7 +321,7 @@ export function registerAssessmentResources(server: McpServer): void {
       description: "ISO 27001 audit record with nested findings and corrective actions. Fields: id, name, scope, auditor, planned_date, actual_date, status, controls_in_scope, clauses_in_scope, findings[] (type, severity, description, objective_evidence, corrective_actions[]).",
       mimeType:    "application/json",
     },
-    async (uri, variables, extra): Promise<ReadResourceResult> => {
+    (uri, variables, extra): ReadResourceResult => {
       assertResourceAuth(extra);
 
       const { audit_id } = variables as { audit_id: string };

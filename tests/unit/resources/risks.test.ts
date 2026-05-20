@@ -205,12 +205,12 @@ describe("iso27001-risk read callback", () => {
 
   it("throws when risk is not found", async () => {
     mockStmtRisk.get.mockReturnValue(undefined);
-    await expect(
+    expect(() =>
       getResource("iso27001-risk").readFn(
         new URL("iso27001://risk/missing"),
         { risk_id: "missing" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("Risk not found");
+      )
+    ).toThrow("Risk not found");
   });
 });

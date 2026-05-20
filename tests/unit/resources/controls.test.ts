@@ -144,15 +144,15 @@ describe("iso27001-control read callback", () => {
     expect(data.control_type).toEqual(["preventive"]);
   });
 
-  it("throws when control is not found", async () => {
+  it("throws when control is not found", () => {
     mockStmt.get.mockReturnValue(undefined);
-    await expect(
+    expect(() =>
       getResource("iso27001-control").readFn(
         new URL("iso27001://control/99.99"),
         { control_id: "99.99" },
         {},
-      ),
-    ).rejects.toThrow("Control not found");
+      )
+    ).toThrow("Control not found");
   });
 });
 
@@ -178,15 +178,15 @@ describe("iso27001-control-versioned read callback", () => {
     expect(data.attributes).toEqual({ security_domains: ["Governance"] });
   });
 
-  it("throws for unknown version", async () => {
+  it("throws for unknown version", () => {
     mockStmt.get.mockReturnValue(undefined);
-    await expect(
+    expect(() =>
       getResource("iso27001-control-versioned").readFn(
         new URL("iso27001://control/5.1/version/2015"),
         { control_id: "5.1", version: "2015" },
         {},
-      ),
-    ).rejects.toThrow("Control not found");
+      )
+    ).toThrow("Control not found");
   });
 });
 
@@ -228,12 +228,12 @@ describe("iso27001-clause read callback", () => {
 
   it("throws when clause is not found", async () => {
     mockStmt.get.mockReturnValue(undefined);
-    await expect(
+    expect(() =>
       getResource("iso27001-clause").readFn(
         new URL("iso27001://clause/99"),
         { clause_id: "99" },
         {},
-      ),
-    ).rejects.toThrow("Clause not found");
+      )
+    ).toThrow("Clause not found");
   });
 });

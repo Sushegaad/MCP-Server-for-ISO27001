@@ -55,7 +55,7 @@ function serializeControl(row: ControlRow): object {
   return {
     ...row,
     control_type:     JSON.parse(row.control_type) as string[],
-    attributes:       row.attributes       ? JSON.parse(row.attributes)       : null,
+    attributes:       row.attributes       ? JSON.parse(row.attributes) as Record<string, unknown> : null,
     related_controls: fromJsonArray<string>(row.related_controls),
     iso_clause_refs:  fromJsonArray<string>(row.iso_clause_refs),
     new_in_2022:      row.new_in_2022 === 1,
@@ -98,7 +98,7 @@ export function registerControlResources(server: McpServer): void {
       description: "ISO 27001 control definition — returns the 2022 version where available, 2013 otherwise. Fields: control_id, name, theme, description, guidance, control_type, attributes (2022), related_controls, iso_clause_refs.",
       mimeType:    "application/json",
     },
-    async (uri, variables): Promise<ReadResourceResult> => {
+    (uri, variables): ReadResourceResult => {
       const { control_id } = variables as { control_id: string };
       const row = getDb()
         .prepare(
@@ -136,7 +136,7 @@ export function registerControlResources(server: McpServer): void {
       description: "ISO 27001 control at a specific standard version ('2022' or '2013'). Use this to compare how a control changed between editions.",
       mimeType:    "application/json",
     },
-    async (uri, variables): Promise<ReadResourceResult> => {
+    (uri, variables): ReadResourceResult => {
       const { control_id, version } = variables as { control_id: string; version: string };
       const row = getDb()
         .prepare("SELECT * FROM controls WHERE control_id = ? AND version = ?")
@@ -180,7 +180,7 @@ export function registerControlResources(server: McpServer): void {
       description: "ISO 27001:2022 clause requirement (clauses 4–10). Fields: clause_id, title, requirement_text, implementation_notes, related_controls.",
       mimeType:    "application/json",
     },
-    async (uri, variables): Promise<ReadResourceResult> => {
+    (uri, variables): ReadResourceResult => {
       const { clause_id } = variables as { clause_id: string };
       const row = getDb()
         .prepare("SELECT * FROM clause_requirements WHERE clause_id = ?")

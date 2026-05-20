@@ -45,7 +45,7 @@ export function assertResourceAuth(
   const keyHash = validateKey(rawKey);   // throws AUTHENTICATION_FAILED if bad
   const role    = loadRole(keyHash);     // throws NOT_FOUND if key not in DB
 
-  if (ROLE_LEVEL[role as Role] < ROLE_LEVEL[minRole]) {
+  if (ROLE_LEVEL[role] < ROLE_LEVEL[minRole]) {
     throw rbacDenied("resource-read", minRole);
   }
 }

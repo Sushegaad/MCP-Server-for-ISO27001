@@ -169,13 +169,13 @@ describe("iso27001-procedure read callback", () => {
 
   it("throws when procedure is not found", async () => {
     mockStmt.get.mockReturnValue(undefined);
-    await expect(
+    expect(() =>
       getResource("iso27001-procedure").readFn(
         new URL("iso27001://procedure/missing"),
         { procedure_id: "missing" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("Procedure not found");
+      )
+    ).toThrow("Procedure not found");
   });
 });
 
@@ -204,34 +204,34 @@ describe("iso27001-procedure-versioned read callback", () => {
   });
 
   it("throws for non-numeric version", async () => {
-    await expect(
+    expect(() =>
       getResource("iso27001-procedure-versioned").readFn(
         new URL("iso27001://procedure/proc-1/version/latest"),
         { procedure_id: "proc-1", version: "latest" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("Invalid version");
+      )
+    ).toThrow("Invalid version");
   });
 
   it("throws for version zero", async () => {
-    await expect(
+    expect(() =>
       getResource("iso27001-procedure-versioned").readFn(
         new URL("iso27001://procedure/proc-1/version/0"),
         { procedure_id: "proc-1", version: "0" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("Invalid version");
+      )
+    ).toThrow("Invalid version");
   });
 
   it("throws when version row is not found", async () => {
     mockStmt.get.mockReturnValue(undefined);
-    await expect(
+    expect(() =>
       getResource("iso27001-procedure-versioned").readFn(
         new URL("iso27001://procedure/proc-1/version/99"),
         { procedure_id: "proc-1", version: "99" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("Procedure version not found");
+      )
+    ).toThrow("Procedure version not found");
   });
 
   it("calls assertResourceAuth", async () => {

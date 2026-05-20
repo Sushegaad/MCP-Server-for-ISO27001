@@ -113,7 +113,7 @@ export function handleCreateProcedure(args: Record<string, unknown>): ToolResult
   }
 
   const id          = newId();
-  const next_review = addMonths(new Date(effective_date), review_cycle_months as number);
+  const next_review = addMonths(new Date(effective_date), review_cycle_months);
   const ts          = now();
 
   // Load and render Mustache template

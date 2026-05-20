@@ -102,7 +102,7 @@ export function registerRiskResources(server: McpServer): void {
       description: "ISO 27001 risk record with calculated risk_score and risk_level, plus nested treatments array. Fields: id, asset, threat, vulnerability, likelihood, impact, risk_score, risk_level, owner, status, related_controls, treatments[].",
       mimeType:    "application/json",
     },
-    async (uri, variables, extra): Promise<ReadResourceResult> => {
+    (uri, variables, extra): ReadResourceResult => {
       assertResourceAuth(extra);
 
       const { risk_id } = variables as { risk_id: string };

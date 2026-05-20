@@ -140,7 +140,7 @@ export function registerProcedureResources(server: McpServer): void {
       description: "Current version of an ISO 27001 ISMS procedure document, returned as Markdown with YAML frontmatter. Includes clause and control mappings, and link to parent policy.",
       mimeType:    "text/markdown",
     },
-    async (uri, variables, extra): Promise<ReadResourceResult> => {
+    (uri, variables, extra): ReadResourceResult => {
       assertResourceAuth(extra);
 
       const { procedure_id } = variables as { procedure_id: string };
@@ -172,7 +172,7 @@ export function registerProcedureResources(server: McpServer): void {
       description: "Archived version of an ISO 27001 procedure document. Use get_procedure with include_versions=true to discover available version numbers.",
       mimeType:    "text/markdown",
     },
-    async (uri, variables, extra): Promise<ReadResourceResult> => {
+    (uri, variables, extra): ReadResourceResult => {
       assertResourceAuth(extra);
 
       const { procedure_id, version } = variables as { procedure_id: string; version: string };

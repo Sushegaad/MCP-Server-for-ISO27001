@@ -218,13 +218,13 @@ describe("iso27001-assessment read callback", () => {
 
   it("throws when assessment is not found", async () => {
     stmts.assessments.get.mockReturnValue(undefined);
-    await expect(
+    expect(() =>
       getResource("iso27001-assessment").readFn(
         new URL("iso27001://assessment/missing"),
         { assessment_id: "missing" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("Assessment not found");
+      )
+    ).toThrow("Assessment not found");
   });
 });
 
@@ -276,13 +276,13 @@ describe("iso27001-soa read callback", () => {
 
   it("throws when SoA is not found", async () => {
     stmts.soa.get.mockReturnValue(undefined);
-    await expect(
+    expect(() =>
       getResource("iso27001-soa").readFn(
         new URL("iso27001://soa/missing"),
         { soa_id: "missing" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("SoA not found");
+      )
+    ).toThrow("SoA not found");
   });
 });
 
@@ -350,13 +350,13 @@ describe("iso27001-audit read callback", () => {
 
   it("throws when audit is not found", async () => {
     stmts.audits.get.mockReturnValue(undefined);
-    await expect(
+    expect(() =>
       getResource("iso27001-audit").readFn(
         new URL("iso27001://audit/missing"),
         { audit_id: "missing" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("Audit not found");
+      )
+    ).toThrow("Audit not found");
   });
 
   it("calls assertResourceAuth", async () => {

@@ -166,13 +166,13 @@ describe("iso27001-policy read callback", () => {
 
   it("throws when policy is not found", async () => {
     mockStmt.get.mockReturnValue(undefined);
-    await expect(
+    expect(() =>
       getResource("iso27001-policy").readFn(
         new URL("iso27001://policy/missing"),
         { policy_id: "missing" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("Policy not found");
+      )
+    ).toThrow("Policy not found");
   });
 });
 
@@ -212,33 +212,33 @@ describe("iso27001-policy-versioned read callback", () => {
   });
 
   it("throws for invalid version format", async () => {
-    await expect(
+    expect(() =>
       getResource("iso27001-policy-versioned").readFn(
         new URL("iso27001://policy/pol-1/version/abc"),
         { policy_id: "pol-1", version: "abc" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("Invalid version");
+      )
+    ).toThrow("Invalid version");
   });
 
   it("throws for version zero", async () => {
-    await expect(
+    expect(() =>
       getResource("iso27001-policy-versioned").readFn(
         new URL("iso27001://policy/pol-1/version/0"),
         { policy_id: "pol-1", version: "0" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("Invalid version");
+      )
+    ).toThrow("Invalid version");
   });
 
   it("throws when version row is not found", async () => {
     mockStmt.get.mockReturnValue(undefined);
-    await expect(
+    expect(() =>
       getResource("iso27001-policy-versioned").readFn(
         new URL("iso27001://policy/pol-1/version/99"),
         { policy_id: "pol-1", version: "99" },
         MOCK_EXTRA,
-      ),
-    ).rejects.toThrow("Policy version not found");
+      )
+    ).toThrow("Policy version not found");
   });
 });
