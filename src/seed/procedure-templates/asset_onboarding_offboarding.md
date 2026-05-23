@@ -5,14 +5,20 @@ control_mappings: ["5.9","5.10","5.11","7.8","7.14","8.10"]
 ---
 # Asset Onboarding and Offboarding Procedure
 
-**Organisation:** {{organisation_name}}
-**Procedure ID:** {{procedure_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
-**Parent Policy ID:** {{parent_policy_id}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Asset Types
+4. Roles and Responsibilities
+5. Asset Onboarding
+6. Asset Changes
+7. Asset Offboarding
+8. Storage Media Management
+9. Record Keeping
+10. Document Control
 
 ---
 
@@ -106,9 +112,7 @@ This procedure defines the process for registering, configuring, and retiring in
 
 The asset register, hardening checklists, assignment records, disposal certificates, and vendor data deletion confirmations are retained for a minimum of 5 years.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

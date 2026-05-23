@@ -5,13 +5,19 @@ control_mappings: ["5.1","5.2","5.3","5.4","5.36","5.37"]
 ---
 # Information Security Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Information Security Objectives
+4. Responsibilities
+5. Information Security Framework
+6. Supporting Policies
+7. Compliance
+8. Review
+9. Document Control
 
 ---
 
@@ -86,9 +92,7 @@ Non-compliance with this policy may result in disciplinary action, up to and inc
 
 This policy shall be reviewed at least annually or following significant changes to the organisation, its context, or applicable legal and regulatory requirements.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

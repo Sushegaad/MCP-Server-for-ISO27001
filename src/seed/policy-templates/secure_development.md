@@ -5,13 +5,18 @@ control_mappings: ["8.25","8.26","8.27","8.28","8.29","8.30","8.31","8.32","8.33
 ---
 # Secure Development Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Secure Development Lifecycle
+4. Environment Separation
+5. Source Code Security
+6. Outsourced Development
+7. Secure Coding Standards
+8. Document Control
 
 ---
 
@@ -92,9 +97,7 @@ Where development is outsourced:
 
 Developers must complete secure coding training annually.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

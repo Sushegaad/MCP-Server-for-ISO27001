@@ -5,13 +5,19 @@ control_mappings: ["5.10","6.3","6.7","8.1"]
 ---
 # Acceptable Use Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. General Principles
+4. Acceptable Use
+5. Prohibited Activities
+6. Personal Devices (BYOD)
+7. Monitoring
+8. Compliance
+9. Document Control
 
 ---
 
@@ -89,9 +95,7 @@ Use of personal devices to access {{organisation_name}} systems is subject to th
 
 Violations of this policy may result in disciplinary action, up to and including termination of employment or contract. Violations that constitute criminal activity will be referred to law enforcement.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

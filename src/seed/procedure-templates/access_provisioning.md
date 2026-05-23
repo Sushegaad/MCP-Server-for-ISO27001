@@ -5,14 +5,21 @@ control_mappings: ["5.15","5.16","5.17","5.18","8.2","8.3"]
 ---
 # Access Provisioning Procedure
 
-**Organisation:** {{organisation_name}}
-**Procedure ID:** {{procedure_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
-**Parent Policy ID:** {{parent_policy_id}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Roles and Responsibilities
+4. Access Request Process
+5. Provisioning Execution
+6. Temporary Access
+7. Access Modification
+8. Access Revocation
+9. Periodic Access Review
+10. Record Keeping
+11. Document Control
 
 ---
 
@@ -94,9 +101,7 @@ This procedure defines the step-by-step process for granting, modifying, and rev
 
 All access requests, approvals, provisioning actions, and revocations are retained in the ticketing system for a minimum of 3 years.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

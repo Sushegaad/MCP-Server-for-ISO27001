@@ -5,13 +5,17 @@ control_mappings: ["8.24","5.14","8.5"]
 ---
 # Cryptography Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Approved Algorithms
+4. Use Cases
+5. Key Management
+6. Certificate Management
+7. Document Control
 
 ---
 
@@ -82,9 +86,7 @@ Compromised or retired keys must be revoked immediately. Key destruction must be
 
 {{organisation_name}} shall maintain an inventory of all certificates in use. Certificate expiry shall be monitored, with renewal initiated at least 30 days before expiry. Self-signed certificates are prohibited in production environments.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

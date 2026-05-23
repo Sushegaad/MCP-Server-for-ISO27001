@@ -2,16 +2,21 @@
  * iso27001-mcp — Shared template utilities
  *
  * loadTemplate()      — resolve and read a Mustache .md template file
+ * loadPartials()      — load all Mustache partials from seed/partials/
  * stripFrontmatter()  — extract YAML frontmatter and return body + mappings
  *
- * Used by both policies.ts and procedures.ts.
+ * Used by policies.ts, procedures.ts, and evidence-templates.ts.
+ *
+ * Partials provide shared header/footer blocks so templates don't duplicate
+ * boilerplate. Available: {{> org_header}}, {{> revision_block}},
+ * {{> approver_signature}}.
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { businessRule } from "../types/errors.js";
 
-export type TemplateDir = "policy-templates" | "procedure-templates";
+export type TemplateDir = "policy-templates" | "procedure-templates" | "evidence-templates";
 
 /**
  * Load a raw Mustache template from seed/<dir>/<type>.md.
@@ -40,6 +45,45 @@ export function loadTemplate(type: string, dir: TemplateDir): string {
     `Template file not found for '${type}' in '${dir}'. ` +
     `Run 'npm run build' to ensure templates are copied into dist/.`,
   );
+}
+
+// ── Partial names ─────────────────────────────────────────────
+
+const PARTIAL_NAMES = ["org_header", "revision_block", "approver_signature"] as const;
+
+/**
+ * Load all Mustache partials from seed/partials/.
+ * Returns a Record<partialName, partialContent> suitable for passing
+ * as the third argument to Mustache.render(template, view, partials).
+ *
+ * Partials that cannot be found are silently returned as empty strings
+ * so templates that don't use them are unaffected.
+ */
+export function loadPartials(): Record<string, string> {
+  const partials: Record<string, string> = {};
+
+  for (const name of PARTIAL_NAMES) {
+    const candidates = [
+      join(__dirname, `../seed/partials`, `${name}.md`),
+      join(process.cwd(), `src/seed/partials`, `${name}.md`),
+      join(process.cwd(), `dist/seed/partials`, `${name}.md`),
+    ];
+
+    for (const candidate of candidates) {
+      try {
+        partials[name] = readFileSync(candidate, "utf8");
+        break;
+      } catch {
+        // try next candidate
+      }
+    }
+
+    if (!partials[name]) {
+      partials[name] = ""; // graceful fallback
+    }
+  }
+
+  return partials;
 }
 
 /**

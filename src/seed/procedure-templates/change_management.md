@@ -5,14 +5,20 @@ control_mappings: ["8.32","5.37","8.9"]
 ---
 # Change Management Procedure
 
-**Organisation:** {{organisation_name}}
-**Procedure ID:** {{procedure_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
-**Parent Policy ID:** {{parent_policy_id}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Change Categories
+4. Roles and Responsibilities
+5. Change Request Process
+6. Implementation
+7. Post-Implementation Review
+8. Security Considerations
+9. Record Keeping
+10. Document Control
 
 ---
 
@@ -100,9 +106,7 @@ This procedure governs the controlled planning, approval, testing, and implement
 
 The change register, CRs, approval records, and post-implementation reviews are retained for a minimum of 3 years.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

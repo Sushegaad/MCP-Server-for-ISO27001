@@ -5,14 +5,19 @@ control_mappings: ["5.19","5.20","5.21","5.22","5.23"]
 ---
 # Supplier Onboarding Procedure
 
-**Organisation:** {{organisation_name}}
-**Procedure ID:** {{procedure_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
-**Parent Policy ID:** {{parent_policy_id}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Supplier Risk Classification
+4. Roles and Responsibilities
+5. Supplier Onboarding Process
+6. Ongoing Supplier Monitoring
+7. Supplier Offboarding
+8. Record Keeping
+9. Document Control
 
 ---
 
@@ -94,9 +99,7 @@ This procedure defines how {{organisation_name}} assesses, approves, and onboard
 
 The supplier register, security assessments, contracts, DPAs, review records, and offboarding confirmations are retained for a minimum of 5 years.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

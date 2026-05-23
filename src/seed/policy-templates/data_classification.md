@@ -5,13 +5,16 @@ control_mappings: ["5.12","5.13","5.14","8.10","8.11"]
 ---
 # Data Classification Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Classification Scheme
+4. Classification Process
+5. Handling Rules Summary
+6. Document Control
 
 ---
 
@@ -98,9 +101,7 @@ Information may be reclassified by the information owner when the sensitivity le
 | External sharing | Open | With approval | Owner approval + NDA | Senior approval only |
 | Secure disposal | No | Yes | Yes + documented | Yes + certified |
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

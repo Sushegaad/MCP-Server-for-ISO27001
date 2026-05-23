@@ -5,13 +5,19 @@ control_mappings: ["5.19","5.20","5.21","5.22","5.23","6.6"]
 ---
 # Supplier Security Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Supplier Classification
+4. Pre-Engagement Assessment
+5. Contractual Requirements
+6. Cloud Services
+7. Ongoing Monitoring
+8. Supply Chain Security
+9. Document Control
 
 ---
 
@@ -79,9 +85,7 @@ For ICT products and services, {{organisation_name}} shall:
 - Require transparency of significant supply chain components
 - Monitor for supply chain security advisories and vulnerabilities
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

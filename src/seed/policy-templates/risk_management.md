@@ -5,13 +5,18 @@ control_mappings: ["5.1","5.7","5.31"]
 ---
 # Information Security Risk Management Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Risk Criteria
+4. Risk Assessment Process
+5. Risk Treatment
+6. Risk Register
+7. Roles and Responsibilities
+8. Document Control
 
 ---
 
@@ -90,9 +95,7 @@ All risk treatment plans must be documented with: treatment option, controls to 
 - **Risk Owners**: Business managers responsible for accepting or treating risks within their domains
 - **{{approver}}**: Approves acceptance of High and Critical risks; reviews risk treatment plans
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

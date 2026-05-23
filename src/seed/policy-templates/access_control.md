@@ -5,13 +5,19 @@ control_mappings: ["5.15","5.16","5.17","5.18","8.2","8.3","8.4","8.5"]
 ---
 # Access Control Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Principles
+4. Access Management Lifecycle
+5. Authentication Requirements
+6. Privileged Access
+7. Remote Access
+8. Third-Party Access
+9. Document Control
 
 ---
 
@@ -84,9 +90,7 @@ Access control within {{organisation_name}} is based on the following principles
 - Third-party access must be time-limited and reviewed regularly
 - Third-party access activities must be logged and monitored
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

@@ -5,29 +5,76 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write      # create GitHub Release
+  id-token: write      # OIDC token for npm provenance attestation
+  attestations: write  # store the provenance attestation
+
 jobs:
-  release:
+  test:
+    name: Pre-release checks
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint src/ --ext .ts --max-warnings 0
+
+      - name: Verify seed checksums
+        run: npm run verify-checksums
+
+      - name: Run tests
+        run: npx vitest run
+        env:
+          CI: true   # skips native-SQLite integration tests (macOS-only binary)
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+
+  publish:
+    name: Publish to npm (with provenance)
+    needs: test
+    runs-on: ubuntu-latest
+
     permissions:
       contents: write
       id-token: write
+      attestations: write
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.11.0'
+          node-version: '22'
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm ci
-      - run: npx tsc --noEmit
-      - run: npm run verify-checksums
-      - run: npx vitest run
-      - run: npm audit --audit-level=high
-      - run: npm run build
-      - run: npm publish --provenance --access public
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (typecheck + bundle + copy templates)
+        run: npm run build
+
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          generate_release_notes: false
+          body_path: ${{ github.workspace }}/.github/RELEASE_NOTES.md
+        continue-on-error: true

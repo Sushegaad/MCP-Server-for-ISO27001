@@ -1,7 +1,7 @@
 /**
  * iso27001-mcp — Tool registry & execution pipeline
  *
- * registerAllTools(server) wires all 50 tools into the MCP server with the
+ * registerAllTools(server) wires all 63 tools into the MCP server with the
  * full security pipeline per §6 of the spec:
  *
  *   1. Extract API key from request meta or MCP_API_KEY env var
@@ -81,6 +81,24 @@ import {
   handleListProcedures, handleExportProcedure,
 } from "./procedures.js";
 
+// ── Group 12: Management Review (Clause 9.3) ─────────────────
+import {
+  handleCreateManagementReview, handleRecordReviewInput, handleRecordReviewOutput,
+  handleCompleteManagementReview, handleGetManagementReview, handleListManagementReviews,
+} from "./management-review.js";
+
+// ── Group 13: Improvement Plan (Clause 10.1) ─────────────────
+import {
+  handleCreateImprovementOpportunity, handleUpdateImprovementOpportunity,
+  handleGetImprovementOpportunity, handleListImprovementOpportunities,
+} from "./improvement-plan.js";
+
+// ── Group 14: Evidence Templates ──────────────────────────────
+import {
+  handleGenerateEvidenceDocument, handleGetEvidenceDocument,
+  handleListEvidenceDocuments,
+} from "./evidence-templates.js";
+
 // ── Types ─────────────────────────────────────────────────────
 
 type ToolResult = {
@@ -92,14 +110,15 @@ type ToolHandler = (args: Record<string, unknown>) => ToolResult | Promise<ToolR
 
 // ── extractShape ─────────────────────────────────────────────
 // MCP SDK registerTool() expects a ZodRawShape, not a full ZodObject.
-// Schemas built with .refine() are ZodEffects — unwrap one level to get
-// the underlying ZodObject's shape.
+// Schemas built with .refine() are ZodEffects — loop to unwrap ALL
+// levels so nested .refine().refine() chains don't silently lose shape.
 
 function extractShape(schema: z.ZodTypeAny): z.ZodRawShape {
-  if (schema instanceof z.ZodEffects) {
-    return (schema.innerType() as z.ZodObject<z.ZodRawShape>).shape;
+  let s: z.ZodTypeAny = schema;
+  while (s instanceof z.ZodEffects) {
+    s = s.innerType() as z.ZodTypeAny;
   }
-  return (schema as z.ZodObject<z.ZodRawShape>).shape;
+  return (s as z.ZodObject<z.ZodRawShape>).shape;
 }
 
 // ── ok / err helpers ──────────────────────────────────────────
@@ -236,6 +255,38 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
     "List procedures with optional filters: procedure_type, status, policy_id, overdue_only, and pagination.",
   export_procedure:
     "Export a procedure as a markdown document (with related controls appended) or as structured JSON.",
+
+  // Group 12 — Management Review, Clause 9.3 (reads: viewer+, writes: admin)
+  create_management_review:
+    "Schedule a new management review (ISO 27001:2022 Clause 9.3) with title, date, and reviewers list.",
+  record_review_input:
+    "Record one of the 7 mandatory Clause 9.3.2 input categories for a management review. Upserts on re-submission; advances status to in_progress on first input.",
+  record_review_output:
+    "Record a Clause 9.3.3 output decision (improvement_decision or isms_change_decision) for a management review.",
+  complete_management_review:
+    "Mark a management review as completed. Enforces ISO 27001:2022 §9.3.2: all 7 input categories must be recorded, and at least one output must be present.",
+  get_management_review:
+    "Retrieve a management review record with all inputs, outputs, and a completion-progress summary.",
+  list_management_reviews:
+    "List management reviews with optional status filter and pagination.",
+
+  // Group 13 — Improvement Plan, Clause 10.1 (reads: viewer+, writes: analyst+)
+  create_improvement_opportunity:
+    "Register a proactive improvement opportunity (ISO 27001:2022 Clause 10.1) with source, priority, owner, and optional target date. Not linked to a nonconformity.",
+  update_improvement_opportunity:
+    "Advance an improvement opportunity's status (forward-only: open → in_progress → implemented → closed) or update owner, target date, priority, or description.",
+  get_improvement_opportunity:
+    "Retrieve a single improvement opportunity by ID.",
+  list_improvement_opportunities:
+    "List improvement opportunities with optional filters (status, source, priority, review_id) and a backlog health rating (excellent/good/fair/needs_attention/at_risk).",
+
+  // Group 14 — Evidence Templates (reads: viewer+, generate: analyst+)
+  generate_evidence_document:
+    "Render one of 6 Mustache evidence templates (access_review_attestation, training_acknowledgement, supplier_security_questionnaire, incident_post_mortem, bcp_test_report, risk_treatment_sign_off) with org-profile auto-injection. Returns rendered Markdown and simultaneously registers an evidence record.",
+  get_evidence_document:
+    "Retrieve a previously generated evidence document by ID, including its rendered Markdown content and template variables used.",
+  list_evidence_documents:
+    "List generated evidence documents with optional filters: template_type, generated_by, control_id, and pagination.",
 };
 
 // ── TOOL_HANDLERS ─────────────────────────────────────────────
@@ -323,7 +374,7 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     if (key_hash)   { conditions.push("key_hash = ?");   params.push(key_hash); }
 
     const where = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
-    const sql   = `SELECT id, timestamp, tool, role, outcome, error_message, duration_ms, row_hash
+    const sql   = `SELECT id, timestamp, tool, role, outcome, error_message, duration_ms, prev_hash, row_hash
                    FROM audit_log ${where}
                    ORDER BY timestamp DESC
                    LIMIT ? OFFSET ?`;
@@ -354,12 +405,31 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   update_procedure: handleUpdateProcedure,
   list_procedures:  handleListProcedures,
   export_procedure: handleExportProcedure,
+
+  // ── Group 12: Management Review (Clause 9.3) ─────────────────
+  create_management_review:   handleCreateManagementReview,
+  record_review_input:        handleRecordReviewInput,
+  record_review_output:       handleRecordReviewOutput,
+  complete_management_review: handleCompleteManagementReview,
+  get_management_review:      handleGetManagementReview,
+  list_management_reviews:    handleListManagementReviews,
+
+  // ── Group 13: Improvement Plan (Clause 10.1) ──────────────────
+  create_improvement_opportunity: handleCreateImprovementOpportunity,
+  update_improvement_opportunity: handleUpdateImprovementOpportunity,
+  get_improvement_opportunity:    handleGetImprovementOpportunity,
+  list_improvement_opportunities: handleListImprovementOpportunities,
+
+  // ── Group 14: Evidence Templates ──────────────────────────────
+  generate_evidence_document: handleGenerateEvidenceDocument,
+  get_evidence_document:      handleGetEvidenceDocument,
+  list_evidence_documents:    handleListEvidenceDocuments,
 };
 
 // ── registerAllTools ──────────────────────────────────────────
 
 /**
- * Register all 50 ISO 27001 MCP tools with the server.
+ * Register all 63 ISO 27001 MCP tools with the server.
  * Each tool callback runs the full security pipeline.
  */
 export function registerAllTools(server: McpServer): void {

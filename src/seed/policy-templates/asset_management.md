@@ -5,13 +5,20 @@ control_mappings: ["5.9","5.10","5.11","5.12","5.13","7.10","8.10"]
 ---
 # Asset Management Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Asset Inventory
+4. Asset Ownership
+5. Information Classification
+6. Labelling
+7. Acceptable Use
+8. Return of Assets
+9. Information Deletion and Disposal
+10. Document Control
 
 ---
 
@@ -80,9 +87,7 @@ Upon termination of employment or contract, all organisational assets must be re
 - Physical media containing sensitive information shall be securely destroyed or wiped before disposal or re-use
 - Data destruction shall be documented and certified for assets classified Confidential or Restricted
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

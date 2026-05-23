@@ -22,15 +22,20 @@
  *   iso27001://assessment/{assessment_id}
  *   iso27001://soa/{soa_id}
  *   iso27001://audit/{audit_id}
+ *   iso27001://management-review/{review_id}
+ *   iso27001://improvement-plan
+ *   iso27001://evidence-document/{document_id}
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerControlResources }    from "./controls.js";
-import { registerPolicyResources }     from "./policies.js";
-import { registerProcedureResources }  from "./procedures.js";
-import { registerRiskResources }       from "./risks.js";
-import { registerAssessmentResources } from "./assessments.js";
-import { registerOrgProfileResource }  from "./org-profile.js";
+import { registerControlResources }         from "./controls.js";
+import { registerPolicyResources }          from "./policies.js";
+import { registerProcedureResources }       from "./procedures.js";
+import { registerRiskResources }            from "./risks.js";
+import { registerAssessmentResources }      from "./assessments.js";
+import { registerOrgProfileResource }       from "./org-profile.js";
+import { registerManagementReviewResources }  from "./management-review.js";
+import { registerEvidenceDocumentResources }   from "./evidence-templates.js";
 
 export function registerAllResources(server: McpServer): void {
   // Public reference data (no auth)
@@ -42,4 +47,6 @@ export function registerAllResources(server: McpServer): void {
   registerProcedureResources(server);
   registerRiskResources(server);
   registerAssessmentResources(server);
+  registerManagementReviewResources(server);
+  registerEvidenceDocumentResources(server);
 }

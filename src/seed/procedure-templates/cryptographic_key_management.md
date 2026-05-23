@@ -5,14 +5,22 @@ control_mappings: ["8.24","5.17"]
 ---
 # Cryptographic Key Management Procedure
 
-**Organisation:** {{organisation_name}}
-**Procedure ID:** {{procedure_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
-**Parent Policy ID:** {{parent_policy_id}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Approved Cryptographic Algorithms and Key Lengths
+4. Roles and Responsibilities
+5. Key Generation
+6. Key Storage
+7. Key Distribution
+8. Key Rotation
+9. Key Revocation and Destruction
+10. Key Register
+11. Record Keeping
+12. Document Control
 
 ---
 
@@ -106,9 +114,7 @@ The register is reviewed quarterly.
 
 Key lifecycle events (generation, distribution, rotation, revocation, destruction) are logged and retained for a minimum of 5 years. The key register is retained for the life of the organisation.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

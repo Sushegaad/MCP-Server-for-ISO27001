@@ -5,14 +5,22 @@ control_mappings: ["8.25","8.26","8.27","8.28","8.29","8.30","8.31"]
 ---
 # Secure Development Workflow Procedure
 
-**Organisation:** {{organisation_name}}
-**Procedure ID:** {{procedure_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
-**Parent Policy ID:** {{parent_policy_id}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Roles and Responsibilities
+4. Secure Design
+5. Secure Coding Standards
+6. Pre-Commit and Pre-Merge Checks
+7. Code Review
+8. Testing Environments
+9. Dynamic Application Security Testing (DAST) and Penetration Testing
+10. Deployment and Release
+11. Record Keeping
+12. Document Control
 
 ---
 
@@ -97,9 +105,7 @@ Developers must adhere to the following minimum standards:
 
 Threat models, SAST/SCA/DAST reports, code review records, penetration test reports, and deployment logs are retained for a minimum of 3 years.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

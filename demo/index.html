@@ -226,6 +226,19 @@
     <div class="nav-item" onclick="showSection('tools')">
       <span class="nav-icon">🔧</span> Tools Explorer
     </div>
+    <div class="sidebar-section">Operations</div>
+    <div class="nav-item" onclick="showSection('procedures')">
+      <span class="nav-icon">📋</span> Procedures
+    </div>
+    <div class="nav-item" onclick="showSection('mgmt-review')">
+      <span class="nav-icon">📝</span> Mgmt Review
+    </div>
+    <div class="nav-item" onclick="showSection('improvement')">
+      <span class="nav-icon">🎯</span> Improvement Plan
+    </div>
+    <div class="nav-item" onclick="showSection('evidence')">
+      <span class="nav-icon">🗂️</span> Evidence
+    </div>
   </nav>
   <div class="sidebar-footer">
     <p>Real server: <a href="https://npmjs.com/package/iso27001-mcp" target="_blank">npm install -g iso27001-mcp</a></p>
@@ -535,6 +548,448 @@
       <div class="card">
         <input class="tool-search" type="text" placeholder="🔍  Search tools, parameters, or descriptions…" oninput="filterTools(this.value)">
         <div id="tools-container" class="mt-3"></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 5: PROCEDURE GENERATOR                          -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-procedures" class="section">
+      <style>
+        .proc-type-list { display: flex; flex-direction: column; gap: 4px; max-height: 420px; overflow-y: auto; }
+        .proc-type-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; font-size: 13px; }
+        .proc-type-item:hover { border-color: var(--accent); background: var(--accent-light); }
+        .proc-type-item.selected { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 500; }
+        .proc-type-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+        .proc-type-meta { font-size: 10px; color: var(--muted); margin-top: 1px; }
+      </style>
+      <div class="notice">
+        💡 Simulates <strong>generate_procedure</strong>, <strong>get_procedure</strong>, and <strong>export_procedure</strong>. Select a procedure type, fill in your org details, and click Generate to render a full ISO 27001-aligned operating procedure document.
+      </div>
+      <div class="grid-2">
+        <!-- Left: form -->
+        <div class="card">
+          <div class="card-title mb-4">Procedure Details</div>
+          <div class="policy-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Organisation Name</label>
+                <input type="text" id="proc-org" value="Acme Financial Services Ltd">
+              </div>
+              <div class="form-group">
+                <label>Procedure Owner</label>
+                <input type="text" id="proc-owner" value="Chief Information Security Officer">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Approver</label>
+                <input type="text" id="proc-approver" value="Chief Executive Officer">
+              </div>
+              <div class="form-group">
+                <label>Effective Date</label>
+                <input type="date" id="proc-date" value="2026-07-01">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Version</label>
+                <input type="text" id="proc-version" value="1.0">
+              </div>
+              <div class="form-group">
+                <label>Parent Policy ID (optional)</label>
+                <input type="text" id="proc-policy-id" placeholder="e.g. POL-2026-001">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Scope</label>
+              <textarea id="proc-scope" style="min-height:64px">All personnel, systems, and third parties operating within the ISMS boundary of Acme Financial Services Ltd.</textarea>
+            </div>
+            <button class="btn btn-primary w-full" onclick="generateProcedure()" id="proc-gen-btn">
+              📋 Generate Procedure
+            </button>
+          </div>
+        </div>
+        <!-- Right: type selector -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Procedure Type</div>
+              <div class="card-sub">Select one of 12 ISO 27001 operating procedures</div>
+            </div>
+            <span class="badge badge-blue" id="proc-selected-badge">None selected</span>
+          </div>
+          <div class="proc-type-list" id="proc-type-list">
+            <div class="proc-type-item selected" onclick="selectProcType(this,'incident_handling')" data-type="incident_handling">
+              <span class="proc-type-icon">🚨</span>
+              <div><div>Incident Handling</div><div class="proc-type-meta">Controls: 5.24, 5.25, 5.26, 5.27, 5.28, 6.8</div></div>
+            </div>
+            <div class="proc-type-item" onclick="selectProcType(this,'access_provisioning')" data-type="access_provisioning">
+              <span class="proc-type-icon">🔑</span>
+              <div><div>Access Provisioning</div><div class="proc-type-meta">Controls: 5.15, 5.16, 5.17, 5.18, 8.2, 8.5</div></div>
+            </div>
+            <div class="proc-type-item" onclick="selectProcType(this,'backup_restore')" data-type="backup_restore">
+              <span class="proc-type-icon">💾</span>
+              <div><div>Backup &amp; Restore</div><div class="proc-type-meta">Controls: 8.13, 8.6</div></div>
+            </div>
+            <div class="proc-type-item" onclick="selectProcType(this,'change_management')" data-type="change_management">
+              <span class="proc-type-icon">🔄</span>
+              <div><div>Change Management</div><div class="proc-type-meta">Controls: 8.32, 8.20, 8.9</div></div>
+            </div>
+            <div class="proc-type-item" onclick="selectProcType(this,'vulnerability_management')" data-type="vulnerability_management">
+              <span class="proc-type-icon">🛡️</span>
+              <div><div>Vulnerability Management</div><div class="proc-type-meta">Controls: 8.8, 8.19, 5.7</div></div>
+            </div>
+            <div class="proc-type-item" onclick="selectProcType(this,'supplier_onboarding')" data-type="supplier_onboarding">
+              <span class="proc-type-icon">🤝</span>
+              <div><div>Supplier Onboarding</div><div class="proc-type-meta">Controls: 5.19, 5.20, 5.21, 5.22, 5.23</div></div>
+            </div>
+            <div class="proc-type-item" onclick="selectProcType(this,'asset_management')" data-type="asset_management">
+              <span class="proc-type-icon">📦</span>
+              <div><div>Asset Management</div><div class="proc-type-meta">Controls: 5.9, 5.10, 5.11, 5.12, 5.14</div></div>
+            </div>
+            <div class="proc-type-item" onclick="selectProcType(this,'cryptography_key_management')" data-type="cryptography_key_management">
+              <span class="proc-type-icon">🔐</span>
+              <div><div>Cryptography &amp; Key Mgmt</div><div class="proc-type-meta">Controls: 8.24, 8.25</div></div>
+            </div>
+            <div class="proc-type-item" onclick="selectProcType(this,'business_continuity')" data-type="business_continuity">
+              <span class="proc-type-icon">♻️</span>
+              <div><div>Business Continuity</div><div class="proc-type-meta">Controls: 5.29, 5.30, 8.14</div></div>
+            </div>
+            <div class="proc-type-item" onclick="selectProcType(this,'secure_development')" data-type="secure_development">
+              <span class="proc-type-icon">💻</span>
+              <div><div>Secure Development</div><div class="proc-type-meta">Controls: 8.25, 8.26, 8.27, 8.28, 8.29, 8.31</div></div>
+            </div>
+            <div class="proc-type-item" onclick="selectProcType(this,'physical_security')" data-type="physical_security">
+              <span class="proc-type-icon">🏢</span>
+              <div><div>Physical Security</div><div class="proc-type-meta">Controls: 7.1–7.14</div></div>
+            </div>
+            <div class="proc-type-item" onclick="selectProcType(this,'data_classification')" data-type="data_classification">
+              <span class="proc-type-icon">🏷️</span>
+              <div><div>Data Classification &amp; Handling</div><div class="proc-type-meta">Controls: 5.12, 5.13, 5.14, 8.10, 8.11, 8.12</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Output -->
+      <div class="card mt-3 hidden" id="proc-output-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title" id="proc-output-title">Procedure Output</div>
+            <div class="card-sub">Rendered from ISO 27001-aligned Mustache partial</div>
+          </div>
+          <span class="badge badge-green">✓ Generated</span>
+        </div>
+        <div id="proc-output-area" class="policy-output"></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 6: MANAGEMENT REVIEW                            -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-mgmt-review" class="section">
+      <style>
+        .review-phase-bar { display: flex; align-items: center; gap: 0; margin-bottom: 20px; }
+        .review-phase { flex: 1; text-align: center; padding: 10px 8px; font-size: 12px; font-weight: 500; background: var(--bg); border: 1px solid var(--border); color: var(--muted); transition: all 0.2s; }
+        .review-phase:first-child { border-radius: 8px 0 0 8px; }
+        .review-phase:last-child { border-radius: 0 8px 8px 0; }
+        .review-phase.phase-active { background: var(--accent); color: white; border-color: var(--accent); }
+        .review-phase.phase-done { background: var(--green-light); color: var(--green); border-color: var(--green); }
+        .mgmt-input-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 7px; border: 1px solid var(--border); margin-bottom: 6px; cursor: pointer; transition: all 0.15s; }
+        .mgmt-input-item:hover { background: var(--bg); }
+        .mgmt-input-item.checked { border-color: var(--green); background: var(--green-light); }
+        .mgmt-input-cb { width: 16px; height: 16px; border-radius: 3px; border: 2px solid var(--border); flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.15s; }
+        .mgmt-input-item.checked .mgmt-input-cb { background: var(--green); border-color: var(--green); color: white; }
+        .mgmt-output-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 7px; border: 1px solid var(--border); margin-bottom: 6px; cursor: pointer; transition: all 0.15s; }
+        .mgmt-output-item:hover { background: var(--bg); }
+        .mgmt-output-item.selected { border-color: var(--accent); background: var(--accent-light); }
+        .mgmt-stats-bar { display: flex; gap: 12px; padding: 12px 16px; background: var(--bg); border-radius: 8px; margin-top: 16px; font-size: 12px; align-items: center; flex-wrap: wrap; }
+      </style>
+      <div class="notice">
+        💡 Simulates <strong>create_management_review</strong>, <strong>record_review_input</strong>, <strong>record_review_output</strong>, and <strong>complete_management_review</strong>. ISO 27001:2022 Clause 9.3 requires all 7 inputs to be addressed and at least 1 output decision recorded before the review can be completed.
+      </div>
+
+      <!-- Phase bar -->
+      <div class="review-phase-bar">
+        <div class="review-phase phase-done" id="mgmt-phase-1">✓ 1. Created</div>
+        <div class="review-phase phase-active" id="mgmt-phase-2">2. Recording Inputs &amp; Outputs</div>
+        <div class="review-phase" id="mgmt-phase-3">3. Completed</div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Inputs -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">§9.3.2 Required Inputs</div>
+              <div class="card-sub">All 7 must be addressed before completion</div>
+            </div>
+            <span class="badge badge-slate" id="mgmt-input-count">0 / 7</span>
+          </div>
+          <div id="mgmt-inputs-list">
+            <div class="mgmt-input-item" id="mgmt-inp-0" onclick="toggleMgmtInput(0)">
+              <div class="mgmt-input-cb" id="mgmt-cb-0"></div>
+              <div><div style="font-size:13px;font-weight:500">Previous action status</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Status of actions from previous management reviews</div></div>
+            </div>
+            <div class="mgmt-input-item" id="mgmt-inp-1" onclick="toggleMgmtInput(1)">
+              <div class="mgmt-input-cb" id="mgmt-cb-1"></div>
+              <div><div style="font-size:13px;font-weight:500">External &amp; internal issues</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Changes in external and internal issues relevant to the ISMS</div></div>
+            </div>
+            <div class="mgmt-input-item" id="mgmt-inp-2" onclick="toggleMgmtInput(2)">
+              <div class="mgmt-input-cb" id="mgmt-cb-2"></div>
+              <div><div style="font-size:13px;font-weight:500">Interested party needs</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Changes in needs and expectations of interested parties</div></div>
+            </div>
+            <div class="mgmt-input-item" id="mgmt-inp-3" onclick="toggleMgmtInput(3)">
+              <div class="mgmt-input-cb" id="mgmt-cb-3"></div>
+              <div><div style="font-size:13px;font-weight:500">ISMS performance</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Feedback on performance incl. nonconformities, audit results, monitoring, KPIs</div></div>
+            </div>
+            <div class="mgmt-input-item" id="mgmt-inp-4" onclick="toggleMgmtInput(4)">
+              <div class="mgmt-input-cb" id="mgmt-cb-4"></div>
+              <div><div style="font-size:13px;font-weight:500">Interested party feedback</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Feedback from interested parties (customers, regulators, partners)</div></div>
+            </div>
+            <div class="mgmt-input-item" id="mgmt-inp-5" onclick="toggleMgmtInput(5)">
+              <div class="mgmt-input-cb" id="mgmt-cb-5"></div>
+              <div><div style="font-size:13px;font-weight:500">Risk assessment results</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Results of risk assessment and status of risk treatment plan</div></div>
+            </div>
+            <div class="mgmt-input-item" id="mgmt-inp-6" onclick="toggleMgmtInput(6)">
+              <div class="mgmt-input-cb" id="mgmt-cb-6"></div>
+              <div><div style="font-size:13px;font-weight:500">Improvement opportunities</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Opportunities for continual improvement of the ISMS</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outputs -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">§9.3.3 Required Outputs</div>
+              <div class="card-sub">Select at least one output decision</div>
+            </div>
+            <span class="badge badge-slate" id="mgmt-output-badge">Not selected</span>
+          </div>
+          <div class="mgmt-output-item" id="mgmt-out-improvement" onclick="setMgmtOutput('improvement_decision')">
+            <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:8px;transition:all 0.15s" id="mgmt-radio-improvement"></div>
+            <div>
+              <div style="font-size:13px;font-weight:500">improvement_decision</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Decisions and actions related to continual improvement opportunities</div>
+              <div style="margin-top:6px;font-size:11px;color:var(--muted);font-style:italic">Example: "Implement automated vulnerability scanning by Q3 2026 · Owner: Head of Engineering"</div>
+            </div>
+          </div>
+          <div class="mgmt-output-item" id="mgmt-out-isms" onclick="setMgmtOutput('isms_change_decision')">
+            <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:8px;transition:all 0.15s" id="mgmt-radio-isms"></div>
+            <div>
+              <div style="font-size:13px;font-weight:500">isms_change_decision</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Decisions on changes needed to the ISMS including resources and objectives</div>
+              <div style="margin-top:6px;font-size:11px;color:var(--muted);font-style:italic">Example: "Expand ISMS scope to include GCP production environment by 2026-09-01"</div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+            <button class="btn btn-primary w-full" id="mgmt-complete-btn" onclick="completeMgmtReview()" disabled style="opacity:0.5;cursor:not-allowed">
+              ✓ Complete Management Review
+            </button>
+            <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px">Requires 7/7 inputs + 1 output</div>
+          </div>
+
+          <div class="mgmt-stats-bar">
+            <div>Inputs: <strong id="mgmt-stat-inputs">0/7</strong></div>
+            <div style="width:1px;height:16px;background:var(--border)"></div>
+            <div>Output: <strong id="mgmt-stat-output" style="color:var(--muted)">not selected</strong></div>
+            <div style="width:1px;height:16px;background:var(--border)"></div>
+            <div>Status: <span class="badge badge-amber" id="mgmt-status-badge">in_progress</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completion message -->
+      <div class="card mt-3 hidden" id="mgmt-complete-card" style="border-color:var(--green);background:var(--green-light)">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="font-size:36px">✅</div>
+          <div>
+            <div style="font-size:15px;font-weight:600;color:var(--green)">Management Review Completed</div>
+            <div style="font-size:13px;color:#065f46;margin-top:4px">All 7 §9.3.2 inputs addressed · Output decision recorded · Review record saved to ISMS database</div>
+            <div style="font-size:12px;color:#065f46;margin-top:6px">Review ID: <span class="font-mono">MR-2026-001</span> · Completed: <span id="mgmt-complete-date"></span> · Clause 9.3 satisfied</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 7: IMPROVEMENT PLAN                             -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-improvement" class="section">
+      <style>
+        .kanban-col { display: flex; flex-direction: column; gap: 10px; }
+        .kanban-col-header { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); padding-bottom: 10px; border-bottom: 2px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .opp-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px; transition: all 0.2s; }
+        .opp-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .opp-card-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; line-height: 1.4; }
+        .opp-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+        .opp-move-btn { background: none; border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px; font-size: 11px; cursor: pointer; transition: all 0.15s; color: var(--muted); }
+        .opp-move-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .toast { position: fixed; bottom: 24px; right: 24px; background: #1e293b; color: white; padding: 12px 18px; border-radius: 8px; font-size: 13px; z-index: 1000; animation: slideIn 0.2s ease; display: none; }
+        .toast.error { background: var(--red); }
+        .toast.success { background: var(--green); }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .health-badge-excellent { background: #d1fae5; color: #065f46; }
+        .health-badge-good { background: #d1fae5; color: #065f46; }
+        .health-badge-fair { background: #fef3c7; color: #92400e; }
+        .health-badge-needs_attention { background: #fed7aa; color: #9a3412; }
+        .health-badge-at_risk { background: #fee2e2; color: #991b1b; }
+      </style>
+      <div class="notice">
+        💡 Simulates <strong>create_improvement_opportunity</strong>, <strong>update_improvement_opportunity</strong>, and <strong>list_improvement_opportunities</strong>. ISO 27001:2022 Clause 10.1 requires a forward-only status workflow — opportunities cannot be moved backwards.
+      </div>
+
+      <!-- Health bar -->
+      <div class="card mb-4" style="padding:14px 20px">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:12px;color:var(--muted)">Backlog Health Rating</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">Based on open opportunity count</div>
+          </div>
+          <span class="badge badge-amber" id="health-rating-badge" style="font-size:13px;padding:6px 14px">computing…</span>
+          <div style="flex:1;text-align:right;font-size:12px;color:var(--muted)">
+            Open: <strong id="health-open-count">–</strong> · In Progress: <strong id="health-inprog-count">–</strong> · Closed: <strong id="health-closed-count">–</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kanban board -->
+      <div class="grid-4">
+        <div class="kanban-col">
+          <div class="kanban-col-header"><span>Open</span><span class="badge badge-slate" id="col-count-open">0</span></div>
+          <div id="kanban-open"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-header"><span>In Progress</span><span class="badge badge-blue" id="col-count-in_progress">0</span></div>
+          <div id="kanban-in_progress"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-header"><span>Implemented</span><span class="badge badge-amber" id="col-count-implemented">0</span></div>
+          <div id="kanban-implemented"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-header"><span>Closed</span><span class="badge badge-green" id="col-count-closed">0</span></div>
+          <div id="kanban-closed"></div>
+        </div>
+      </div>
+      <div class="toast" id="opp-toast"></div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 8: EVIDENCE TEMPLATES                           -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-evidence" class="section">
+      <style>
+        .evid-template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .evid-template-card { border: 1px solid var(--border); border-radius: 8px; padding: 14px; cursor: pointer; transition: all 0.15s; }
+        .evid-template-card:hover { border-color: var(--accent); background: var(--accent-light); }
+        .evid-template-card.selected { border-color: var(--accent); background: var(--accent-light); }
+        .evid-template-name { font-size: 13px; font-weight: 600; color: var(--accent); font-family: monospace; margin-bottom: 4px; }
+        .evid-template-desc { font-size: 12px; color: var(--muted); margin-bottom: 6px; line-height: 1.4; }
+        .evid-template-controls { font-size: 10px; color: var(--muted); }
+      </style>
+      <div class="notice">
+        💡 Simulates <strong>generate_evidence_document</strong>, <strong>get_evidence_document</strong>, and <strong>list_evidence_documents</strong>. Generated documents are dual-written to both the <code>evidence</code> and <code>generated_evidence</code> tables, enabling both tracking and version history.
+      </div>
+
+      <div class="grid-2">
+        <!-- Template selector -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Evidence Document Type</div>
+              <div class="card-sub">6 pre-built ISO 27001 evidence templates</div>
+            </div>
+          </div>
+          <div class="evid-template-grid" id="evid-template-grid">
+            <div class="evid-template-card selected" onclick="selectEvidenceTemplate('access_review_log')" data-type="access_review_log">
+              <div class="evid-template-name">access_review_log</div>
+              <div class="evid-template-desc">Quarterly access rights review log documenting who reviewed, what systems, and findings</div>
+              <div class="evid-template-controls">Controls: 5.15, 5.16, 5.18, 8.2 · Clause 9.1</div>
+            </div>
+            <div class="evid-template-card" onclick="selectEvidenceTemplate('risk_treatment_evidence')" data-type="risk_treatment_evidence">
+              <div class="evid-template-name">risk_treatment_evidence</div>
+              <div class="evid-template-desc">Evidence package for a completed risk treatment action with before/after risk scores</div>
+              <div class="evid-template-controls">Controls: 6.1.3, 8.3 · Clause 8.3</div>
+            </div>
+            <div class="evid-template-card" onclick="selectEvidenceTemplate('training_completion_record')" data-type="training_completion_record">
+              <div class="evid-template-name">training_completion_record</div>
+              <div class="evid-template-desc">Security awareness training completion records with assessment scores and attestation</div>
+              <div class="evid-template-controls">Controls: 6.3, 6.6 · Clause 7.2, 7.3</div>
+            </div>
+            <div class="evid-template-card" onclick="selectEvidenceTemplate('vulnerability_scan_report')" data-type="vulnerability_scan_report">
+              <div class="evid-template-name">vulnerability_scan_report</div>
+              <div class="evid-template-desc">Structured vulnerability scan results with CVE references, severity, and remediation status</div>
+              <div class="evid-template-controls">Controls: 8.8, 8.19, 5.7 · Clause 8.1</div>
+            </div>
+            <div class="evid-template-card" onclick="selectEvidenceTemplate('supplier_assessment')" data-type="supplier_assessment">
+              <div class="evid-template-name">supplier_assessment</div>
+              <div class="evid-template-desc">Third-party supplier security assessment questionnaire results and risk rating</div>
+              <div class="evid-template-controls">Controls: 5.19–5.23 · Clause 8.1</div>
+            </div>
+            <div class="evid-template-card" onclick="selectEvidenceTemplate('internal_audit_evidence')" data-type="internal_audit_evidence">
+              <div class="evid-template-name">internal_audit_evidence</div>
+              <div class="evid-template-desc">Internal audit evidence package with objective evidence references and conformance status</div>
+              <div class="evid-template-controls">Clause 9.2 · All Annex A controls in scope</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <div class="card">
+          <div class="card-title mb-4">Document Details</div>
+          <div class="policy-form">
+            <div class="form-group">
+              <label>Document Title</label>
+              <input type="text" id="evid-title" value="Q2 2026 Access Rights Review — Cloud Systems">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Generated By</label>
+                <input type="text" id="evid-generated-by" value="Jane Smith, Compliance Manager">
+              </div>
+              <div class="form-group">
+                <label>Organisation Name</label>
+                <input type="text" id="evid-org" value="Acme Financial Services Ltd">
+              </div>
+            </div>
+            <div id="evid-dynamic-fields">
+              <!-- Populated by selectEvidenceTemplate() -->
+              <div class="form-group">
+                <label>Review Period</label>
+                <input type="text" id="evid-var1" value="Q2 2026 (April–June)">
+              </div>
+              <div class="form-group">
+                <label>Systems in Scope</label>
+                <input type="text" id="evid-var2" value="AWS IAM, GitHub, Okta, Jira, Confluence">
+              </div>
+              <div class="form-group">
+                <label>Reviewer(s)</label>
+                <input type="text" id="evid-var3" value="Jane Smith, Mike Lee">
+              </div>
+            </div>
+            <button class="btn btn-primary w-full" onclick="generateEvidence()" id="evid-gen-btn">
+              🗂️ Generate Evidence Document
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="card mt-3 hidden" id="evid-output-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title" id="evid-output-title">Evidence Document</div>
+            <div class="card-sub">Dual-written to evidence + generated_evidence tables</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="badge badge-green">✓ Generated</span>
+            <span class="badge badge-blue font-mono" id="evid-doc-id"></span>
+          </div>
+        </div>
+        <div id="evid-output-area" class="policy-output"></div>
       </div>
     </div>
 
@@ -962,6 +1417,10 @@ const SECTION_META = {
   risk:   { title:'Risk Register',     sub:'6 risks across all levels · click any risk to view treatment plan' },
   policy: { title:'Policy Generator',  sub:'12 ISO 27001-aligned policy templates · rendered with your org details' },
   tools:  { title:'Tools Explorer',    sub:'50 MCP tools across 11 groups · all require a valid API key' },
+  procedures:      { title: 'Procedure Generator',   sub: '12 ISO 27001 operating procedures · rendered with Mustache partials' },
+  'mgmt-review':   { title: 'Management Review',      sub: 'ISO 27001:2022 Clause 9.3 · 7 required inputs + at least 1 output · enforced business rule' },
+  improvement:     { title: 'Improvement Plan',        sub: 'Clause 10.1 · forward-only status · health rating based on active backlog' },
+  evidence:        { title: 'Evidence Templates',      sub: '6 evidence document types · dual-write to evidence + generated_evidence tables' },
 };
 
 function showSection(id) {
@@ -974,7 +1433,7 @@ function showSection(id) {
   // fix active nav
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(n => n.classList.remove('active'));
-  const map = { gap: 0, risk: 1, policy: 2, tools: 3 };
+  const map = { gap: 0, risk: 1, policy: 2, tools: 3, procedures: 4, 'mgmt-review': 5, improvement: 6, evidence: 7 };
   navItems[map[id]]?.classList.add('active');
   document.getElementById('topbar-title').textContent = SECTION_META[id].title;
   document.getElementById('topbar-sub').textContent = SECTION_META[id].sub;
@@ -1294,6 +1753,532 @@ function filterTools(q) { renderTools(q); }
 
 
 // ══════════════════════════════════════════════════════════════
+//  PROCEDURE GENERATOR
+// ══════════════════════════════════════════════════════════════
+let selectedProcType = 'incident_handling';
+
+const PROC_TYPE_LABELS = {
+  incident_handling: 'Incident Handling Procedure',
+  access_provisioning: 'Access Provisioning Procedure',
+  backup_restore: 'Backup & Restore Procedure',
+  change_management: 'Change Management Procedure',
+  vulnerability_management: 'Vulnerability Management Procedure',
+  supplier_onboarding: 'Supplier Onboarding Procedure',
+  asset_management: 'Asset Management Procedure',
+  cryptography_key_management: 'Cryptography & Key Management Procedure',
+  business_continuity: 'Business Continuity Procedure',
+  secure_development: 'Secure Development Procedure',
+  physical_security: 'Physical Security Procedure',
+  data_classification: 'Data Classification & Handling Procedure',
+};
+
+const PROC_CONTROLS = {
+  incident_handling: '5.24, 5.25, 5.26, 5.27, 5.28, 6.8',
+  access_provisioning: '5.15, 5.16, 5.17, 5.18, 8.2, 8.5',
+  backup_restore: '8.13, 8.6',
+  change_management: '8.32, 8.20, 8.9',
+  vulnerability_management: '8.8, 8.19, 5.7',
+  supplier_onboarding: '5.19, 5.20, 5.21, 5.22, 5.23',
+  asset_management: '5.9, 5.10, 5.11, 5.12, 5.14',
+  cryptography_key_management: '8.24, 8.25',
+  business_continuity: '5.29, 5.30, 8.14',
+  secure_development: '8.25, 8.26, 8.27, 8.28, 8.29, 8.31',
+  physical_security: '7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8',
+  data_classification: '5.12, 5.13, 5.14, 8.10, 8.11, 8.12',
+};
+
+const PROC_STEPS = {
+  incident_handling: ['Detection & Identification — monitor SIEM alerts; staff report via security@org.com', 'Initial Assessment — classify severity (P1/P2/P3) within 15 min; P1 triggers war-room', 'Containment — isolate affected systems; revoke compromised credentials; block IOCs', 'Eradication — remove malware; patch vulnerability; rebuild from clean baseline if required', 'Recovery — restore from verified backup; validate system integrity; re-admit to production', 'Post-Incident Review — hold PIR within 5 business days; update threat model; close CAR'],
+  access_provisioning: ['Request — manager submits Access Request Form (ARF) via ITSM portal', 'Approval — data owner approves within 2 business days; risk review if privileged access', 'Provisioning — IT team grants access in IdP; MFA enforced for all accounts', 'Notification — user receives welcome email with security responsibilities', 'Quarterly Review — access rights reviewed every 90 days by data owner', 'Revocation — HR triggers immediate revocation on employee departure'],
+  backup_restore: ['Automated Daily Backup — incremental backups at 02:00 UTC; weekly full backup on Sunday', 'Backup Validation — automated restore test monthly; results logged to evidence table', 'Offsite Replication — backups replicated to secondary region within 1 hour (RPO)', 'Retention — 30-day rolling retention for daily; 12-month for weekly; 7-year for compliance data', 'Restore Procedure — raise ITSM ticket; authorisation from data owner; restore to isolated env first', 'RTO Target — critical systems restored within 4 hours; standard within 24 hours'],
+  change_management: ['Change Request — initiator submits RFC with impact and rollback plan via ITSM', 'Risk Assessment — CAB reviews all Standard, Major, and Emergency changes', 'Approval — Standard: automated; Major: CAB vote; Emergency: CISO approval', 'Testing — changes tested in non-production; security review for infrastructure changes', 'Deployment — approved change deployed in maintenance window; monitoring enabled', 'Post-Implementation Review — verify expected outcome; document actual vs planned impact'],
+  vulnerability_management: ['Discovery — weekly authenticated scans (Tenable/Qualys); SBOM analysis monthly', 'Triage — CVSSv3 score + asset criticality → internal severity (P1–P4)', 'Assignment — P1 critical: remediate in 24h; P2 high: 7 days; P3 medium: 30 days; P4: 90 days', 'Remediation — apply patches; deploy WAF rules; implement compensating controls', 'Verification — re-scan to confirm remediation; update risk register', 'Reporting — monthly vulnerability KPI dashboard to CISO; quarterly trend report to Board'],
+  supplier_onboarding: ['Due Diligence — security questionnaire (SIG Lite or custom); review certifications (ISO 27001, SOC 2)', 'Risk Classification — classify supplier as Critical/High/Medium/Low based on data access', 'Contract Review — DPA, security clauses, right-to-audit, incident notification SLAs', 'Technical Controls — confirm MFA, encryption in transit/rest, data residency requirements', 'Onboarding Approval — CISO approval for Critical; Head of Procurement for High/Medium', 'Annual Review — reassess all Critical and High suppliers annually; event-triggered for incidents'],
+  asset_management: ['Discovery — automated asset discovery via network scan and cloud APIs weekly', 'Classification — owner assigns data classification (Public/Internal/Confidential/Restricted)', 'Registration — asset recorded in CMDB with owner, location, classification, review date', 'Handling Rules — apply controls per classification (encryption, DLP, access controls)', 'Change Tracking — CMDB updated within 48h of any asset change or decommission', 'Annual Audit — physical and logical asset audit annually; reconcile with CMDB'],
+  cryptography_key_management: ['Key Generation — generate keys using approved algorithms (AES-256, RSA-4096, ECC-384)', 'Key Storage — keys stored in HSM or managed KMS (AWS KMS, Azure Key Vault); never in plaintext', 'Key Distribution — keys distributed via secure channels; split-knowledge for master keys', 'Key Rotation — automated rotation: data keys annually; signing keys 2 years; root keys 5 years', 'Key Revocation — immediate revocation on compromise; update all dependent services within 4h', 'Key Destruction — crypto-erasure with certificate of destruction; logged to audit trail'],
+  business_continuity: ['BIA — Business Impact Analysis reviewed annually; RTO/RPO defined per system tier', 'BCP Activation — CISO declares incident; BCP team assembled within 30 minutes', 'Crisis Communications — stakeholder notification tree; regulator notification within 72h if required', 'Failover — activate DR environment; DNS cutover; verify service availability', 'Business Recovery — restore business processes in priority order per BIA tiers', 'Testing — full DR test annually; tabletop exercise quarterly; results feed improvement plan'],
+  secure_development: ['Security Requirements — security requirements defined at project initiation (threat model)', 'Design Review — security architecture review for all new services; STRIDE threat modelling', 'Secure Coding — developers follow OWASP Top 10; mandatory SAST in CI/CD pipeline', 'Code Review — all code requires peer review with security checklist sign-off', 'DAST/Pen Test — DAST scan on staging; annual penetration test by accredited third party', 'Deployment — secrets management via Vault; no hardcoded credentials; SBOM generated'],
+  physical_security: ['Perimeter Security — access controlled via badge readers; CCTV monitored 24/7', 'Visitor Management — all visitors registered; escorted at all times in secure areas', 'Clean Desk Policy — no sensitive information left unattended; screens locked when absent', 'Equipment Security — server room access restricted; equipment removal requires authorisation', 'Environmental Controls — temperature, humidity, UPS, and fire suppression monitored', 'Disposal — media sanitised per NIST 800-88; certificate of destruction retained'],
+  data_classification: ['Classification — data classified as Public, Internal, Confidential, or Restricted at creation', 'Labelling — documents labelled in header/footer; emails tagged; files metadata-tagged', 'Handling — Restricted: encrypted at rest + in transit, need-to-know access, no cloud without DPA', 'Storage — classification drives storage location; Restricted data not on personal devices', 'Transmission — Confidential/Restricted sent via encrypted channels only; no unencrypted email', 'Disposal — data disposed per retention schedule; secure deletion certified'],
+};
+
+function selectProcType(el, type) {
+  document.querySelectorAll('.proc-type-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedProcType = type;
+  document.getElementById('proc-selected-badge').textContent = type.replace(/_/g, ' ');
+}
+
+function generateProcedure() {
+  const btn = document.getElementById('proc-gen-btn');
+  btn.innerHTML = '<span class="spinner"></span> Generating…';
+  btn.disabled = true;
+  setTimeout(() => {
+    const org = document.getElementById('proc-org').value || 'Your Organisation';
+    const owner = document.getElementById('proc-owner').value || 'CISO';
+    const approver = document.getElementById('proc-approver').value || 'CEO';
+    const date = document.getElementById('proc-date').value || '2026-07-01';
+    const version = document.getElementById('proc-version').value || '1.0';
+    const policyId = document.getElementById('proc-policy-id').value;
+    const scope = document.getElementById('proc-scope').value || 'All systems and personnel.';
+    const type = selectedProcType;
+    const title = PROC_TYPE_LABELS[type] || type;
+    const controls = PROC_CONTROLS[type] || '';
+    const steps = PROC_STEPS[type] || ['Step 1', 'Step 2', 'Step 3'];
+
+    const procId = 'PROC-2026-' + String(Math.floor(Math.random()*900)+100);
+    const md = `# ${title}
+
+**Document ID:** ${procId}
+**Organisation:** ${org}
+**Version:** ${version}
+**Owner:** ${owner}
+**Approver:** ${approver}
+**Effective Date:** ${date}
+**Review Cycle:** Annual${policyId ? '\n**Parent Policy:** ' + policyId : ''}
+**Related Controls:** ${controls}
+
+---
+
+## 1. Purpose
+
+This procedure defines the ${title.replace(' Procedure','').toLowerCase()} process for **${org}**, ensuring consistent and auditable implementation of the controls required by ISO/IEC 27001:2022.
+
+## 2. Scope
+
+${scope}
+
+## 3. Roles & Responsibilities
+
+| Role | Responsibility |
+|------|---------------|
+| **${owner}** | Procedure owner; accountable for compliance and annual review |
+| **All Personnel** | Follow this procedure; report deviations immediately |
+| **IT / Security Team** | Execute technical steps; maintain evidence records |
+| **${approver}** | Annual sign-off and approval of significant changes |
+
+## 4. Procedure Steps
+
+${steps.map((s, i) => `### Step ${i+1}: ${s}`).join('\n\n')}
+
+## 5. Evidence & Records
+
+All procedure executions must be logged in the ISMS evidence register within 24 hours of completion. Retain records for a minimum of 3 years or as required by applicable regulations.
+
+| Record | Location | Retention |
+|--------|----------|-----------|
+| Execution log | ISMS platform → Evidence | 3 years |
+| Approvals | ITSM / email archive | 3 years |
+| Exceptions | Risk register | Until risk closed |
+
+## 6. Exceptions & Deviations
+
+Any deviation from this procedure requires written approval from **${owner}**. Unapproved deviations are reportable as nonconformities under Clause 10.2.
+
+## 7. Review
+
+This procedure shall be reviewed annually, or following a significant incident, audit finding, or change in scope. Version history is maintained in the ISMS document management system.
+
+---
+
+*Approved by: ${approver} | Effective: ${date} | ISO/IEC 27001:2022 Annex A controls: ${controls}*`;
+
+    const card = document.getElementById('proc-output-card');
+    document.getElementById('proc-output-title').textContent = title;
+    document.getElementById('proc-output-area').innerHTML = renderMarkdown(md);
+    card.classList.remove('hidden');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    btn.innerHTML = '📋 Generate Procedure';
+    btn.disabled = false;
+  }, 800);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  MANAGEMENT REVIEW
+// ══════════════════════════════════════════════════════════════
+const mgmtInputs = [false, false, false, false, false, false, false];
+let mgmtOutput = null;
+let mgmtReviewCompleted = false;
+
+function toggleMgmtInput(n) {
+  if (mgmtReviewCompleted) return;
+  mgmtInputs[n] = !mgmtInputs[n];
+  const item = document.getElementById('mgmt-inp-' + n);
+  const cb = document.getElementById('mgmt-cb-' + n);
+  if (mgmtInputs[n]) {
+    item.classList.add('checked');
+    cb.textContent = '✓';
+  } else {
+    item.classList.remove('checked');
+    cb.textContent = '';
+  }
+  updateCompleteBtn();
+}
+
+function setMgmtOutput(type) {
+  if (mgmtReviewCompleted) return;
+  mgmtOutput = type;
+  ['improvement', 'isms'].forEach(key => {
+    const item = document.getElementById('mgmt-out-' + key);
+    const radio = document.getElementById('mgmt-radio-' + key);
+    const isSelected = (key === 'improvement' && type === 'improvement_decision') ||
+                       (key === 'isms' && type === 'isms_change_decision');
+    if (isSelected) {
+      item.classList.add('selected');
+      radio.style.background = 'var(--accent)';
+      radio.style.borderColor = 'var(--accent)';
+      radio.textContent = '●';
+      radio.style.color = 'white';
+    } else {
+      item.classList.remove('selected');
+      radio.style.background = '';
+      radio.style.borderColor = 'var(--border)';
+      radio.textContent = '';
+    }
+  });
+  updateCompleteBtn();
+}
+
+function updateCompleteBtn() {
+  const checkedCount = mgmtInputs.filter(Boolean).length;
+  const btn = document.getElementById('mgmt-complete-btn');
+  const inputBadge = document.getElementById('mgmt-input-count');
+  const statInputs = document.getElementById('mgmt-stat-inputs');
+  const statOutput = document.getElementById('mgmt-stat-output');
+  const statusBadge = document.getElementById('mgmt-status-badge');
+  const outputBadge = document.getElementById('mgmt-output-badge');
+
+  inputBadge.textContent = checkedCount + ' / 7';
+  statInputs.textContent = checkedCount + '/7';
+
+  if (checkedCount === 7) {
+    inputBadge.className = 'badge badge-green';
+  } else {
+    inputBadge.className = 'badge badge-slate';
+  }
+
+  if (mgmtOutput) {
+    statOutput.textContent = mgmtOutput;
+    statOutput.style.color = 'var(--green)';
+    outputBadge.textContent = 'Selected';
+    outputBadge.className = 'badge badge-green';
+  } else {
+    statOutput.textContent = 'not selected';
+    statOutput.style.color = 'var(--muted)';
+    outputBadge.textContent = 'Not selected';
+    outputBadge.className = 'badge badge-slate';
+  }
+
+  const ready = checkedCount === 7 && mgmtOutput !== null;
+  btn.disabled = !ready;
+  btn.style.opacity = ready ? '1' : '0.5';
+  btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+
+  if (ready) {
+    statusBadge.textContent = 'ready_to_complete';
+    statusBadge.className = 'badge badge-green';
+  } else {
+    statusBadge.textContent = 'in_progress';
+    statusBadge.className = 'badge badge-amber';
+  }
+}
+
+function completeMgmtReview() {
+  if (!mgmtInputs.every(Boolean) || !mgmtOutput) return;
+  mgmtReviewCompleted = true;
+  document.getElementById('mgmt-phase-2').className = 'review-phase phase-done';
+  document.getElementById('mgmt-phase-2').textContent = '✓ 2. Inputs & Outputs Recorded';
+  document.getElementById('mgmt-phase-3').className = 'review-phase phase-active';
+  document.getElementById('mgmt-phase-3').textContent = '✓ 3. Completed';
+  document.getElementById('mgmt-status-badge').textContent = 'completed';
+  document.getElementById('mgmt-status-badge').className = 'badge badge-green';
+  document.getElementById('mgmt-complete-btn').textContent = '✓ Review Completed';
+  document.getElementById('mgmt-complete-btn').disabled = true;
+  document.getElementById('mgmt-complete-date').textContent = new Date().toISOString().slice(0,10);
+  const card = document.getElementById('mgmt-complete-card');
+  card.classList.remove('hidden');
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  IMPROVEMENT PLAN (KANBAN)
+// ══════════════════════════════════════════════════════════════
+const STATUS_ORDER = ['open', 'in_progress', 'implemented', 'closed'];
+
+const OPPORTUNITIES = [
+  { id: 'opp-1', title: 'Implement automated vulnerability scanning in CI/CD pipeline', priority: 'critical', source: 'risk_assessment', status: 'open' },
+  { id: 'opp-2', title: 'Enforce MFA on all SaaS tools via IdP conditional access policies', priority: 'high', source: 'audit', status: 'open' },
+  { id: 'opp-3', title: 'Migrate secrets from config files to HashiCorp Vault', priority: 'critical', source: 'risk_assessment', status: 'open' },
+  { id: 'opp-4', title: 'Establish quarterly security KPI dashboard for Board reporting', priority: 'medium', source: 'management_review', status: 'in_progress' },
+  { id: 'opp-5', title: 'Conduct annual penetration test and remediate all critical findings', priority: 'high', source: 'audit', status: 'in_progress' },
+  { id: 'opp-6', title: 'Ship audit logs to immutable SIEM within 60 seconds', priority: 'medium', source: 'internal', status: 'implemented' },
+  { id: 'opp-7', title: 'Complete ISO 27001:2022 transition gap assessment', priority: 'high', source: 'management_review', status: 'implemented' },
+  { id: 'opp-8', title: 'Run phishing simulation campaign for all staff', priority: 'low', source: 'incident', status: 'closed' },
+  { id: 'opp-9', title: 'Implement Dependabot and monthly SBOM audit process', priority: 'medium', source: 'risk_assessment', status: 'closed' },
+];
+
+const PRIORITY_COLORS = {
+  critical: { bg:'#fee2e2', color:'#991b1b' },
+  high:     { bg:'#fed7aa', color:'#9a3412' },
+  medium:   { bg:'#fef3c7', color:'#92400e' },
+  low:      { bg:'#d1fae5', color:'#065f46' },
+};
+
+const SOURCE_COLORS = {
+  audit:             'badge-red',
+  risk_assessment:   'badge-amber',
+  incident:          'badge-purple',
+  management_review: 'badge-blue',
+  internal:          'badge-slate',
+};
+
+function computeHealthRating() {
+  const openCount = OPPORTUNITIES.filter(o => o.status === 'open').length;
+  if (openCount <= 2) return 'excellent';
+  if (openCount <= 4) return 'good';
+  if (openCount <= 6) return 'fair';
+  if (openCount <= 9) return 'needs_attention';
+  return 'at_risk';
+}
+
+function renderKanban() {
+  const cols = { open: '', in_progress: '', implemented: '', closed: '' };
+  const counts = { open: 0, in_progress: 0, implemented: 0, closed: 0 };
+
+  OPPORTUNITIES.forEach(o => {
+    counts[o.status]++;
+    const pc = PRIORITY_COLORS[o.priority] || PRIORITY_COLORS.medium;
+    const sc = SOURCE_COLORS[o.source] || 'badge-slate';
+    const curIdx = STATUS_ORDER.indexOf(o.status);
+    const canAdvance = curIdx < STATUS_ORDER.length - 1;
+    const nextStatus = canAdvance ? STATUS_ORDER[curIdx + 1] : null;
+
+    cols[o.status] += `<div class="opp-card" id="card-${o.id}">
+      <div class="opp-card-title">${o.title}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
+        <span class="badge" style="background:${pc.bg};color:${pc.color}">${o.priority}</span>
+        <span class="badge ${sc}">${o.source.replace(/_/g,' ')}</span>
+      </div>
+      <div class="opp-card-footer">
+        <span style="font-size:10px;color:var(--muted);font-family:monospace">${o.id}</span>
+        ${canAdvance ? `<button class="opp-move-btn" onclick="moveOpportunity('${o.id}', 'forward')">→ ${nextStatus.replace('_',' ')}</button>` : '<span style="font-size:10px;color:var(--muted)">✓ final</span>'}
+      </div>
+    </div>`;
+  });
+
+  Object.keys(cols).forEach(status => {
+    const el = document.getElementById('kanban-' + status);
+    if (el) el.innerHTML = cols[status] || `<div style="font-size:12px;color:var(--muted);padding:10px 0;text-align:center">No items</div>`;
+    const countEl = document.getElementById('col-count-' + status);
+    if (countEl) countEl.textContent = counts[status];
+  });
+
+  const health = computeHealthRating();
+  const healthEl = document.getElementById('health-rating-badge');
+  if (healthEl) {
+    healthEl.textContent = health.replace('_', ' ');
+    healthEl.className = 'badge health-badge-' + health;
+    healthEl.style.fontSize = '13px';
+    healthEl.style.padding = '6px 14px';
+  }
+  const openCount = OPPORTUNITIES.filter(o => o.status === 'open').length;
+  const inProgCount = OPPORTUNITIES.filter(o => o.status === 'in_progress').length;
+  const closedCount = OPPORTUNITIES.filter(o => o.status === 'closed').length;
+  const openEl = document.getElementById('health-open-count');
+  const inEl = document.getElementById('health-inprog-count');
+  const closedEl = document.getElementById('health-closed-count');
+  if (openEl) openEl.textContent = openCount;
+  if (inEl) inEl.textContent = inProgCount;
+  if (closedEl) closedEl.textContent = closedCount;
+}
+
+function moveOpportunity(id, direction) {
+  if (direction === 'backward') {
+    showToast('Forward-only status: opportunities cannot be moved backwards (Clause 10.1)', 'error');
+    return;
+  }
+  const opp = OPPORTUNITIES.find(o => o.id === id);
+  if (!opp) return;
+  const curIdx = STATUS_ORDER.indexOf(opp.status);
+  if (curIdx >= STATUS_ORDER.length - 1) return;
+  opp.status = STATUS_ORDER[curIdx + 1];
+  renderKanban();
+  showToast('Moved to ' + opp.status.replace('_', ' '), 'success');
+}
+
+function showToast(msg, type) {
+  const toast = document.getElementById('opp-toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.className = 'toast ' + (type || '');
+  toast.style.display = 'block';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  EVIDENCE TEMPLATES
+// ══════════════════════════════════════════════════════════════
+let selectedEvidenceType = 'access_review_log';
+
+const EVID_DYNAMIC_FIELDS = {
+  access_review_log: [
+    { label: 'Review Period', id: 'evid-var1', value: 'Q2 2026 (April–June)' },
+    { label: 'Systems in Scope', id: 'evid-var2', value: 'AWS IAM, GitHub, Okta, Jira, Confluence' },
+    { label: 'Reviewer(s)', id: 'evid-var3', value: 'Jane Smith, Mike Lee' },
+  ],
+  risk_treatment_evidence: [
+    { label: 'Risk ID', id: 'evid-var1', value: 'RISK-2026-003' },
+    { label: 'Treatment Action', id: 'evid-var2', value: 'Enforce MFA via IdP conditional access' },
+    { label: 'Residual Risk Score', id: 'evid-var3', value: '4 (Low) — down from 15 (Critical)' },
+  ],
+  training_completion_record: [
+    { label: 'Training Course', id: 'evid-var1', value: 'Annual Security Awareness 2026' },
+    { label: 'Completion Rate', id: 'evid-var2', value: '97% (194/200 staff)' },
+    { label: 'Average Assessment Score', id: 'evid-var3', value: '84%' },
+  ],
+  vulnerability_scan_report: [
+    { label: 'Scan Tool & Version', id: 'evid-var1', value: 'Tenable.io 10.6.2' },
+    { label: 'Scan Target', id: 'evid-var2', value: 'Production AWS VPC (10.0.0.0/16)' },
+    { label: 'Critical/High CVEs Found', id: 'evid-var3', value: '2 Critical, 7 High, 23 Medium' },
+  ],
+  supplier_assessment: [
+    { label: 'Supplier Name', id: 'evid-var1', value: 'DataSync Technologies Ltd' },
+    { label: 'Data Accessed', id: 'evid-var2', value: 'Customer transaction records (Confidential)' },
+    { label: 'Risk Rating', id: 'evid-var3', value: 'High — annual review required' },
+  ],
+  internal_audit_evidence: [
+    { label: 'Audit Name', id: 'evid-var1', value: 'Q2 2026 Internal ISMS Audit' },
+    { label: 'Auditor', id: 'evid-var2', value: 'Sarah Johnson (Internal Auditor)' },
+    { label: 'Findings', id: 'evid-var3', value: '1 Major NC, 2 Observations, 3 OFIs' },
+  ],
+};
+
+function selectEvidenceTemplate(type) {
+  selectedEvidenceType = type;
+  document.querySelectorAll('.evid-template-card').forEach(c => c.classList.remove('selected'));
+  const card = document.querySelector(`.evid-template-card[data-type="${type}"]`);
+  if (card) card.classList.add('selected');
+
+  const fields = EVID_DYNAMIC_FIELDS[type] || [];
+  const container = document.getElementById('evid-dynamic-fields');
+  if (container) {
+    container.innerHTML = fields.map(f => `
+      <div class="form-group">
+        <label>${f.label}</label>
+        <input type="text" id="${f.id}" value="${f.value}">
+      </div>
+    `).join('');
+  }
+
+  const titleMap = {
+    access_review_log: 'Access Rights Review — ',
+    risk_treatment_evidence: 'Risk Treatment Evidence — ',
+    training_completion_record: 'Training Completion Record — ',
+    vulnerability_scan_report: 'Vulnerability Scan Report — ',
+    supplier_assessment: 'Supplier Security Assessment — ',
+    internal_audit_evidence: 'Internal Audit Evidence — ',
+  };
+  const titleEl = document.getElementById('evid-title');
+  if (titleEl) titleEl.value = (titleMap[type] || '') + new Date().toISOString().slice(0,7);
+}
+
+function generateEvidence() {
+  const btn = document.getElementById('evid-gen-btn');
+  btn.innerHTML = '<span class="spinner"></span> Generating…';
+  btn.disabled = true;
+  setTimeout(() => {
+    const type = selectedEvidenceType;
+    const title = document.getElementById('evid-title').value || 'Evidence Document';
+    const generatedBy = document.getElementById('evid-generated-by').value || 'System';
+    const org = document.getElementById('evid-org').value || 'Your Organisation';
+    const var1El = document.getElementById('evid-var1');
+    const var2El = document.getElementById('evid-var2');
+    const var3El = document.getElementById('evid-var3');
+    const var1 = var1El ? var1El.value : '';
+    const var2 = var2El ? var2El.value : '';
+    const var3 = var3El ? var3El.value : '';
+    const fields = EVID_DYNAMIC_FIELDS[type] || [];
+    const f1 = fields[0] ? fields[0].label : 'Field 1';
+    const f2 = fields[1] ? fields[1].label : 'Field 2';
+    const f3 = fields[2] ? fields[2].label : 'Field 3';
+
+    const docId = 'EVID-' + Date.now().toString(36).toUpperCase();
+    const now = new Date().toISOString().slice(0,10);
+
+    const typeDescriptions = {
+      access_review_log: 'Quarterly access rights review log documenting all user access rights reviewed, confirming least-privilege principle application and removal of orphaned accounts.',
+      risk_treatment_evidence: 'Evidence package confirming completion of a risk treatment action, including before/after risk scores and verification by the risk owner.',
+      training_completion_record: 'Security awareness training completion record demonstrating staff competency and ISMS awareness per Clause 7.2 and 7.3.',
+      vulnerability_scan_report: 'Structured vulnerability assessment report providing objective evidence of technical vulnerability management per Annex A control 8.8.',
+      supplier_assessment: 'Third-party supplier security assessment providing evidence of due diligence in supplier selection and ongoing monitoring per Annex A 5.19–5.23.',
+      internal_audit_evidence: 'Internal audit evidence package providing objective evidence for the conduct of the audit, findings, and conformance determination per Clause 9.2.',
+    };
+
+    const md = `# ${title}
+
+**Document ID:** ${docId}
+**Document Type:** ${type}
+**Organisation:** ${org}
+**Generated By:** ${generatedBy}
+**Generation Date:** ${now}
+**Status:** current
+**Tables:** evidence, generated_evidence (dual-write confirmed)
+
+---
+
+## Document Summary
+
+${typeDescriptions[type] || 'ISO 27001 evidence document.'}
+
+## Evidence Details
+
+| Field | Value |
+|-------|-------|
+| ${f1} | ${var1} |
+| ${f2} | ${var2} |
+| ${f3} | ${var3} |
+| Generated By | ${generatedBy} |
+| Organisation | ${org} |
+| Date | ${now} |
+
+## Conformance Statement
+
+This document constitutes objective evidence as required by ISO/IEC 27001:2022. It has been generated, reviewed, and stored in accordance with the organisation's Document Control Procedure.
+
+**Evidence Owner:** ${generatedBy}
+**Approved For Use:** Yes — stored in ISMS evidence register
+**Retention Period:** 3 years from document date
+
+## Audit Trail
+
+| Timestamp | Action | Actor |
+|-----------|--------|-------|
+| ${now}T${new Date().toTimeString().slice(0,8)}Z | document_generated | ${generatedBy} |
+| ${now}T${new Date().toTimeString().slice(0,8)}Z | written_to_evidence_table | system |
+| ${now}T${new Date().toTimeString().slice(0,8)}Z | written_to_generated_evidence_table | system |
+
+---
+
+*Evidence Document ID: ${docId} · Type: ${type} · ISO/IEC 27001:2022 compliance evidence*
+*This document is tamper-evident: hash recorded in audit log at generation time.*`;
+
+    document.getElementById('evid-output-title').textContent = title;
+    document.getElementById('evid-doc-id').textContent = docId;
+    document.getElementById('evid-output-area').innerHTML = renderMarkdown(md);
+    const outCard = document.getElementById('evid-output-card');
+    outCard.classList.remove('hidden');
+    outCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    btn.innerHTML = '🗂️ Generate Evidence Document';
+    btn.disabled = false;
+  }, 700);
+}
+
+
+// ══════════════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════════════
 renderControls();
@@ -1301,6 +2286,7 @@ renderHeatmap();
 renderRiskSummary();
 renderRiskList();
 renderTools();
+renderKanban();
 </script>
 </body>
 </html>

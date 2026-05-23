@@ -3,9 +3,12 @@
  *
  * writeAuditEvent() — inserts to audit_log table + appends JSON-L line
  *
- * The row_hash is computed in application code (not a SQL generated column)
- * over "timestamp|tool|key_hash|outcome" before the INSERT, providing
- * tamper evidence: any modification to those four fields is detectable.
+ * The row_hash is HMAC-SHA256 (keyed with HMAC_SECRET) over ALL fields:
+ *   id | timestamp | tool | key_hash | role | params_json |
+ *   outcome | error_message | duration_ms | prev_hash
+ *
+ * prev_hash chains each row to its predecessor — any gap or reorder
+ * in the chain is detectable via verifyRowHash + verifyChain.
  *
  * NEVER logged:
  *   • Raw API keys
@@ -14,10 +17,10 @@
  *   • Full policy content (log policy_id + version only)
  */
 
-import { createHash, randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import { appendFileSync } from "node:fs";
 import { getDb } from "../db/connection.js";
-import { getEnv } from "../security/secrets.js";
+import { requireEnv, getEnv } from "../security/secrets.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -34,6 +37,7 @@ export interface AuditEventInput {
 export interface AuditEvent extends AuditEventInput {
   id:        string;
   timestamp: string;
+  prev_hash: string | null;   // null for the first row (genesis); links to previous row_hash
   row_hash:  string;
 }
 
@@ -44,22 +48,44 @@ export interface AuditEvent extends AuditEventInput {
  *   1. The `audit_log` SQLite table
  *   2. The flat JSON-L file at AUDIT_LOG_PATH (for SIEM ingestion)
  *
- * The row_hash covers: timestamp | tool | key_hash | outcome
+ * row_hash = HMAC-SHA256(HMAC_SECRET, all 9 fields + prev_hash)
+ * prev_hash chains each row to its predecessor for tamper-chain detection.
  */
 export function writeAuditEvent(event: AuditEventInput): AuditEvent {
   const db        = getDb();
   const id        = randomUUID();
   const timestamp = new Date().toISOString().replace("T", " ").split(".")[0] + "Z";
 
-  const row_hash = createHash("sha256")
-    .update(`${timestamp}|${event.tool}|${event.key_hash}|${event.outcome}`)
+  // ── Hash chain: load the most recent row_hash ─────────────
+  const prevRow = db.prepare(
+    "SELECT row_hash FROM audit_log ORDER BY rowid DESC LIMIT 1",
+  ).get() as { row_hash: string } | undefined;
+  const prev_hash = prevRow?.row_hash ?? null;
+
+  // ── HMAC-SHA256 over all fields + chain link ──────────────
+  const hmacSecret = requireEnv("HMAC_SECRET");
+  const hashInput = [
+    id,
+    timestamp,
+    event.tool,
+    event.key_hash,
+    event.role,
+    event.params_json,
+    event.outcome,
+    event.error_message ?? "",
+    String(event.duration_ms),
+    prev_hash ?? "GENESIS",
+  ].join("|");
+
+  const row_hash = createHmac("sha256", hmacSecret)
+    .update(hashInput)
     .digest("hex");
 
   db.prepare(`
     INSERT INTO audit_log
       (id, timestamp, tool, key_hash, role, params_json,
-       outcome, error_message, duration_ms, row_hash)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       outcome, error_message, duration_ms, prev_hash, row_hash)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     timestamp,
@@ -70,10 +96,11 @@ export function writeAuditEvent(event: AuditEventInput): AuditEvent {
     event.outcome,
     event.error_message,
     event.duration_ms,
+    prev_hash,
     row_hash,
   );
 
-  const full: AuditEvent = { id, timestamp, row_hash, ...event };
+  const full: AuditEvent = { id, timestamp, prev_hash, row_hash, ...event };
 
   // Append to flat JSON-L file — non-fatal if the write fails
   try {
@@ -90,12 +117,27 @@ export function writeAuditEvent(event: AuditEventInput): AuditEvent {
 
 /**
  * Verify the row_hash of an audit log entry.
- * Returns true if the stored hash matches a fresh computation.
+ * Returns true if the stored hash matches a fresh HMAC-SHA256 computation
+ * over all fields including the chain link (prev_hash).
  * Used in admin tooling and tests to detect tampering.
  */
 export function verifyRowHash(entry: AuditEvent): boolean {
-  const expected = createHash("sha256")
-    .update(`${entry.timestamp}|${entry.tool}|${entry.key_hash}|${entry.outcome}`)
+  const hmacSecret = requireEnv("HMAC_SECRET");
+  const hashInput = [
+    entry.id,
+    entry.timestamp,
+    entry.tool,
+    entry.key_hash,
+    entry.role,
+    entry.params_json,
+    entry.outcome,
+    entry.error_message ?? "",
+    String(entry.duration_ms),
+    entry.prev_hash ?? "GENESIS",
+  ].join("|");
+
+  const expected = createHmac("sha256", hmacSecret)
+    .update(hashInput)
     .digest("hex");
   return expected === entry.row_hash;
 }

@@ -5,14 +5,18 @@ control_mappings: ["5.24","5.25","5.26","5.27","5.28","6.8"]
 ---
 # Incident Handling Procedure
 
-**Organisation:** {{organisation_name}}
-**Procedure ID:** {{procedure_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
-**Parent Policy ID:** {{parent_policy_id}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Incident Severity Classification
+4. Roles and Responsibilities
+5. Incident Response Phases
+6. Regulatory and Breach Notification
+7. Evidence Preservation
+8. Document Control
 
 ---
 
@@ -97,9 +101,7 @@ This procedure provides a structured, repeatable approach for detecting, reporti
 
 All logs, artefacts, and documentation collected during an incident must be preserved in a tamper-evident manner and retained for a minimum of 3 years.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

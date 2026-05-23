@@ -5,14 +5,19 @@ control_mappings: ["8.13","8.6","5.30"]
 ---
 # Backup and Restore Procedure
 
-**Organisation:** {{organisation_name}}
-**Procedure ID:** {{procedure_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
-**Parent Policy ID:** {{parent_policy_id}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Backup Schedule and Retention
+4. Roles and Responsibilities
+5. Backup Process
+6. Restore Process
+7. Restore Testing
+8. Record Keeping
+9. Document Control
 
 ---
 
@@ -91,9 +96,7 @@ This procedure defines the backup schedules, retention policies, storage require
 
 Backup job logs, monitoring reports, restore requests, and restore test results are retained for a minimum of 3 years.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

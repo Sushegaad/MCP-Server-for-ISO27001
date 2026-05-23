@@ -5,14 +5,22 @@ control_mappings: ["8.15","8.16","8.17","5.33","5.36"]
 ---
 # Audit Log Review Procedure
 
-**Organisation:** {{organisation_name}}
-**Procedure ID:** {{procedure_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
-**Parent Policy ID:** {{parent_policy_id}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Log Sources and Events to Capture
+4. Roles and Responsibilities
+5. Log Collection and Centralisation
+6. Log Integrity and Protection
+7. Log Review Schedule
+8. Review Process
+9. Anomaly Indicators
+10. Log Retention
+11. Record Keeping
+12. Document Control
 
 ---
 
@@ -120,9 +128,7 @@ Retention periods may be extended by legal holds or regulatory requirements.
 
 Daily triage records, weekly review logs, monthly review reports, and SIEM configuration change records are retained for a minimum of 3 years.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

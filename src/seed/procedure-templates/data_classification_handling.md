@@ -5,14 +5,21 @@ control_mappings: ["5.12","5.13","5.14","7.10","8.10"]
 ---
 # Data Classification and Handling Procedure
 
-**Organisation:** {{organisation_name}}
-**Procedure ID:** {{procedure_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
-**Parent Policy ID:** {{parent_policy_id}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Classification Levels
+4. Roles and Responsibilities
+5. Classification Process
+6. Handling Requirements
+7. Handling Special Category Data
+8. Information Transfer
+9. Data Retention and Disposal
+10. Record Keeping
+11. Document Control
 
 ---
 
@@ -104,9 +111,7 @@ Personal data (as defined by applicable data protection law) and special categor
 
 Classification decisions, access lists for Restricted data, transfer logs, and disposal records are retained for a minimum of 3 years.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

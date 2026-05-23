@@ -453,13 +453,160 @@ CREATE INDEX IF NOT EXISTS idx_procedures_type
   ON procedures(procedure_type, status);
 `;
 
+const MIGRATION_0004 = `-- ============================================================
+-- iso27001-mcp  Migration 0004 — Management Review & Improvement Plan
+-- Clause 9.3 (Management Review) and Clause 10.1 (Improvement Opportunities)
+-- ============================================================
+
+-- ── Management Reviews (ISO 27001:2022 Clause 9.3) ───────────
+
+CREATE TABLE IF NOT EXISTS management_reviews (
+  id           TEXT PRIMARY KEY NOT NULL,
+  title        TEXT NOT NULL,
+  review_date  TEXT NOT NULL,
+  reviewers    TEXT NOT NULL,
+  scope_notes  TEXT,
+  status       TEXT NOT NULL DEFAULT 'planned' CHECK (status IN ('planned','in_progress','completed')),
+  completed_at TEXT,
+  completed_by TEXT,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── Review Inputs (ISO 27001:2022 Clause 9.3.2) ──────────────
+
+CREATE TABLE IF NOT EXISTS review_inputs (
+  id             TEXT PRIMARY KEY NOT NULL,
+  review_id      TEXT NOT NULL REFERENCES management_reviews(id) ON DELETE CASCADE,
+  input_category TEXT NOT NULL CHECK (input_category IN (
+    'previous_action_status',
+    'external_internal_issues',
+    'interested_party_needs',
+    'isms_performance',
+    'interested_party_feedback',
+    'risk_assessment_results',
+    'improvement_opportunities'
+  )),
+  summary    TEXT NOT NULL,
+  details    TEXT,
+  trend      TEXT CHECK (trend IN ('improving','stable','declining','insufficient_data')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(review_id, input_category)
+);
+
+-- ── Review Outputs (ISO 27001:2022 Clause 9.3.3) ─────────────
+
+CREATE TABLE IF NOT EXISTS review_outputs (
+  id          TEXT PRIMARY KEY NOT NULL,
+  review_id   TEXT NOT NULL REFERENCES management_reviews(id) ON DELETE CASCADE,
+  output_type TEXT NOT NULL CHECK (output_type IN (
+    'improvement_decision',
+    'isms_change_decision'
+  )),
+  decision   TEXT NOT NULL,
+  owner      TEXT,
+  due_date   TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── Improvement Opportunities (ISO 27001:2022 Clause 10.1) ───
+
+CREATE TABLE IF NOT EXISTS improvement_opportunities (
+  id          TEXT PRIMARY KEY NOT NULL,
+  title       TEXT NOT NULL,
+  description TEXT NOT NULL,
+  source      TEXT NOT NULL CHECK (source IN (
+    'management_review','risk_assessment','audit','monitoring','other'
+  )),
+  priority    TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high','critical')),
+  owner       TEXT,
+  target_date TEXT,
+  status      TEXT NOT NULL DEFAULT 'open' CHECK (status IN (
+    'open','in_progress','implemented','closed'
+  )),
+  review_id   TEXT REFERENCES management_reviews(id) ON DELETE SET NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── Performance Indexes ───────────────────────────────────────
+
+CREATE INDEX IF NOT EXISTS idx_management_reviews_status
+  ON management_reviews(status, review_date DESC);
+
+CREATE INDEX IF NOT EXISTS idx_review_inputs_review
+  ON review_inputs(review_id, input_category);
+
+CREATE INDEX IF NOT EXISTS idx_review_outputs_review
+  ON review_outputs(review_id, output_type);
+
+CREATE INDEX IF NOT EXISTS idx_improvement_opps_status
+  ON improvement_opportunities(status, priority);
+
+CREATE INDEX IF NOT EXISTS idx_improvement_opps_review
+  ON improvement_opportunities(review_id);
+`;
+
+const MIGRATION_0005 = `-- ============================================================
+-- iso27001-mcp  Migration 0005 — Generated Evidence Documents
+-- Supports the generate_evidence_document tool (Group 14).
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS generated_evidence (
+  id                TEXT PRIMARY KEY NOT NULL,
+  template_type     TEXT NOT NULL CHECK (template_type IN (
+    'access_review_attestation',
+    'training_acknowledgement',
+    'supplier_security_questionnaire',
+    'incident_post_mortem',
+    'bcp_test_report',
+    'risk_treatment_sign_off'
+  )),
+  title             TEXT NOT NULL,
+  content           TEXT NOT NULL,
+  organisation_name TEXT NOT NULL,
+  generated_by      TEXT NOT NULL,
+  clause_mappings   TEXT,
+  control_mappings  TEXT,
+  template_vars     TEXT NOT NULL DEFAULT '{}',
+  evidence_id       TEXT REFERENCES evidence(id) ON DELETE SET NULL,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_generated_evidence_type
+  ON generated_evidence(template_type, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_generated_evidence_generated_by
+  ON generated_evidence(generated_by, created_at DESC);
+`;
+
+const MIGRATION_0006 = `-- ============================================================
+-- iso27001-mcp  Migration 0006 — Audit Log HMAC Hardening
+-- Adds prev_hash column to audit_log for hash-chain integrity.
+-- After this migration, row_hash is computed as HMAC-SHA256 over
+-- ALL fields (id, timestamp, tool, key_hash, role, params_json,
+-- outcome, error_message, duration_ms, prev_hash), replacing the
+-- former SHA-256 over 4 fields only.
+-- !! Never edit this file after it has been applied !!
+-- ============================================================
+
+-- SQLite does not support ALTER TABLE ADD COLUMN with NOT NULL
+-- without a default; prev_hash is nullable (NULL = first in chain).
+ALTER TABLE audit_log ADD COLUMN prev_hash TEXT;
+`;
+
 /**
  * All migrations in application order.
  * The runner applies them sequentially, skipping already-applied ones.
  * Never reorder or remove entries — add new entries at the end only.
  */
 export const MIGRATIONS: Migration[] = [
-  { filename: "0001_initial.sql",               sql: MIGRATION_0001 },
-  { filename: "0002_fts_index.sql",             sql: MIGRATION_0002 },
-  { filename: "0003_org_profile_procedures.sql", sql: MIGRATION_0003 },
+  { filename: "0001_initial.sql",                          sql: MIGRATION_0001 },
+  { filename: "0002_fts_index.sql",                        sql: MIGRATION_0002 },
+  { filename: "0003_org_profile_procedures.sql",           sql: MIGRATION_0003 },
+  { filename: "0004_management_review_improvement.sql",    sql: MIGRATION_0004 },
+  { filename: "0005_evidence_documents.sql",               sql: MIGRATION_0005 },
+  { filename: "0006_audit_log_hmac.sql",                   sql: MIGRATION_0006 },
 ];

@@ -23,14 +23,17 @@ describe.skipIf(!!process.env.CI || !supportsNativeDb)("DB operations — migrat
 
   // ── Migration integrity ────────────────────────────────────
 
-  it("migrations create the _migrations table with exactly 3 rows", () => {
+  it("migrations create the _migrations table with exactly 6 rows", () => {
     const rows = db
       .prepare("SELECT filename FROM _migrations ORDER BY id")
       .all() as { filename: string }[];
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(6);
     expect(rows[0].filename).toBe("0001_initial.sql");
     expect(rows[1].filename).toBe("0002_fts_index.sql");
     expect(rows[2].filename).toBe("0003_org_profile_procedures.sql");
+    expect(rows[3].filename).toBe("0004_management_review_improvement.sql");
+    expect(rows[4].filename).toBe("0005_evidence_documents.sql");
+    expect(rows[5].filename).toBe("0006_audit_log_hmac.sql");
   });
 
   it("all expected core tables exist after migration", () => {
@@ -42,6 +45,11 @@ describe.skipIf(!!process.env.CI || !supportsNativeDb)("DB operations — migrat
       "evidence", "audit_log",
       // Migration 0003
       "organization_profile", "procedures", "procedure_versions",
+      // Migration 0004
+      "management_reviews", "review_inputs", "review_outputs",
+      "improvement_opportunities",
+      // Migration 0005
+      "generated_evidence",
     ];
     for (const table of tables) {
       const row = db
@@ -92,6 +100,17 @@ describe.skipIf(!!process.env.CI || !supportsNativeDb)("DB operations — migrat
     } finally {
       closeTestDb(db2);
     }
+  });
+
+  // ── Migration 0006 — audit_log.prev_hash ──────────────────
+
+  it("audit_log has prev_hash column after migration 0006", () => {
+    // PRAGMA table_info returns one row per column
+    const cols = db
+      .prepare("PRAGMA table_info(audit_log)")
+      .all() as { name: string }[];
+    const colNames = cols.map((c) => c.name);
+    expect(colNames).toContain("prev_hash");
   });
 
   // ── FTS5 search ────────────────────────────────────────────

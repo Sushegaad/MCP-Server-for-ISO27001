@@ -12,7 +12,7 @@ import Mustache from "mustache";
 import { getDb } from "../db/connection.js";
 import { newId, now, addMonths, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
-import { loadTemplate, stripFrontmatter } from "./template-utils.js";
+import { loadTemplate, loadPartials, stripFrontmatter } from "./template-utils.js";
 import { loadOrgProfileDefaults } from "./org-profile.js";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -130,7 +130,9 @@ export function handleCreateProcedure(args: Record<string, unknown>): ToolResult
     next_review_date:  next_review,
     version:           "1.0",
     parent_policy_id:  resolvedPolicyId ?? "N/A",
-  });
+    clause_mappings:   clauseMappings.join(", "),
+    control_mappings:  controlMappings.join(", "),
+  }, loadPartials());
 
   db.prepare(`
     INSERT INTO procedures
@@ -335,7 +337,9 @@ export function handleUpdateProcedure(args: Record<string, unknown>): ToolResult
     next_review_date:  current.next_review_date,
     version:           `${newVersion}.0`,
     parent_policy_id:  current.policy_id ?? "N/A",
-  });
+    clause_mappings:   clauseMappings.join(", "),
+    control_mappings:  controlMappings.join(", "),
+  }, loadPartials());
 
   const newRelatedControls = related_controls
     ? JSON.stringify(related_controls)

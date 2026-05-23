@@ -1,5 +1,5 @@
 /**
- * iso27001-mcp — Zod input schemas for all 50 tools
+ * iso27001-mcp — Zod input schemas for all 63 tools
  *
  * One named schema per tool. Used in the 11-step pipeline (step 7: Zod parse)
  * before sanitisation and business logic run.
@@ -491,6 +491,145 @@ export const ExportProcedureSchema = z.object({
   format:       formatMarkdownJson,
 });
 
+// ── Group 12: Management Review (Clause 9.3) ─────────────────
+
+const reviewStatusEnum = z.enum(["planned", "in_progress", "completed"]);
+
+const reviewInputCategoryEnum = z.enum([
+  "previous_action_status",
+  "external_internal_issues",
+  "interested_party_needs",
+  "isms_performance",
+  "interested_party_feedback",
+  "risk_assessment_results",
+  "improvement_opportunities",
+]);
+
+const reviewOutputTypeEnum = z.enum([
+  "improvement_decision",
+  "isms_change_decision",
+]);
+
+const reviewTrendEnum = z.enum([
+  "improving", "stable", "declining", "insufficient_data",
+]);
+
+export const CreateManagementReviewSchema = z.object({
+  title:        shortText(200),
+  review_date:  date,
+  reviewers:    z.array(shortText(200)).min(1, "At least one reviewer required"),
+  scope_notes:  freeText(2000).optional(),
+});
+
+export const RecordReviewInputSchema = z.object({
+  review_id:      uuid,
+  input_category: reviewInputCategoryEnum,
+  summary:        freeText(2000),
+  details:        freeText(4000).optional(),
+  trend:          reviewTrendEnum.optional(),
+});
+
+export const RecordReviewOutputSchema = z.object({
+  review_id:   uuid,
+  output_type: reviewOutputTypeEnum,
+  decision:    freeText(2000),
+  owner:       shortText(200).optional(),
+  due_date:    date.optional(),
+});
+
+export const CompleteManagementReviewSchema = z.object({
+  review_id:    uuid,
+  completed_by: shortText(200),
+});
+
+export const GetManagementReviewSchema = z.object({
+  review_id: uuid,
+});
+
+export const ListManagementReviewsSchema = z.object({
+  status: reviewStatusEnum.optional(),
+  limit:  paginationLimit,
+  offset: paginationOffset,
+});
+
+// ── Group 13: Improvement Plan (Clause 10.1) ─────────────────
+
+const improvementStatusEnum = z.enum([
+  "open", "in_progress", "implemented", "closed",
+]);
+
+const improvementSourceEnum = z.enum([
+  "management_review", "risk_assessment", "audit", "monitoring", "other",
+]);
+
+const improvementPriorityEnum = z.enum([
+  "low", "medium", "high", "critical",
+]);
+
+export const CreateImprovementOpportunitySchema = z.object({
+  title:       shortText(200),
+  description: freeText(2000),
+  source:      improvementSourceEnum,
+  priority:    improvementPriorityEnum.optional().default("medium"),
+  owner:       shortText(200).optional(),
+  target_date: date.optional(),
+  review_id:   uuid.optional(),
+});
+
+export const UpdateImprovementOpportunitySchema = z.object({
+  opportunity_id: uuid,
+  status:         improvementStatusEnum.optional(),
+  owner:          shortText(200).optional(),
+  target_date:    date.optional(),
+  priority:       improvementPriorityEnum.optional(),
+  description:    freeText(2000).optional(),
+});
+
+export const GetImprovementOpportunitySchema = z.object({
+  opportunity_id: uuid,
+});
+
+export const ListImprovementOpportunitiesSchema = z.object({
+  status:    improvementStatusEnum.optional(),
+  source:    improvementSourceEnum.optional(),
+  priority:  improvementPriorityEnum.optional(),
+  review_id: uuid.optional(),
+  limit:     paginationLimit,
+  offset:    paginationOffset,
+});
+
+// ── Group 14: Evidence Templates ─────────────────────────────
+
+const evidenceTemplateTypeEnum = z.enum([
+  "access_review_attestation",
+  "training_acknowledgement",
+  "supplier_security_questionnaire",
+  "incident_post_mortem",
+  "bcp_test_report",
+  "risk_treatment_sign_off",
+]);
+
+export const GenerateEvidenceDocumentSchema = z.object({
+  template_type:     evidenceTemplateTypeEnum,
+  title:             shortText(200),
+  generated_by:      shortText(200),
+  organisation_name: shortText(200).optional(),   // falls back to org profile
+  control_id:        z.string().min(1).max(20).optional(),
+  vars:              z.record(z.string()).optional().default({}),
+});
+
+export const GetEvidenceDocumentSchema = z.object({
+  document_id: uuid,
+});
+
+export const ListEvidenceDocumentsSchema = z.object({
+  template_type: evidenceTemplateTypeEnum.optional(),
+  generated_by:  shortText(200).optional(),
+  control_id:    z.string().min(1).max(20).optional(),
+  limit:         paginationLimit,
+  offset:        paginationOffset,
+});
+
 // ── Registry: tool name → schema ─────────────────────────────
 
 export const TOOL_SCHEMAS: Record<string, z.ZodTypeAny> = {
@@ -555,6 +694,22 @@ export const TOOL_SCHEMAS: Record<string, z.ZodTypeAny> = {
   update_procedure: UpdateProcedureSchema,
   list_procedures:  ListProceduresSchema,
   export_procedure: ExportProcedureSchema,
+  // Group 12
+  create_management_review:  CreateManagementReviewSchema,
+  record_review_input:       RecordReviewInputSchema,
+  record_review_output:      RecordReviewOutputSchema,
+  complete_management_review:CompleteManagementReviewSchema,
+  get_management_review:     GetManagementReviewSchema,
+  list_management_reviews:   ListManagementReviewsSchema,
+  // Group 13
+  create_improvement_opportunity: CreateImprovementOpportunitySchema,
+  update_improvement_opportunity: UpdateImprovementOpportunitySchema,
+  get_improvement_opportunity:    GetImprovementOpportunitySchema,
+  list_improvement_opportunities: ListImprovementOpportunitiesSchema,
+  // Group 14
+  generate_evidence_document: GenerateEvidenceDocumentSchema,
+  get_evidence_document:      GetEvidenceDocumentSchema,
+  list_evidence_documents:    ListEvidenceDocumentsSchema,
 };
 
 // ── validateToolInput ─────────────────────────────────────────

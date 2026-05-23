@@ -1,7 +1,7 @@
 /**
  * iso27001-mcp — Role-Based Access Control
  *
- * Permission matrix covering all 50 tools × 3 roles.
+ * Permission matrix covering all 63 tools × 3 roles.
  * Roles are hierarchical: admin ⊇ analyst ⊇ viewer.
  *
  * checkPermission(role, toolName) — returns true if allowed
@@ -103,6 +103,28 @@ const TOOL_MIN_ROLE: Record<string, Role> = {
   update_procedure: "admin",
   list_procedures:  "viewer",
   export_procedure: "analyst",
+
+  // ── Group 12: Management Review (Clause 9.3) ─────────────
+  // Schedule/record: admin; read: viewer
+  create_management_review:   "admin",
+  record_review_input:        "admin",
+  record_review_output:       "admin",
+  complete_management_review: "admin",
+  get_management_review:      "viewer",
+  list_management_reviews:    "viewer",
+
+  // ── Group 13: Improvement Plan (Clause 10.1) ─────────────
+  // Create/update: analyst; read: viewer
+  create_improvement_opportunity: "analyst",
+  update_improvement_opportunity: "analyst",
+  get_improvement_opportunity:    "viewer",
+  list_improvement_opportunities: "viewer",
+
+  // ── Group 14: Evidence Templates ──────────────────────────
+  // Generate (writes two tables): analyst; read: viewer
+  generate_evidence_document: "analyst",
+  get_evidence_document:      "viewer",
+  list_evidence_documents:    "viewer",
 };
 
 // ── Public API ────────────────────────────────────────────────
@@ -145,5 +167,5 @@ export function toolsForRole(role: Role): string[] {
     .sort();
 }
 
-/** Total registered tool count — must equal 50. */
+/** Total registered tool count — must equal 63. */
 export const TOTAL_TOOLS = Object.keys(TOOL_MIN_ROLE).length;

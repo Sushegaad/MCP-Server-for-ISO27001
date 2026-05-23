@@ -5,14 +5,19 @@ control_mappings: ["5.29","5.30","8.14"]
 ---
 # Business Continuity Plan Testing Procedure
 
-**Organisation:** {{organisation_name}}
-**Procedure ID:** {{procedure_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
-**Parent Policy ID:** {{parent_policy_id}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Testing Types and Frequency
+4. Roles and Responsibilities
+5. Test Planning
+6. Test Execution
+7. Post-Test Review
+8. Record Keeping
+9. Document Control
 
 ---
 
@@ -107,9 +112,7 @@ Halts are documented with the reason and time.
 
 Test plans, observation checklists, test reports, and action logs are retained for a minimum of 5 years.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

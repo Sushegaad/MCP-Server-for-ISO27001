@@ -5,13 +5,19 @@ control_mappings: ["5.24","5.25","5.26","5.27","5.28","6.8"]
 ---
 # Information Security Incident Response Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Definitions
+4. Incident Classification
+5. Incident Response Process
+6. Evidence Collection
+7. Regulatory Notification
+8. Communication
+9. Document Control
 
 ---
 
@@ -79,9 +85,7 @@ Evidence must be handled in accordance with the Evidence Collection Procedure to
 
 All communications regarding incidents shall be coordinated through {{owner}}. Personnel must not discuss incidents with external parties (including media) without explicit authorisation.
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

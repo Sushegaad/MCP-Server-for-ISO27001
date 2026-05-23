@@ -5,13 +5,18 @@ control_mappings: ["5.29","5.30","8.13","8.14"]
 ---
 # Information Security Business Continuity Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Business Continuity Objectives
+4. ICT Continuity Planning
+5. Testing and Exercises
+6. Plan Maintenance
+7. Roles and Responsibilities
+8. Document Control
 
 ---
 
@@ -74,9 +79,7 @@ Business continuity and ICT recovery plans shall be reviewed and updated:
 - **System Owners**: Ensure recovery procedures exist for their systems
 - **All Personnel**: Understand their roles during a business continuity event and follow established procedures
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}

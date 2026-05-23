@@ -64,4 +64,147 @@ describe("validateToolInput", () => {
       }),
     ).toThrow(McpError);
   });
+
+  // Group 12 — Management Review
+  it("validates create_management_review with required fields", () => {
+    const result = validateToolInput<{ title: string; review_date: string; reviewers: string[] }>(
+      "create_management_review",
+      {
+        title:       "Q1 Management Review",
+        review_date: "2025-03-31",
+        reviewers:   ["CISO", "DPO"],
+      },
+    );
+    expect(result.title).toBe("Q1 Management Review");
+    expect(result.reviewers).toHaveLength(2);
+  });
+
+  it("rejects create_management_review with invalid date format", () => {
+    expect(() =>
+      validateToolInput("create_management_review", {
+        title:       "Q1 Review",
+        review_date: "31-03-2025",   // wrong format
+        reviewers:   ["CISO"],
+      }),
+    ).toThrow(McpError);
+  });
+
+  it("rejects record_review_input with unknown input_category", () => {
+    expect(() =>
+      validateToolInput("record_review_input", {
+        review_id:      "00000000-0000-0000-0000-000000000001",
+        input_category: "board_presentation",   // invalid
+        summary:        "Some summary",
+      }),
+    ).toThrow(McpError);
+  });
+
+  it("validates record_review_input with all 7 valid input_category values", () => {
+    const categories = [
+      "previous_action_status",
+      "external_internal_issues",
+      "interested_party_needs",
+      "isms_performance",
+      "interested_party_feedback",
+      "risk_assessment_results",
+      "improvement_opportunities",
+    ];
+
+    for (const cat of categories) {
+      expect(() =>
+        validateToolInput("record_review_input", {
+          review_id:      "00000000-0000-0000-0000-000000000001",
+          input_category: cat,
+          summary:        "Summary text",
+        }),
+      ).not.toThrow();
+    }
+  });
+
+  // Group 13 — Improvement Plan
+  it("validates create_improvement_opportunity with defaults", () => {
+    const result = validateToolInput<{ priority: string; status?: string }>(
+      "create_improvement_opportunity",
+      {
+        title:       "Automate patch management",
+        description: "Manual process is error-prone",
+        source:      "audit",
+      },
+    );
+    expect(result.priority).toBe("medium");  // default
+  });
+
+  it("rejects create_improvement_opportunity with invalid source", () => {
+    expect(() =>
+      validateToolInput("create_improvement_opportunity", {
+        title:       "Something",
+        description: "Something",
+        source:      "board_request",   // invalid
+      }),
+    ).toThrow(McpError);
+  });
+
+  it("rejects update_improvement_opportunity with invalid status value", () => {
+    expect(() =>
+      validateToolInput("update_improvement_opportunity", {
+        opportunity_id: "00000000-0000-0000-0000-000000000001",
+        status:         "cancelled",   // not in enum
+      }),
+    ).toThrow(McpError);
+  });
+
+  // Group 14 — Evidence Templates
+  it("validates generate_evidence_document with required fields and vars default", () => {
+    const result = validateToolInput<{ vars: Record<string, string> }>(
+      "generate_evidence_document",
+      {
+        template_type: "access_review_attestation",
+        title:         "Q1 Access Review",
+        generated_by:  "alice",
+      },
+    );
+    expect(result.vars).toEqual({});   // default
+  });
+
+  it("rejects generate_evidence_document with unknown template_type", () => {
+    expect(() =>
+      validateToolInput("generate_evidence_document", {
+        template_type: "board_minutes",   // invalid
+        title:         "Meeting",
+        generated_by:  "ciso",
+      }),
+    ).toThrow(McpError);
+  });
+
+  it("accepts generate_evidence_document for all 6 valid template types", () => {
+    const types = [
+      "access_review_attestation",
+      "training_acknowledgement",
+      "supplier_security_questionnaire",
+      "incident_post_mortem",
+      "bcp_test_report",
+      "risk_treatment_sign_off",
+    ];
+    for (const t of types) {
+      expect(() =>
+        validateToolInput("generate_evidence_document", {
+          template_type: t,
+          title:         "Test",
+          generated_by:  "tester",
+        }),
+      ).not.toThrow();
+    }
+  });
+
+  it("validates get_evidence_document requires UUID", () => {
+    expect(() =>
+      validateToolInput("get_evidence_document", { document_id: "not-a-uuid" }),
+    ).toThrow(McpError);
+  });
+
+  it("validates list_evidence_documents with all optional fields omitted", () => {
+    expect(() =>
+      validateToolInput("list_evidence_documents", {}),
+    ).not.toThrow();
+  });
 });

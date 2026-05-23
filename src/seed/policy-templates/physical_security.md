@@ -5,13 +5,20 @@ control_mappings: ["7.1","7.2","7.3","7.4","7.5","7.6","7.7","7.8","7.9","7.10",
 ---
 # Physical Security Policy
 
-**Organisation:** {{organisation_name}}
-**Policy ID:** {{policy_id}}
-**Version:** {{version}}
-**Effective Date:** {{effective_date}}
-**Next Review Date:** {{next_review_date}}
-**Owner:** {{owner}}
-**Approver:** {{approver}}
+{{> org_header}}
+
+## Table of Contents
+
+1. Purpose
+2. Scope
+3. Physical Security Perimeters
+4. Access Control
+5. Clear Desk and Clear Screen
+6. Equipment Protection
+7. Supporting Utilities
+8. Equipment Maintenance and Disposal
+9. Environmental Threats
+10. Document Control
 
 ---
 
@@ -86,9 +93,7 @@ Physical security shall address protection against fire, flood, earthquake, powe
 - Environmental monitoring (temperature, humidity)
 - Regular testing of physical security measures
 
----
 
-**Clause Mappings:** {{clause_mappings}}
-**Control Mappings:** {{control_mappings}}
+{{> revision_block}}
 
-*Approved by: {{approver}} | Effective: {{effective_date}} | Next Review: {{next_review_date}}*
+{{> approver_signature}}
