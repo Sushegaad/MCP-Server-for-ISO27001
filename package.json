@@ -43,7 +43,6 @@
     "postbuild": "rm -rf dist/seed && mkdir -p dist/seed && cp -r src/seed/policy-templates dist/seed/policy-templates && cp -r src/seed/procedure-templates dist/seed/procedure-templates && cp -r src/seed/evidence-templates dist/seed/evidence-templates && cp -r src/seed/partials dist/seed/partials",
     "prepack": "npm run build",
     "prepublishOnly": "npm run typecheck && npm test && npm run build",
-    "postinstall": "node -e \"require('better-sqlite3-multiple-ciphers')\" 2>/dev/null || echo \"\\n⚠️  iso27001-mcp: Native SQLite module failed to load. You may need build tools installed.\\n   macOS: xcode-select --install\\n   Ubuntu/Debian: sudo apt-get install build-essential python3\\n   Windows: https://visualstudio.microsoft.com/downloads/ → Build Tools for Visual Studio → Desktop development with C++\\n   See: https://github.com/Sushegaad/MCP-Server-for-ISO27001#prerequisites\\n\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "test": "vitest run --coverage",

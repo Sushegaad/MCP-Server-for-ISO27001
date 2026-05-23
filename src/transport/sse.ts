@@ -2,13 +2,21 @@
  * SSE transport module for iso27001-mcp.
  * Starts an Express server that exposes the MCP server over Server-Sent Events.
  *
- * Security:
- *   • /sse requires Authorization: Bearer <iso27001_...> at connect time.
- *     The key is validated via HMAC and the role is bound to the session.
- *   • On /messages, the session-bound raw key is injected into _meta.apiKey
- *     before the message is forwarded, preventing mid-stream key substitution.
- *   • MCP_API_KEY env var is accepted as a fallback for deployments that
- *     don't use per-request Authorization headers.
+ * Security model
+ * ──────────────
+ * • /sse requires Authorization: Bearer <iso27001_...> at connect time.
+ *   The raw key is validated once, then immediately discarded.
+ *   Only the HMAC hash (keyHash) is retained — never the raw key.
+ *
+ * • A short-lived session token (iso27001_sess_<UUID>) is created and stored
+ *   in the session entry. This token is injected into every /messages request
+ *   as _meta.apiKey. The tool pipeline resolves it via session-store.ts,
+ *   which returns { keyHash, role } without re-exposing the raw key.
+ *
+ * • Session tokens are removed from the store when the SSE connection closes,
+ *   so they cannot be reused after disconnection.
+ *
+ * • MCP_API_KEY env var is accepted as a fallback for stdio/dev deployments.
  */
 
 import express from "express";
@@ -17,6 +25,7 @@ import { randomUUID } from "crypto";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { validateKey, loadRole } from "../auth/api-key.js";
+import { createSessionToken, removeSessionToken } from "../auth/session-store.js";
 import { McpError } from "../types/errors.js";
 
 // ── Session store ─────────────────────────────────────────────
@@ -25,10 +34,9 @@ interface SessionEntry {
   transport:    SSEServerTransport;
   createdAt:    number;
   lastActivity: number;
-  /** HMAC hash of the key bound at connect time — used for audit log correlation. */
-  keyHash:      string;
-  /** Raw key bound at connect time — injected into every /messages request. */
-  rawKey:       string;
+  /** Opaque session token — injected into _meta.apiKey on each /messages request.
+   *  Maps to { keyHash, role } in session-store.ts. The raw API key is NOT stored. */
+  sessionToken: string;
 }
 
 const sessions = new Map<string, SessionEntry>();
@@ -42,12 +50,12 @@ setInterval(() => {
   const now = Date.now();
   for (const [sessionId, entry] of sessions) {
     if (now - entry.lastActivity > ttlMs) {
-      // Close the underlying response if possible
       try {
         (entry.transport as unknown as { res?: { end(): void } }).res?.end();
       } catch {
         // ignore
       }
+      removeSessionToken(entry.sessionToken);
       sessions.delete(sessionId);
       console.error(`[iso27001-mcp] Session ${sessionId} expired and removed.`);
     }
@@ -60,7 +68,6 @@ export function startSseServer(server: McpServer): void {
   const isProduction = process.env["NODE_ENV"] === "production";
   const port = parseInt(process.env["SSE_PORT"] ?? "3000", 10);
 
-  // TLS warning
   if (isProduction && process.env["BEHIND_TLS_PROXY"] !== "true") {
     console.error(
       "[SECURITY] Running in production without BEHIND_TLS_PROXY=true. Ensure TLS is terminated upstream.",
@@ -69,54 +76,49 @@ export function startSseServer(server: McpServer): void {
 
   const app = express();
 
-  // ── CORS middleware ────────────────────────────────────────
+  // ── CORS ──────────────────────────────────────────────────
   app.use((req, res, next) => {
     const allowedOrigin = isProduction ? "https://claude.ai" : "*";
     res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    if (req.method === "OPTIONS") {
-      res.sendStatus(204);
-      return;
-    }
+    if (req.method === "OPTIONS") { res.sendStatus(204); return; }
     next();
   });
 
-  // ── Parse JSON bodies (for POST /messages) ─────────────────
   app.use(express.json());
 
-  // ── Rate limiting on /messages ─────────────────────────────
   if (isProduction) {
     const limiter = rateLimit({
-      windowMs: 60 * 1000,
-      max: 100,
-      standardHeaders: true,
-      legacyHeaders: false,
+      windowMs: 60 * 1000, max: 100,
+      standardHeaders: true, legacyHeaders: false,
     });
     app.use("/messages", limiter);
   }
 
-  // ── Routes ─────────────────────────────────────────────────
+  // ── Routes ────────────────────────────────────────────────
 
-  // Health check (no auth)
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", uptime: process.uptime(), mode: "sse" });
   });
 
-  // SSE connection endpoint — requires Bearer token auth at connect time
+  // SSE connection endpoint — validates Bearer token and binds a session token.
+  // The raw key is used only here; it is NOT stored after this handler returns.
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   app.get("/sse", async (req, res) => {
-    // ── Auth: extract Bearer token ────────────────────────────
+    // ── Step 1: extract Bearer token ──────────────────────────
     const authHeader = req.headers["authorization"];
     const rawKey =
       (authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null) ??
       process.env["MCP_API_KEY"] ??
       "";
 
+    // ── Step 2: validate once — raw key used here only ────────
     let keyHash: string;
+    let role: string;
     try {
       keyHash = validateKey(rawKey);
-      loadRole(keyHash);  // checks expiry + revocation
+      role    = loadRole(keyHash);   // checks expiry + revocation
     } catch (err) {
       const msg = err instanceof McpError ? err.message : "Invalid or missing API key";
       res.status(401).json({
@@ -125,37 +127,35 @@ export function startSseServer(server: McpServer): void {
         hint: "Pass Authorization: Bearer <iso27001_...> header at connect time.",
       });
       return;
+      // rawKey goes out of scope here — never stored
     }
 
-    const sessionId = randomUUID();
-
-    const transport = new SSEServerTransport("/messages", res);
+    // ── Step 3: create session token (no raw key retained) ────
+    const sessionToken = createSessionToken(keyHash, role);
+    const sessionId    = randomUUID();
+    const transport    = new SSEServerTransport("/messages", res);
 
     sessions.set(sessionId, {
       transport,
       createdAt:    Date.now(),
       lastActivity: Date.now(),
-      keyHash,
-      rawKey,
+      sessionToken,
     });
 
     res.on("close", () => {
+      removeSessionToken(sessionToken);
       sessions.delete(sessionId);
-      console.error(`[iso27001-mcp] SSE connection closed for session ${sessionId}.`);
+      console.error(`[iso27001-mcp] SSE session ${sessionId} closed.`);
     });
 
-    // Connect the MCP server to this transport
     await server.connect(transport);
-
-    // Send the session ID as the first SSE event
     res.write("data: " + JSON.stringify({ type: "session", sessionId }) + "\n\n");
   });
 
-  // Message handler endpoint
+  // Message handler — injects the session token (not the raw key) into _meta.apiKey.
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   app.post("/messages", async (req, res) => {
     const sessionId = req.query["sessionId"] as string | undefined;
-
     if (!sessionId) {
       res.status(400).json({ error: "Missing sessionId query parameter." });
       return;
@@ -167,19 +167,15 @@ export function startSseServer(server: McpServer): void {
       return;
     }
 
-    // Update last activity
     entry.lastActivity = Date.now();
 
-    // ── Pin the session-bound API key ─────────────────────────
-    // Inject the key from connect-time auth into _meta.apiKey so the tool
-    // pipeline always uses the key bound at /sse time.  This prevents a
-    // client from substituting a different (higher-privilege) key mid-stream
-    // via _meta.apiKey in the JSON-RPC body.
-    if (entry.rawKey && req.body && typeof req.body === "object") {
+    // Inject the opaque session token as _meta.apiKey so the tool pipeline
+    // can resolve { keyHash, role } without re-exposing any raw key material.
+    if (req.body && typeof req.body === "object") {
       const body = req.body as { params?: Record<string, unknown> };
       if (body.params && typeof body.params === "object") {
         const meta = ((body.params["_meta"] ?? {}) as Record<string, unknown>);
-        meta["apiKey"] = entry.rawKey;
+        meta["apiKey"] = entry.sessionToken;
         body.params["_meta"] = meta;
       }
     }
@@ -187,7 +183,6 @@ export function startSseServer(server: McpServer): void {
     await entry.transport.handlePostMessage(req, res);
   });
 
-  // ── Start listening ────────────────────────────────────────
   app.listen(port, () => {
     console.error(`[iso27001-mcp] SSE server listening on port ${port}.`);
   });

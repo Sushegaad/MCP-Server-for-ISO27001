@@ -19,8 +19,47 @@
 
 import { createHmac, randomUUID } from "node:crypto";
 import { appendFileSync } from "node:fs";
+import { resolve, extname } from "node:path";
 import { getDb } from "../db/connection.js";
 import { requireEnv, getEnv } from "../security/secrets.js";
+
+// ── AUDIT_LOG_PATH validation ─────────────────────────────────
+
+/**
+ * Resolve and validate the audit log file path.
+ *
+ * Rejects paths that:
+ *   • resolve into privileged system directories (/etc, /proc, /sys, /dev)
+ *   • have a file extension other than .jsonl or .log
+ *
+ * This prevents an attacker with env-var control from redirecting the append
+ * stream into a sensitive system file (e.g. /etc/cron.d/something).
+ */
+function resolveAuditLogPath(raw: string): string {
+  const abs = resolve(raw);
+
+  // Reject system directories
+  const FORBIDDEN_PREFIXES = ["/etc/", "/proc/", "/sys/", "/dev/"];
+  for (const prefix of FORBIDDEN_PREFIXES) {
+    if (abs.startsWith(prefix)) {
+      throw new Error(
+        `[audit] AUDIT_LOG_PATH "${abs}" points to a system directory. ` +
+        `Use a writable application directory instead.`,
+      );
+    }
+  }
+
+  // Reject unexpected file extensions
+  const ext = extname(abs).toLowerCase();
+  if (ext !== "" && ext !== ".jsonl" && ext !== ".log") {
+    throw new Error(
+      `[audit] AUDIT_LOG_PATH "${abs}" has an unexpected extension "${ext}". ` +
+      `Only .jsonl or .log files are permitted.`,
+    );
+  }
+
+  return abs;
+}
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -104,7 +143,7 @@ export function writeAuditEvent(event: AuditEventInput): AuditEvent {
 
   // Append to flat JSON-L file — non-fatal if the write fails
   try {
-    const logPath = getEnv("AUDIT_LOG_PATH", "./audit.jsonl");
+    const logPath = resolveAuditLogPath(getEnv("AUDIT_LOG_PATH", "./audit.jsonl"));
     appendFileSync(logPath, JSON.stringify(full) + "\n", "utf8");
   } catch (err) {
     console.error("[audit] Warning: failed to write to AUDIT_LOG_PATH:", err);

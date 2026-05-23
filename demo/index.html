@@ -241,6 +241,7 @@
     </div>
   </nav>
   <div class="sidebar-footer">
+    <p style="margin-bottom:4px">v0.8.0 · 63 tools · 14 groups</p>
     <p>Real server: <a href="https://npmjs.com/package/iso27001-mcp" target="_blank">npm install -g iso27001-mcp</a></p>
   </div>
 </aside>
@@ -542,7 +543,7 @@
     <!-- ════════════════════════════════════════════════════════ -->
     <div id="section-tools" class="section">
       <div class="notice">
-        💡 All 50 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 25 tools), analyst (writes, 40 tools), admin (all 50 tools).
+        💡 All 63 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 31 tools), analyst (49 tools), admin (all 63 tools).
       </div>
 
       <div class="card">
@@ -1224,6 +1225,51 @@ const TOOLS = [
     { name:'export_procedure', desc:'Export procedure as Markdown or JSON.',
       params:[['procedure_id','✅','uuid',''],['format','✅','enum','markdown | json']],
       example:'{ "procedure_id": "uuid", "format": "markdown" }' },
+  ]},
+  { group:'Group 12 — Management Review (Clause 9.3)', role:'admin', tools:[
+    { name:'create_management_review', desc:'Schedule a management review meeting with chair, attendees, and agenda.',
+      params:[['title','✅','string',''],['review_date','✅','string','YYYY-MM-DD'],['chair','✅','string',''],['attendees','—','array','names'],['agenda','—','string','']],
+      example:'{ "title": "Q2 2026 ISMS Management Review", "review_date": "2026-06-30", "chair": "CISO" }' },
+    { name:'record_review_input', desc:'Record a management review input item (audit results, risk summary, performance metrics, etc.).',
+      params:[['review_id','✅','uuid',''],['input_type','✅','enum','audit_results | risk_summary | objective_performance | nonconformities | previous_actions | changes | resources | stakeholder_feedback | other'],['summary','✅','string',''],['detail','—','string','']],
+      example:'{ "review_id": "uuid", "input_type": "audit_results", "summary": "3 minor NCs raised in Q1 audit, all CARs in progress" }' },
+    { name:'record_review_output', desc:'Record a decision or action item from the review (improvement opportunity, resource decision, policy change).',
+      params:[['review_id','✅','uuid',''],['output_type','✅','enum','improvement_opportunity | resource_decision | policy_change | objective_change | other'],['description','✅','string',''],['owner','—','string',''],['due_date','—','string','YYYY-MM-DD']],
+      example:'{ "review_id": "uuid", "output_type": "improvement_opportunity", "description": "Automate evidence collection for control 8.15", "owner": "Head of Engineering" }' },
+    { name:'complete_management_review', desc:'Mark a management review as complete and record the outcome summary.',
+      params:[['review_id','✅','uuid',''],['outcome_summary','✅','string','']],
+      example:'{ "review_id": "uuid", "outcome_summary": "ISMS performing well. 2 improvement opportunities identified and assigned." }' },
+    { name:'get_management_review', desc:'Fetch a management review with all inputs, outputs, and completion status.',
+      params:[['review_id','✅','uuid','']],
+      example:'{ "review_id": "uuid" }' },
+    { name:'list_management_reviews', desc:'List management reviews with optional status filter.',
+      params:[['status','—','enum','scheduled | in_progress | completed'],['limit','—','integer','default 20']],
+      example:'{ "status": "completed", "limit": 10 }' },
+  ]},
+  { group:'Group 13 — Improvement Plan (Clause 10.1)', role:'analyst', tools:[
+    { name:'create_improvement_opportunity', desc:'Register an improvement opportunity from an audit, management review, incident, or self-assessment.',
+      params:[['title','✅','string',''],['description','✅','string',''],['source','✅','enum','audit | management_review | incident | risk_assessment | self_assessment | other'],['priority','—','enum','low | medium | high | critical'],['owner','—','string',''],['due_date','—','string','YYYY-MM-DD'],['related_controls','—','array','control IDs'],['review_id','—','uuid','link to management review']],
+      example:'{ "title": "Automate access review process", "description": "Manual quarterly access reviews are error-prone", "source": "management_review", "priority": "high", "owner": "IT Security" }' },
+    { name:'update_improvement_opportunity', desc:'Update status, owner, due date, or resolution notes of an improvement opportunity.',
+      params:[['opportunity_id','✅','uuid',''],['status','—','enum','open | in_progress | completed | cancelled'],['owner','—','string',''],['due_date','—','string','YYYY-MM-DD'],['resolution_notes','—','string','required when closing']],
+      example:'{ "opportunity_id": "uuid", "status": "completed", "resolution_notes": "Automated via quarterly IAM report" }' },
+    { name:'get_improvement_opportunity', desc:'Fetch a single improvement opportunity by ID.',
+      params:[['opportunity_id','✅','uuid','']],
+      example:'{ "opportunity_id": "uuid" }' },
+    { name:'list_improvement_opportunities', desc:'List improvement opportunities with optional filters by status, priority, or source.',
+      params:[['status','—','enum','open | in_progress | completed | cancelled'],['priority','—','enum','low | medium | high | critical'],['source','—','enum','audit | management_review | incident | risk_assessment | self_assessment | other'],['limit','—','integer','default 50']],
+      example:'{ "status": "open", "priority": "high" }' },
+  ]},
+  { group:'Group 14 — Evidence Templates', role:'analyst', tools:[
+    { name:'generate_evidence_document', desc:'Render a Mustache evidence template and dual-write to evidence + generated_evidence tables. 6 template types available.',
+      params:[['template_type','✅','enum','access_review_attestation | bcp_test_report | incident_post_mortem | risk_treatment_sign_off | supplier_security_questionnaire | training_acknowledgement'],['title','✅','string',''],['generated_by','✅','string',''],['organisation_name','—','string','auto-injected from org profile'],['control_id','—','string','default: general'],['vars','—','object','additional template variables']],
+      example:'{ "template_type": "access_review_attestation", "title": "Q2 2026 Access Review", "generated_by": "alice", "vars": { "reviewer_name": "Alice Smith", "review_period": "Q2 2026" } }' },
+    { name:'get_evidence_document', desc:'Fetch a generated evidence document by ID including rendered content and clause/control mappings.',
+      params:[['document_id','✅','uuid','']],
+      example:'{ "document_id": "uuid" }' },
+    { name:'list_evidence_documents', desc:'List generated evidence documents with optional filters by template type, author, or linked control.',
+      params:[['template_type','—','enum','any template type'],['generated_by','—','string',''],['control_id','—','string',''],['limit','—','integer','default 20']],
+      example:'{ "template_type": "access_review_attestation", "generated_by": "alice" }' },
   ]},
 ];
 

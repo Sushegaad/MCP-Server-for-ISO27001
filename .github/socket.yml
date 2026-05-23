@@ -1,0 +1,30 @@
+# Socket.dev security scanner configuration
+# https://docs.socket.dev/docs/socket-yml
+
+version: 2
+
+# ── Issue suppressions ────────────────────────────────────────────────────────
+#
+# False positive: AI-detected credential exposure in src/auth/api-key.ts
+#
+# generateKey() intentionally prints the freshly-generated key to stdout ONCE
+# so the operator can copy it to their .env file.  The raw key is printed
+# exactly one time at key-creation time and is NEVER stored in server memory,
+# database, or logs after that call returns.
+#
+# The print-once pattern is by design — the alternative (silently writing the
+# key to a file) is arguably less secure because it leaves key material on
+# disk indefinitely.  All downstream handling uses the HMAC hash (key_hash)
+# exclusively.
+#
+# Detection: socket.dev AI rule "possible-credentials-in-code" (confidence 0.72)
+# File: src/auth/api-key.ts — the console.log inside generateKey()
+#
+issues:
+  - rule: possible-credentials-in-code
+    path: src/auth/api-key.ts
+    reason: >
+      generateKey() prints the raw API key to stdout exactly once so the
+      operator can capture it at key-creation time. This is intentional
+      print-once key delivery. The raw key is never stored server-side
+      after the function returns. All downstream auth uses HMAC(key) only.

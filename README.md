@@ -1,6 +1,6 @@
 # iso27001-mcp
 
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.7.9)](https://socket.dev/npm/package/iso27001-mcp/overview/0.7.9)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.0)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.0)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![Live Demo](https://img.shields.io/badge/demo-live-blue)](https://sushegaad.github.io/MCP-Server-for-ISO27001/)
 
@@ -31,6 +31,20 @@ Claude ──MCP──► iso27001-mcp ──► encrypted SQLite (isms.db)
 - [Configuration](#configuration)
 - [Connecting to Claude](#connecting-to-claude)
 - [Tools Reference](#tools-reference)
+  - [Group 1 — Control Registry](#group-1--control-registry-minimum-role-viewer)
+  - [Group 2 — Gap Analysis](#group-2--gap-analysis-reads-viewer-writes-analyst)
+  - [Group 3 — Risk Management](#group-3--risk-management-reads-viewer-writes-analyst)
+  - [Group 4 — Policy Management](#group-4--policy-management-reads-viewer-create-analyst-update-admin)
+  - [Group 5 — Statement of Applicability](#group-5--statement-of-applicability-minimum-role-analyst)
+  - [Group 6 — Audit Management](#group-6--audit-management-reads-viewer-writes-admin)
+  - [Group 7 — Evidence Tracking](#group-7--evidence-tracking-reads-viewer-writes-analyst)
+  - [Group 8 — Server Info](#group-8--server-info-minimum-role-viewer)
+  - [Group 9 — Admin & Key Management](#group-9--admin--key-management-minimum-role-admin)
+  - [Group 10 — Organisation Profile](#group-10--organisation-profile-minimum-role-admin-for-writes-viewer-for-reads)
+  - [Group 11 — Procedure Management](#group-11--procedure-management-reads-viewer-createexport-analyst-update-admin)
+  - [Group 12 — Management Review](#group-12--management-review-reads-viewer-writes-admin--clause-93)
+  - [Group 13 — Improvement Plan](#group-13--improvement-plan-reads-viewer-writes-analyst--clause-101)
+  - [Group 14 — Evidence Templates](#group-14--evidence-templates-reads-viewer-generate-analyst)
 - [MCP Resources](#mcp-resources)
 - [Architecture](#architecture)
 - [Modes](#modes)
@@ -90,7 +104,7 @@ iso27001-mcp keygen --label "Me" --role admin
 
 The raw key (`iso27001_...`) is printed **once** and never stored in plaintext. Copy it immediately.
 
-> Three roles are available: `viewer` (25 read-only tools), `analyst` (40 tools), `admin` (all 50 tools). Use `admin` for your personal key.
+> Three roles are available: `viewer` (31 read-only tools), `analyst` (49 tools), `admin` (all 63 tools). Use `admin` for your personal key.
 
 ### Step 4 — Add to Claude Desktop
 
@@ -121,7 +135,7 @@ Add the following block, substituting your values from Steps 2 and 3:
 
 ### Step 5 — Restart Claude Desktop and verify
 
-Fully quit and reopen Claude Desktop. You should see 50 tools in the MCP tools panel (hammer icon). Then ask Claude:
+Fully quit and reopen Claude Desktop. You should see 63 tools in the MCP tools panel (hammer icon). Then ask Claude:
 
 > *"Use get_server_info to check the server is running."*
 
@@ -287,7 +301,7 @@ Full variable reference:
 | `HMAC_SECRET` | ✅ | — | 32-byte hex secret for HMAC-signing API keys |
 | `DB_ENCRYPTION_KEY` | ✅ | — | 32-byte hex key for AES-256 SQLite encryption |
 | `DB_PATH` | | `./isms.db` | Path to the encrypted database file |
-| `AUDIT_LOG_PATH` | | `./audit.log` | Path for the append-only JSON-L audit log |
+| `AUDIT_LOG_PATH` | | `./audit.jsonl` | Path for the append-only JSON-L audit log (`.jsonl` or `.log` only) |
 | `RATE_LIMIT_RPM` | | `500` | Tool calls per minute per API key |
 | `SESSION_TTL_HOURS` | | `4` | SSE session TTL (hosted/team modes) |
 | `SSE_PORT` | | `3000` | Port for the SSE server (hosted/team modes) |
@@ -307,10 +321,10 @@ The server requires an API key on every tool call. Generate one for yourself:
 # Viewer — read-only access to 25 tools
 iso27001-mcp keygen --label "Alice" --role viewer
 
-# Analyst — read + write for gap/risk/policy/procedure/evidence tools (40 tools)
+# Analyst — read + write for gap/risk/policy/procedure/evidence tools (49 tools)
 iso27001-mcp keygen --label "Bob" --role analyst --expires 90d
 
-# Admin — all 50 tools including audit log and key management
+# Admin — all 63 tools including audit log and key management
 iso27001-mcp keygen --label "CISO" --role admin --expires 1y
 ```
 
@@ -375,7 +389,7 @@ export DB_PATH=$HOME/.iso27001/isms.db
 
 ## Tools Reference
 
-The server exposes **50 tools** across 11 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
+The server exposes **63 tools** across 14 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
 
 ---
 
@@ -913,6 +927,147 @@ Export a procedure as Markdown or JSON.
 
 ---
 
+### Group 12 — Management Review *(reads: viewer+, writes: admin)* — Clause 9.3
+
+#### `create_management_review`
+Schedule a management review meeting.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `title` | ✅ | string | Review title |
+| `review_date` | ✅ | string | `YYYY-MM-DD` |
+| `chair` | ✅ | string | Review chair / CISO name |
+| `attendees` | — | array | List of attendee names |
+| `agenda` | — | string | Meeting agenda |
+
+#### `record_review_input`
+Record an input item to a management review (e.g. audit results, risk summary, performance metrics).
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `review_id` | ✅ | string (UUID) | |
+| `input_type` | ✅ | enum | `audit_results` \| `risk_summary` \| `objective_performance` \| `nonconformities` \| `previous_actions` \| `changes` \| `resources` \| `stakeholder_feedback` \| `other` |
+| `summary` | ✅ | string | |
+| `detail` | — | string | Supporting detail |
+
+#### `record_review_output`
+Record a decision or action item from a management review.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `review_id` | ✅ | string (UUID) | |
+| `output_type` | ✅ | enum | `improvement_opportunity` \| `resource_decision` \| `policy_change` \| `objective_change` \| `other` |
+| `description` | ✅ | string | |
+| `owner` | — | string | |
+| `due_date` | — | string | `YYYY-MM-DD` |
+
+#### `complete_management_review`
+Mark a management review as complete and record the outcome.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `review_id` | ✅ | string (UUID) | |
+| `outcome_summary` | ✅ | string | |
+
+#### `get_management_review`
+Fetch a management review with all inputs, outputs, and status.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `review_id` | ✅ | string (UUID) | |
+
+#### `list_management_reviews`
+List management reviews with optional status filter.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `status` | — | enum | `scheduled` \| `in_progress` \| `completed` |
+| `limit` | — | integer | Default: `20`, max `100` |
+| `offset` | — | integer | Default: `0` |
+
+---
+
+### Group 13 — Improvement Plan *(reads: viewer+, writes: analyst+)* — Clause 10.1
+
+#### `create_improvement_opportunity`
+Register an improvement opportunity, typically identified during a management review or audit.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `title` | ✅ | string | |
+| `description` | ✅ | string | |
+| `source` | ✅ | enum | `audit` \| `management_review` \| `incident` \| `risk_assessment` \| `self_assessment` \| `other` |
+| `priority` | — | enum | `low` \| `medium` \| `high` \| `critical` — default: `medium` |
+| `owner` | — | string | |
+| `due_date` | — | string | `YYYY-MM-DD` |
+| `related_controls` | — | array | Control IDs |
+| `review_id` | — | string (UUID) | Link to a management review output |
+
+#### `update_improvement_opportunity`
+Update the status, owner, or due date of an improvement opportunity.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `opportunity_id` | ✅ | string (UUID) | |
+| `status` | — | enum | `open` \| `in_progress` \| `completed` \| `cancelled` |
+| `owner` | — | string | |
+| `due_date` | — | string | `YYYY-MM-DD` |
+| `resolution_notes` | — | string | Required when closing |
+
+#### `get_improvement_opportunity`
+Fetch a single improvement opportunity by ID.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `opportunity_id` | ✅ | string (UUID) | |
+
+#### `list_improvement_opportunities`
+List improvement opportunities with optional filters.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `status` | — | enum | `open` \| `in_progress` \| `completed` \| `cancelled` |
+| `priority` | — | enum | `low` \| `medium` \| `high` \| `critical` |
+| `source` | — | enum | Any source enum value above |
+| `limit` | — | integer | Default: `50`, max `100` |
+| `offset` | — | integer | Default: `0` |
+
+---
+
+### Group 14 — Evidence Templates *(reads: viewer+, generate: analyst+)*
+
+#### `generate_evidence_document`
+Render a Mustache evidence template and store it. The document is dual-written to both the `evidence` table and the `generated_evidence` table for tracking and version history.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `template_type` | ✅ | enum | `access_review_attestation` \| `bcp_test_report` \| `incident_post_mortem` \| `risk_treatment_sign_off` \| `supplier_security_questionnaire` \| `training_acknowledgement` |
+| `title` | ✅ | string | Document title |
+| `generated_by` | ✅ | string | Author or system that generated the document |
+| `organisation_name` | — | string | Auto-injected from org profile if set |
+| `control_id` | — | string | Link to a specific control (default: `general`) |
+| `vars` | — | object | Additional Mustache template variables |
+
+#### `get_evidence_document`
+Fetch a generated evidence document by ID, including rendered content and clause/control mappings.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `document_id` | ✅ | string (UUID) | |
+
+#### `list_evidence_documents`
+List generated evidence documents with optional filters.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `template_type` | — | enum | Filter to a specific template type |
+| `generated_by` | — | string | Filter by author |
+| `control_id` | — | string | Filter by linked control |
+| `limit` | — | integer | Default: `20`, max `100` |
+| `offset` | — | integer | Default: `0` |
+
+---
+
 ## MCP Resources
 
 In addition to tools, the server exposes ISMS artefacts as browseable **MCP Resources** under the `iso27001://` URI scheme. Claude can reference these directly without a tool call — ideal for inline document review, cross-referencing controls, and long-context analysis.
@@ -967,34 +1122,37 @@ Resources are read-only. Write operations always go through tools (which enforce
 │                     Claude (LLM)                        │
 └──────────┬───────────────────────────────┬──────────────┘
            │  MCP Tools (read/write)        │  MCP Resources (read-only)
-           │  50 tools, RBAC enforced       │  12 iso27001:// URIs
+           │  63 tools, RBAC enforced       │  12 iso27001:// URIs
 ┌──────────▼───────────────────────────────▼──────────────┐
 │                   iso27001-mcp server                   │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐    │
-│  │             9-Step Security Pipeline            │    │
+│  │             7-Step Security Pipeline            │    │
 │  │                                                 │    │
-│  │  1. Extract API key (meta or MCP_API_KEY env)   │    │
-│  │  2. validateKey()    HMAC-SHA256, timing-safe   │    │
+│  │  1. Extract credential (_meta.apiKey / env)     │    │
+│  │  2. Auth — session token OR validateKey()       │    │
+│  │     SSE sessions use opaque token (no raw key)  │    │
 │  │  3. checkRateLimit() sliding 60s window (RPM)   │    │
-│  │  4. loadRole()       viewer | analyst | admin   │    │
-│  │  5. assertPermission() RBAC check               │    │
-│  │  6. sanitiseParams() strip injection patterns   │    │
-│  │  7. Domain handler   business logic             │    │
-│  │  8. writeAuditEvent() tamper-evident row_hash   │    │
-│  │  9. Return result or structured McpError        │    │
+│  │  4. assertPermission() RBAC check               │    │
+│  │  5. sanitiseParams() strip injection patterns   │    │
+│  │  6. Domain handler   business logic             │    │
+│  │  7. writeAuditEvent() HMAC chain + row_hash     │    │
 │  └─────────────────────────────────────────────────┘    │
 │                                                         │
 │  ┌─────────────┐  ┌──────────┐  ┌────────────────────┐  │
 │  │  Controls   │  │  Risks   │  │  Policies &        │  │
 │  │  Gap Assess │  │ Register │  │  Procedures        │  │
-│  │  SoA        │  │ Treatmts │  │  (Mustache tmpl)   │  │
+│  │  SoA        │  │ Treatmts │  │  (Mustache+partls) │  │
 │  └─────────────┘  └──────────┘  └────────────────────┘  │
 │  ┌─────────────┐  ┌──────────┐  ┌────────────────────┐  │
-│  │   Audits    │  │ Evidence │  │  Org Profile &     │  │
-│  │  Findings   │  │  Jira/GH │  │  Audit Log         │  │
-│  │  CARs       │  │  Gaps    │  │  (tamper-evident)  │  │
+│  │   Audits    │  │ Evidence │  │  Mgmt Review &     │  │
+│  │  Findings   │  │  Jira/GH │  │  Improvement Plan  │  │
+│  │  CARs       │  │  Tmplts  │  │  (Clauses 9.3/10.1)│  │
 │  └─────────────┘  └──────────┘  └────────────────────┘  │
+│  ┌─────────────────────────────────────────────────┐    │
+│  │  Org Profile · Audit Log (HMAC-SHA256 chain)    │    │
+│  │  Session Token Store · API Key RBAC (63 tools)  │    │
+│  └─────────────────────────────────────────────────┘    │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐    │
 │  │    AES-256 encrypted SQLite  (isms.db)          │    │
@@ -1006,11 +1164,14 @@ Resources are read-only. Write operations always go through tools (which enforce
 
 ### Database
 
-All data is stored in a single encrypted SQLite file (`isms.db`) using AES-256 via `better-sqlite3-multiple-ciphers`. The schema is managed by three SQL migrations applied automatically on first startup:
+All data is stored in a single encrypted SQLite file (`isms.db`) using AES-256 via `better-sqlite3-multiple-ciphers`. The schema is managed by six SQL migrations applied automatically on first startup:
 
 - `0001_initial.sql` — 17 tables covering every ISMS domain (controls, gap assessments, risks, policies, audits, evidence, API keys, audit log, and more)
 - `0002_fts_index.sql` — FTS5 full-text search index on controls, plus 12 performance indexes
 - `0003_org_profile_procedures.sql` — `organization_profile` singleton table, `procedures` table, and `procedure_versions` history table
+- `0004_management_review_improvement.sql` — `management_reviews`, `review_inputs`, `review_outputs`, and `improvement_opportunities` tables (Clauses 9.3 and 10.1)
+- `0005_evidence_documents.sql` — `generated_evidence` table for Mustache-rendered evidence documents with dual-write to `evidence`
+- `0006_audit_log_hmac.sql` — adds `prev_hash` column to `audit_log` for HMAC chain integrity
 
 ### Seed Data
 
@@ -1023,7 +1184,7 @@ On first startup, `seedAll()` inserts all ISO 27001 reference data and verifies 
 
 ### Security Pipeline
 
-Every tool call passes through the same 9-step pipeline before any business logic runs. Audit events are always written — including on authentication failure and RBAC denial — so the log is a complete record of all attempts, not just successful ones.
+Every tool call passes through the same 7-step pipeline before any business logic runs. SSE sessions use an opaque session token so the raw API key is never retained in server memory after the initial `/sse` handshake. Audit events are always written — including on authentication failure and RBAC denial — so the log is a complete record of all attempts, not just successful ones.
 
 ### Business Rules Enforced
 
@@ -1044,9 +1205,9 @@ Three roles with strict hierarchy. A key can only call tools at or below its ass
 
 | Role | Tools available | Typical user |
 |------|----------------|--------------|
-| `viewer` | 25 (all read-only tools) | Auditor, stakeholder |
-| `analyst` | 40 (reads + gap/risk/policy/procedure/evidence writes) | ISMS practitioner, consultant |
-| `admin` | 50 (all tools, including org profile, audit log and key management) | CISO, ISMS owner |
+| `viewer` | 31 (all read-only tools) | Auditor, stakeholder |
+| `analyst` | 49 (reads + gap/risk/policy/procedure/evidence/improvement writes) | ISMS practitioner, consultant |
+| `admin` | 63 (all tools, including org profile, audit management, audit log and key management) | CISO, ISMS owner |
 
 ---
 
@@ -1123,7 +1284,7 @@ npm run typecheck
 # Build dist/
 npm run build
 
-# Run all tests (404 unit + integration tests)
+# Run all tests (470 unit + integration tests)
 npm test
 
 # Watch mode
@@ -1147,12 +1308,13 @@ src/
 ├── server.ts                 McpServer factory — registers tools + resources
 ├── auth/
 │   ├── api-key.ts            Key generation, HMAC validation, expiry, revocation
-│   └── rbac.ts               Permission matrix (50 tools × 3 roles)
+│   ├── rbac.ts               Permission matrix (63 tools × 3 roles)
+│   └── session-store.ts      SSE session token store (opaque token → keyHash + role)
 ├── security/
 │   ├── sanitise.ts           Prompt-injection stripping for free-text fields
 │   ├── rate-limiter.ts       Sliding-window RPM counter per key hash
 │   ├── secrets.ts            Env var validation (fail-fast on startup)
-│   └── validate.ts           Zod schemas for all 50 tool inputs
+│   └── validate.ts           Zod schemas for all 63 tool inputs
 ├── audit/
 │   └── logger.ts             Tamper-evident audit event writer
 ├── db/
@@ -1166,7 +1328,9 @@ src/
 │   ├── version-mapping.json  125 cross-version mappings
 │   ├── clause-requirements.json  41 clause requirements (clauses 4–10)
 │   ├── policy-templates/     12 Mustache .md policy templates
-│   └── procedure-templates/  12 Mustache .md procedure templates
+│   ├── procedure-templates/  12 Mustache .md procedure templates
+│   ├── evidence-templates/   6 Mustache .md evidence document templates
+│   └── partials/             Shared Mustache partials (org_header, revision_block, approver_signature)
 ├── tools/
 │   ├── index.ts              Tool registry and security pipeline
 │   ├── controls.ts           Group 1: Control Registry (7 tools)
@@ -1179,7 +1343,10 @@ src/
 │   ├── server-info.ts        Group 8: Server Info (1 tool)
 │   ├── org-profile.ts        Group 10: Organisation Profile (2 tools) + loadOrgProfileDefaults helper
 │   ├── procedures.ts         Group 11: Procedure Management (5 tools)
-│   └── template-utils.ts     Shared loadTemplate / stripFrontmatter helpers
+│   ├── management-review.ts  Group 12: Management Review — Clause 9.3 (6 tools)
+│   ├── improvement-plan.ts   Group 13: Improvement Plan — Clause 10.1 (4 tools)
+│   ├── evidence-templates.ts Group 14: Evidence Templates (3 tools)
+│   └── template-utils.ts     Shared loadTemplate / stripFrontmatter / loadPartials helpers
 ├── resources/
 │   ├── index.ts              Registers all 12 MCP Resources
 │   ├── resource-auth.ts      Slim auth helper for resource callbacks
@@ -1225,10 +1392,11 @@ The SQLite database (`isms.db`) is encrypted at rest using AES-256 via `better-s
 Every tool call writes a row to `audit_log` with a `row_hash` computed as:
 
 ```
-SHA-256(timestamp | tool | key_hash | outcome)
+HMAC-SHA256(HMAC_SECRET, id | timestamp | tool | key_hash | role |
+            params_json | outcome | error_message | duration_ms | prev_hash)
 ```
 
-Any modification to an audit row after insertion will cause `verifyRowHash()` to fail. The same events are also appended in JSON-L format to `AUDIT_LOG_PATH` for off-database retention and SIEM ingestion.
+The `prev_hash` field chains each row to its predecessor — insertion, deletion, or reordering of rows is detectable via `verifyRowHash()` and `verifyChain()`. The same events are appended in JSON-L format to `AUDIT_LOG_PATH` for off-database retention and SIEM ingestion. The log path is validated on write to reject paths inside system directories (`/etc`, `/proc`, `/sys`, `/dev`).
 
 ### Production Checklist
 

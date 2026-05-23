@@ -4,20 +4,22 @@
  * registerAllTools(server) wires all 63 tools into the MCP server with the
  * full security pipeline per §6 of the spec:
  *
- *   1. Extract API key from request meta or MCP_API_KEY env var
- *   2. validateKey(rawKey)          → keyHash
+ *   1. Extract credential from _meta.apiKey or MCP_API_KEY env var
+ *   2a. If it is an SSE session token → lookupSessionToken() → { keyHash, role }
+ *       (auth already validated at /sse connect time; raw key never re-transmitted)
+ *   2b. Otherwise → validateKey(rawKey) → keyHash, then loadRole(keyHash)
  *   3. checkRateLimit(keyHash)
- *   4. loadRole(keyHash)            → role
- *   5. assertPermission(role, tool)
- *   6. sanitiseParams(args)
- *   7. Call domain handler
- *   8. writeAuditEvent(...)         — in finally block (always runs)
- *   9. Return result or McpError.toToolResult()
+ *   4. assertPermission(role, tool)
+ *   5. sanitiseParams(args)
+ *   6. Call domain handler
+ *   7. writeAuditEvent(...)         — always runs (success + error paths)
+ *   8. Return result or McpError.toToolResult()
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { validateKey, loadRole, listKeys, revokeKey } from "../auth/api-key.js";
+import { isSessionToken, lookupSessionToken } from "../auth/session-store.js";
 import { assertPermission } from "../auth/rbac.js";
 import { checkRateLimit } from "../security/rate-limiter.js";
 import { sanitiseParams } from "../security/sanitise.js";
@@ -448,8 +450,8 @@ export function registerAllTools(server: McpServer): void {
     server.tool(toolName, description, shape, async (args, extra) => {
       const startMs = Date.now();
 
-      // ── Step 1: extract API key from request meta or env ──
-      const rawKey: string =
+      // ── Step 1: extract credential from request meta or env ──
+      const credential: string =
         ((extra as unknown as { _meta?: { apiKey?: string } })._meta?.apiKey) ??
         process.env["MCP_API_KEY"] ??
         "";
@@ -462,22 +464,32 @@ export function registerAllTools(server: McpServer): void {
       let result: ToolResult;
 
       try {
-        // ── Step 2: auth — validate API key ──────────────────
-        keyHash = validateKey(rawKey);
+        // ── Step 2: auth ──────────────────────────────────────
+        // SSE sessions use an opaque session token that maps to a pre-validated
+        // { keyHash, role } — no raw key is re-transmitted or re-HMAC'd.
+        // Stdio / direct API calls use a raw iso27001_... key as before.
+        if (isSessionToken(credential)) {
+          const session = lookupSessionToken(credential);
+          if (!session) {
+            throw new McpError({ error_code: "AUTH_INVALID", message: "Session token is invalid or expired" });
+          }
+          keyHash = session.keyHash;
+          role    = session.role;
+        } else {
+          keyHash = validateKey(credential);
+          role    = loadRole(keyHash);
+        }
 
         // ── Step 3: rate limit ────────────────────────────────
         checkRateLimit(keyHash);
 
-        // ── Step 4: load role ─────────────────────────────────
-        role = loadRole(keyHash);
-
-        // ── Step 5: RBAC ──────────────────────────────────────
+        // ── Step 4: RBAC ──────────────────────────────────────
         assertPermission(role as "viewer" | "analyst" | "admin", toolName);
 
-        // ── Step 6: sanitise free-text inputs ─────────────────
+        // ── Step 5: sanitise free-text inputs ─────────────────
         const { sanitisedFields } = sanitiseParams(args as Record<string, unknown>);
 
-        // ── Step 7: call domain handler ───────────────────────
+        // ── Step 6: call domain handler ───────────────────────
         result = await handler(args as Record<string, unknown>);
 
         outcome = result.isError ? "error" : "success";
@@ -490,7 +502,7 @@ export function registerAllTools(server: McpServer): void {
           }
         }
 
-        // ── Step 8 (success path): write audit event ──────────
+        // ── Step 7 (success path): write audit event ──────────
         writeAuditEvent({
           tool:          toolName,
           key_hash:      keyHash,
