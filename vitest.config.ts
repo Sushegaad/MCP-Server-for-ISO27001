@@ -17,6 +17,9 @@ export default defineConfig({
         "src/resources/index.ts",
         "src/transport/sse.ts",
         "src/types/**",
+        // Interactive CLI tools — readline-based wizard and health-check; not
+        // unit-testable in CI without a real TTY and Claude Desktop installation.
+        "src/cli/**",
         // Infrastructure files that require a real encrypted SQLite database
         // on disk — not unit-testable without the native binary (macOS only).
         "src/db/connection.ts",
