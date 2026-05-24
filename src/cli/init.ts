@@ -298,7 +298,7 @@ export async function runInit(): Promise<void> {
     step(10, TOTAL, "Running health check...");
     blank();
 
-    await runDoctor(/* calledFromInit */ true);
+    runDoctor(/* calledFromInit */ true);
 
     // ────────────────────────────────────────────────────────
     //  STEP 11 — Success summary

@@ -31,10 +31,10 @@ interface CheckResult {
 
 // ── runDoctor ─────────────────────────────────────────────────
 
-export async function runDoctor(
+export function runDoctor(
   /** When true, don't call closePrompt() — caller manages it. */
   calledFromInit = false,
-): Promise<boolean> {
+): boolean {
   const results: CheckResult[] = [];
   let dbOpen = false;
 
@@ -223,7 +223,7 @@ export async function runDoctor(
     record(false, true);
   } else {
     try {
-      const raw    = readFileSync(configPath!, "utf8");
+      const raw    = readFileSync(configPath, "utf8");
       const config = JSON.parse(raw) as { mcpServers?: Record<string, unknown> };
       const passed = !!(config.mcpServers?.["iso27001-mcp"]);
       check(

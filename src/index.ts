@@ -60,10 +60,12 @@ if (subCommand === "init") {
   });
 } else if (subCommand === "doctor") {
   // iso27001-mcp doctor — health check
-  runDoctor().catch((err) => {
+  try {
+    runDoctor();
+  } catch (err) {
     console.error("[doctor] FATAL:", err);
     process.exit(1);
-  });
+  }
 } else if (subCommand === "keygen") {
   // iso27001-mcp keygen --label "Alice" --role analyst --expires 90d
   handleKeygen();
