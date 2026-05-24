@@ -1,0 +1,21 @@
+name: Publish to MCP Registry
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write   # required for GitHub OIDC authentication with the registry
+
+jobs:
+  publish:
+    name: Publish to registry.modelcontextprotocol.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish to MCP Registry
+        uses: modelcontextprotocol/registry/.github/actions/publish@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
