@@ -16,7 +16,11 @@
  * • Session tokens are removed from the store when the SSE connection closes,
  *   so they cannot be reused after disconnection.
  *
- * • MCP_API_KEY env var is accepted as a fallback for stdio/dev deployments.
+ * • MCP_API_KEY env var is used by the stdio pipeline only (src/tools/index.ts).
+ *   The SSE /sse endpoint does NOT fall back to env — Bearer is always required.
+ *
+ * • CORS_ORIGIN env var controls the allowed origin (default: http://localhost
+ *   in dev, https://claude.ai in production). Never set to '*' in production.
  */
 
 import express from "express";
@@ -77,8 +81,14 @@ export function startSseServer(server: McpServer): void {
   const app = express();
 
   // ── CORS ──────────────────────────────────────────────────
+  // Origin is configurable via CORS_ORIGIN env var.
+  // Never defaults to '*' — wildcard is incompatible with Authorization headers
+  // (browsers block credentialed requests to '*' per the Fetch spec) and
+  // broadens attack surface unnecessarily.
   app.use((req, res, next) => {
-    const allowedOrigin = isProduction ? "https://claude.ai" : "*";
+    const allowedOrigin =
+      process.env["CORS_ORIGIN"] ??
+      (isProduction ? "https://claude.ai" : "http://localhost");
     res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -107,11 +117,10 @@ export function startSseServer(server: McpServer): void {
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   app.get("/sse", async (req, res) => {
     // ── Step 1: extract Bearer token ──────────────────────────
+    // SSE always requires Authorization: Bearer — no env fallback here.
+    // The MCP_API_KEY env var is for the stdio pipeline only (src/tools/index.ts).
     const authHeader = req.headers["authorization"];
-    const rawKey =
-      (authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null) ??
-      process.env["MCP_API_KEY"] ??
-      "";
+    const rawKey = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
 
     // ── Step 2: validate once — raw key used here only ────────
     let keyHash: string;
@@ -124,7 +133,7 @@ export function startSseServer(server: McpServer): void {
       res.status(401).json({
         error: "Unauthorized",
         message: msg,
-        hint: "Pass Authorization: Bearer <iso27001_...> header at connect time.",
+        hint: "Pass 'Authorization: Bearer <iso27001_...>' header at /sse connect time. MCP_API_KEY env fallback is not accepted over SSE.",
       });
       return;
       // rawKey goes out of scope here — never stored

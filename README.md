@@ -2,6 +2,7 @@
 
 [![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.1)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.1)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
+[![npm downloads](https://img.shields.io/npm/dt/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![Live Demo](https://img.shields.io/badge/demo-live-blue)](https://sushegaad.github.io/MCP-Server-for-ISO27001/)
 
 **[▶ Live Interactive Demo](https://sushegaad.github.io/MCP-Server-for-ISO27001/)**
@@ -306,6 +307,7 @@ Full variable reference:
 | `SESSION_TTL_HOURS` | | `4` | SSE session TTL (hosted/team modes) |
 | `SSE_PORT` | | `3000` | Port for the SSE server (hosted/team modes) |
 | `BEHIND_TLS_PROXY` | | `false` | Set `true` when behind nginx/Caddy in production |
+| `CORS_ORIGIN` | | `http://localhost` (dev) / `https://claude.ai` (prod) | Allowed CORS origin for the SSE server — never set to `*` |
 | `JIRA_BASE_URL` | | — | e.g. `https://your-org.atlassian.net` |
 | `JIRA_API_TOKEN` | | — | Jira API token for the integration |
 | `JIRA_PROJECT_KEY` | | — | e.g. `SEC` |
