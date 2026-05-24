@@ -1,3 +1,23 @@
+## What's new in v0.8.1
+
+### Demo site — Resources tab
+
+The interactive demo now includes a **Resources** section in the left navigation (under the new "Info" sidebar group):
+
+- **What is this MCP server?** — plain-English overview of capabilities and architecture
+- **Installation** — step-by-step guide: `npm install -g iso27001-mcp`, secret generation (`openssl rand -hex 32`), API key generation, Claude Desktop JSON config snippet, and a verify call
+- **Quick start** — sample Claude prompts to get running in under a minute
+- **External links** — cards for the npm package, GitHub repo, README docs, and the issue tracker
+- **Author** — Hemant Naik · Creator & Maintainer ([LinkedIn](https://www.linkedin.com/in/tanaji-naik))
+
+### Fixes
+
+- Demo `SECTION_META.tools` sub-text corrected from "50 MCP tools across 11 groups" → "63 MCP tools across 14 groups"
+- Demo sidebar footer bumped to `v0.8.1`
+- `docs/index.html` (GitHub Pages live site) fully re-synced with `demo/index.html` — the Resources section and all Group 12–14 additions are now live
+
+---
+
 ## What's new in v0.8.0
 
 ### 13 new tools (63 total)

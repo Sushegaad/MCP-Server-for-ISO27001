@@ -239,9 +239,13 @@
     <div class="nav-item" onclick="showSection('evidence')">
       <span class="nav-icon">🗂️</span> Evidence
     </div>
+    <div class="sidebar-section">Info</div>
+    <div class="nav-item" onclick="showSection('resources')">
+      <span class="nav-icon">📦</span> Resources
+    </div>
   </nav>
   <div class="sidebar-footer">
-    <p style="margin-bottom:4px">v0.8.0 · 63 tools · 14 groups</p>
+    <p style="margin-bottom:4px">v0.8.1 · 63 tools · 14 groups</p>
     <p>Real server: <a href="https://npmjs.com/package/iso27001-mcp" target="_blank">npm install -g iso27001-mcp</a></p>
   </div>
 </aside>
@@ -994,6 +998,264 @@
       </div>
     </div>
 
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 9: RESOURCES                                    -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-resources" class="section">
+      <style>
+        .res-hero { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border-radius: 12px; padding: 36px 40px; color: white; margin-bottom: 20px; position: relative; overflow: hidden; }
+        .res-hero::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; border-radius: 50%; background: rgba(59,130,246,0.15); }
+        .res-hero-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(59,130,246,0.25); border: 1px solid rgba(59,130,246,0.4); color: #93c5fd; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; margin-bottom: 14px; }
+        .res-hero h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 10px; }
+        .res-hero p { color: #94a3b8; font-size: 14px; line-height: 1.65; max-width: 620px; }
+        .res-hero-stats { display: flex; gap: 32px; margin-top: 24px; }
+        .res-hero-stat { text-align: center; }
+        .res-hero-stat-value { font-size: 28px; font-weight: 800; color: #60a5fa; line-height: 1; }
+        .res-hero-stat-label { font-size: 11px; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .res-feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+        .res-feature-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+        .res-feature-icon { font-size: 24px; margin-bottom: 10px; }
+        .res-feature-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+        .res-feature-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
+
+        .res-install-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+        .res-install-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+        .res-install-sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+        .res-step { display: flex; gap: 14px; margin-bottom: 18px; align-items: flex-start; }
+        .res-step-num { flex-shrink: 0; width: 26px; height: 26px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; margin-top: 2px; }
+        .res-step-body { flex: 1; }
+        .res-step-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        .res-step-desc { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 8px; }
+        .res-code { background: #0f172a; color: #e2e8f0; font-family: monospace; font-size: 12px; padding: 10px 14px; border-radius: 7px; white-space: pre; overflow-x: auto; margin-top: 6px; }
+        .res-code .cmd { color: #60a5fa; }
+        .res-code .comment { color: #475569; }
+        .res-code .key { color: #34d399; }
+        .res-code .val { color: #fbbf24; }
+
+        .res-links-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+        .res-link-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; display: flex; gap: 16px; align-items: flex-start; text-decoration: none; color: inherit; transition: all 0.15s; }
+        .res-link-card:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(29,78,216,0.10); transform: translateY(-1px); }
+        .res-link-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+        .res-link-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+        .res-link-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+        .res-link-url { font-size: 11px; color: var(--accent); margin-top: 6px; font-family: monospace; }
+
+        .res-author-card { background: linear-gradient(135deg, #f8faff 0%, #eff6ff 100%); border: 1px solid #bfdbfe; border-radius: 12px; padding: 28px; display: flex; gap: 24px; align-items: center; margin-bottom: 20px; }
+        .res-author-avatar { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, #1d4ed8, #7c3aed); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; color: white; flex-shrink: 0; border: 3px solid white; box-shadow: 0 4px 12px rgba(29,78,216,0.2); }
+        .res-author-name { font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+        .res-author-role { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+        .res-author-links { display: flex; gap: 10px; }
+        .res-author-link { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; text-decoration: none; transition: all 0.15s; }
+        .res-author-link-li { background: #0a66c2; color: white; }
+        .res-author-link-li:hover { background: #004182; }
+        .res-author-link-npm { background: #cb3837; color: white; }
+        .res-author-link-npm:hover { background: #a02f2e; }
+        .res-author-link-gh { background: #24292e; color: white; }
+        .res-author-link-gh:hover { background: #040d21; }
+
+        .res-qs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+        .res-qs-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+        .res-qs-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .res-qs-item { font-size: 12px; color: var(--muted); padding: 6px 0; border-bottom: 1px solid var(--border); line-height: 1.5; }
+        .res-qs-item:last-child { border-bottom: none; }
+        .res-qs-item code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 11px; color: var(--accent); }
+        .res-version-badge { display: inline-flex; align-items: center; gap: 5px; background: #d1fae5; color: #065f46; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 10px; border: 1px solid #6ee7b7; }
+      </style>
+
+      <!-- Hero -->
+      <div class="res-hero">
+        <div class="res-hero-badge">🔒 ISO 27001:2022 · Model Context Protocol</div>
+        <h2>iso27001-mcp</h2>
+        <p>A stateful MCP server that gives Claude a complete Information Security Management System. Run gap assessments, manage risks, generate ISO-aligned policies and procedures, track evidence, and schedule management reviews — all backed by an AES-256 encrypted SQLite database on your own machine.</p>
+        <div class="res-hero-stats">
+          <div class="res-hero-stat">
+            <div class="res-hero-stat-value">63</div>
+            <div class="res-hero-stat-label">MCP Tools</div>
+          </div>
+          <div class="res-hero-stat">
+            <div class="res-hero-stat-value">14</div>
+            <div class="res-hero-stat-label">Tool Groups</div>
+          </div>
+          <div class="res-hero-stat">
+            <div class="res-hero-stat-value">93</div>
+            <div class="res-hero-stat-label">2022 Controls</div>
+          </div>
+          <div class="res-hero-stat">
+            <div class="res-hero-stat-value">30</div>
+            <div class="res-hero-stat-label">Templates</div>
+          </div>
+          <div class="res-hero-stat">
+            <div class="res-hero-stat-value" style="font-size:20px">v0.8.1</div>
+            <div class="res-hero-stat-label">Latest</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- What is this? -->
+      <div class="res-feature-grid">
+        <div class="res-feature-card">
+          <div class="res-feature-icon">🗄️</div>
+          <div class="res-feature-title">Encrypted Local Database</div>
+          <div class="res-feature-desc">All ISMS data is stored in an AES-256 encrypted SQLite database (<code>isms.db</code>) on your machine. Your compliance data never leaves your infrastructure.</div>
+        </div>
+        <div class="res-feature-card">
+          <div class="res-feature-icon">🔑</div>
+          <div class="res-feature-title">HMAC-Signed API Keys</div>
+          <div class="res-feature-desc">Three-tier RBAC (viewer · analyst · admin) enforced on every tool call. Keys are never stored in plaintext — only their HMAC-SHA256 hash is persisted.</div>
+        </div>
+        <div class="res-feature-card">
+          <div class="res-feature-icon">📋</div>
+          <div class="res-feature-title">Mustache Templates</div>
+          <div class="res-feature-desc">12 policy templates, 12 procedure templates, and 6 evidence document templates rendered with your organisation's details. Shared partials ensure consistent formatting.</div>
+        </div>
+        <div class="res-feature-card">
+          <div class="res-feature-icon">🔗</div>
+          <div class="res-feature-title">MCP Resources</div>
+          <div class="res-feature-desc">12 read-only <code>iso27001://</code> URIs expose every ISMS artefact as a browsable MCP Resource. Claude can reference them without a tool call.</div>
+        </div>
+        <div class="res-feature-card">
+          <div class="res-feature-icon">🛡️</div>
+          <div class="res-feature-title">Tamper-Evident Audit Log</div>
+          <div class="res-feature-desc">Every tool call writes an HMAC-SHA256 chained row. Insertion, deletion, or reordering of audit rows is cryptographically detectable.</div>
+        </div>
+        <div class="res-feature-card">
+          <div class="res-feature-icon">🌐</div>
+          <div class="res-feature-title">SSE Team Mode</div>
+          <div class="res-feature-desc">Run as a shared Express server for teams. Bearer token auth at connect time, opaque session tokens throughout — raw keys are never retained in server memory.</div>
+        </div>
+      </div>
+
+      <!-- Installation -->
+      <div class="res-install-card">
+        <div class="res-install-title">Installation &amp; Quick Start</div>
+        <div class="res-install-sub">Get connected to Claude Desktop in five steps · Requires Node.js ≥ 20.11.0</div>
+
+        <div class="res-step">
+          <div class="res-step-num">1</div>
+          <div class="res-step-body">
+            <div class="res-step-title">Install globally</div>
+            <div class="res-step-desc">The <code>iso27001-mcp</code> command becomes available globally. The native SQLite module downloads a prebuilt binary on macOS and Linux x64 automatically.</div>
+            <div class="res-code"><span class="cmd">npm install -g iso27001-mcp</span></div>
+          </div>
+        </div>
+
+        <div class="res-step">
+          <div class="res-step-num">2</div>
+          <div class="res-step-body">
+            <div class="res-step-title">Generate two secrets</div>
+            <div class="res-step-desc">One encrypts your database, the other signs API keys. Keep both — you'll need them in every restart.</div>
+            <div class="res-code"><span class="comment"># Run each command twice — save both outputs</span>
+<span class="cmd">openssl rand -hex 32</span>   <span class="comment"># → DB_ENCRYPTION_KEY</span>
+<span class="cmd">openssl rand -hex 32</span>   <span class="comment"># → HMAC_SECRET</span></div>
+          </div>
+        </div>
+
+        <div class="res-step">
+          <div class="res-step-num">3</div>
+          <div class="res-step-body">
+            <div class="res-step-title">Generate your API key</div>
+            <div class="res-step-desc">The raw key is printed <strong>once</strong> and never stored. Copy it immediately.</div>
+            <div class="res-code"><span class="cmd">export</span> <span class="key">HMAC_SECRET</span>=<span class="val">&lt;your_hmac_secret&gt;</span>
+<span class="cmd">export</span> <span class="key">DB_ENCRYPTION_KEY</span>=<span class="val">&lt;your_db_key&gt;</span>
+<span class="cmd">iso27001-mcp keygen</span> --label <span class="val">"Me"</span> --role <span class="val">admin</span></div>
+          </div>
+        </div>
+
+        <div class="res-step">
+          <div class="res-step-num">4</div>
+          <div class="res-step-body">
+            <div class="res-step-title">Add to Claude Desktop config</div>
+            <div class="res-step-desc">macOS: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></div>
+            <div class="res-code">{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"iso27001"</span>: {
+      <span class="key">"command"</span>: <span class="val">"iso27001-mcp"</span>,
+      <span class="key">"env"</span>: {
+        <span class="key">"HMAC_SECRET"</span>:        <span class="val">"your_hmac_secret"</span>,
+        <span class="key">"DB_ENCRYPTION_KEY"</span>: <span class="val">"your_db_key"</span>,
+        <span class="key">"MCP_API_KEY"</span>:       <span class="val">"iso27001_your_key"</span>,
+        <span class="key">"DB_PATH"</span>:           <span class="val">"/Users/you/.iso27001/isms.db"</span>
+      }
+    }
+  }
+}</div>
+          </div>
+        </div>
+
+        <div class="res-step">
+          <div class="res-step-num">5</div>
+          <div class="res-step-body">
+            <div class="res-step-title">Restart Claude Desktop and verify</div>
+            <div class="res-step-desc">You should see <strong>63 tools</strong> in the tools panel. Then ask Claude:</div>
+            <div class="res-code"><span class="val">"Use get_server_info to check the server is running."</span>
+<span class="val">"Create a gap assessment for Acme Ltd covering all ISO 27001:2022 controls."</span>
+<span class="val">"Register a new risk: our customer DB is exposed to SQL injection — likelihood 4, impact 5."</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Links -->
+      <div class="res-links-grid">
+        <a class="res-link-card" href="https://npmjs.com/package/iso27001-mcp" target="_blank">
+          <div class="res-link-icon">📦</div>
+          <div>
+            <div class="res-link-title">npm Package</div>
+            <div class="res-link-desc">Latest release on the npm registry. Install globally with one command. Provenance-attested build.</div>
+            <div class="res-link-url">npmjs.com/package/iso27001-mcp</div>
+          </div>
+        </a>
+        <a class="res-link-card" href="https://github.com/Sushegaad/MCP-Server-for-ISO27001" target="_blank">
+          <div class="res-link-icon">🐙</div>
+          <div>
+            <div class="res-link-title">GitHub Repository</div>
+            <div class="res-link-desc">Source code, issue tracker, and contribution guide. Stars and PRs welcome.</div>
+            <div class="res-link-url">github.com/Sushegaad/MCP-Server-for-ISO27001</div>
+          </div>
+        </a>
+        <a class="res-link-card" href="https://github.com/Sushegaad/MCP-Server-for-ISO27001/blob/main/README.md" target="_blank">
+          <div class="res-link-icon">📄</div>
+          <div>
+            <div class="res-link-title">Full Documentation</div>
+            <div class="res-link-desc">Complete tools reference with all 63 tools, parameter tables, architecture diagram, and security model.</div>
+            <div class="res-link-url">github.com/…/README.md</div>
+          </div>
+        </a>
+        <a class="res-link-card" href="https://github.com/Sushegaad/MCP-Server-for-ISO27001/issues" target="_blank">
+          <div class="res-link-icon">🐛</div>
+          <div>
+            <div class="res-link-title">Report an Issue</div>
+            <div class="res-link-desc">Found a bug or have a feature request? Open an issue on GitHub — all feedback is welcome.</div>
+            <div class="res-link-url">github.com/…/issues</div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Author -->
+      <div class="res-author-card">
+        <div class="res-author-avatar">HN</div>
+        <div>
+          <div class="res-author-name">Hemant Naik</div>
+          <div class="res-author-role">Creator &amp; Maintainer of iso27001-mcp · Security &amp; Compliance Automation</div>
+          <div class="res-author-links">
+            <a class="res-author-link res-author-link-li" href="https://www.linkedin.com/in/tanaji-naik" target="_blank">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              LinkedIn
+            </a>
+            <a class="res-author-link res-author-link-npm" href="https://npmjs.com/package/iso27001-mcp" target="_blank">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg>
+              npm
+            </a>
+            <a class="res-author-link res-author-link-gh" href="https://github.com/Sushegaad" target="_blank">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /section-resources -->
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -1462,11 +1724,12 @@ const SECTION_META = {
   gap:    { title:'Gap Assessment',    sub:'Acme Financial Services · ISO 27001:2022 · 24 controls shown' },
   risk:   { title:'Risk Register',     sub:'6 risks across all levels · click any risk to view treatment plan' },
   policy: { title:'Policy Generator',  sub:'12 ISO 27001-aligned policy templates · rendered with your org details' },
-  tools:  { title:'Tools Explorer',    sub:'50 MCP tools across 11 groups · all require a valid API key' },
+  tools:  { title:'Tools Explorer',    sub:'63 MCP tools across 14 groups · all require a valid API key' },
   procedures:      { title: 'Procedure Generator',   sub: '12 ISO 27001 operating procedures · rendered with Mustache partials' },
   'mgmt-review':   { title: 'Management Review',      sub: 'ISO 27001:2022 Clause 9.3 · 7 required inputs + at least 1 output · enforced business rule' },
   improvement:     { title: 'Improvement Plan',        sub: 'Clause 10.1 · forward-only status · health rating based on active backlog' },
   evidence:        { title: 'Evidence Templates',      sub: '6 evidence document types · dual-write to evidence + generated_evidence tables' },
+  resources:       { title: 'Resources',               sub: 'Installation · quick start · npm · GitHub · author' },
 };
 
 function showSection(id) {
@@ -1479,7 +1742,7 @@ function showSection(id) {
   // fix active nav
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(n => n.classList.remove('active'));
-  const map = { gap: 0, risk: 1, policy: 2, tools: 3, procedures: 4, 'mgmt-review': 5, improvement: 6, evidence: 7 };
+  const map = { gap: 0, risk: 1, policy: 2, tools: 3, procedures: 4, 'mgmt-review': 5, improvement: 6, evidence: 7, resources: 8 };
   navItems[map[id]]?.classList.add('active');
   document.getElementById('topbar-title').textContent = SECTION_META[id].title;
   document.getElementById('topbar-sub').textContent = SECTION_META[id].sub;
