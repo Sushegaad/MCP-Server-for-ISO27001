@@ -1,3 +1,37 @@
+## What's new in v0.8.2
+
+### Security hardening (3 fixes)
+
+Addresses findings from the [Socket.dev AI security scan](https://socket.dev/alerts/gptSecurity) on v0.8.1:
+
+- **SSE `MCP_API_KEY` env fallback removed** — the `/sse` endpoint now strictly requires `Authorization: Bearer <key>`. The `MCP_API_KEY` env var is for the stdio pipeline only (`src/tools/index.ts`). Using it as an SSE fallback allowed any process on the host that could read env vars to connect without a header.
+- **CORS wildcard eliminated** — dev mode no longer sends `Access-Control-Allow-Origin: *`. Defaults to `http://localhost` in dev and `https://claude.ai` in production, configurable via `CORS_ORIGIN` env var. (Wildcard + `Authorization` is already blocked by browsers per the Fetch spec, but the explicit removal closes the scanner finding and is the correct default.)
+- **`gptSecurity` suppression added** — `.github/socket.yml` now includes a `gptSecurity` suppression for `src/auth/api-key.ts` explaining that `generateKey()` uses intentional print-once key delivery (same pattern as `ssh-keygen`, `npm token create`). The raw key is never re-logged or stored in plaintext.
+
+### Trust Center added
+
+New `docs/security/` directory with five auditor-facing documents:
+
+- [`threat-model.md`](https://github.com/Sushegaad/MCP-Server-for-ISO27001/blob/main/docs/security/threat-model.md) — full STRIDE analysis: 7 assets, trust boundaries, 16-row mitigations table
+- [`hardening-guide.md`](https://github.com/Sushegaad/MCP-Server-for-ISO27001/blob/main/docs/security/hardening-guide.md) — three deployment modes (local/team/hosted) with env var tables, nginx/Caddy examples, key rotation runbook
+- [`data-flow.md`](https://github.com/Sushegaad/MCP-Server-for-ISO27001/blob/main/docs/security/data-flow.md) — auditor statement on what data leaves the machine (nothing in stdio mode; no telemetry; opt-in integrations only)
+- [`supply-chain.md`](https://github.com/Sushegaad/MCP-Server-for-ISO27001/blob/main/docs/security/supply-chain.md) — 4-dep inventory, npm provenance verification, SBOM commands, reproducible build steps
+- [`audit-log-integrity.md`](https://github.com/Sushegaad/MCP-Server-for-ISO27001/blob/main/docs/security/audit-log-integrity.md) — exact HMAC-SHA256 chain spec, tamper detection guide, standalone Node.js + Python verification scripts
+
+### Auditor-ready sample outputs added
+
+New `samples/` directory with 9 realistic output files for a fictitious payments processor ("Acme Financial Services Ltd") preparing for ISO 27001:2022 certification:
+
+`gap-assessment-summary.md` · `remediation-roadmap.md` · `risk-register.csv` · `statement-of-applicability.csv` · `access-control-policy.md` · `incident-handling-procedure.md` · `internal-audit-report.md` · `corrective-action-record.md` · `evidence-package.md`
+
+### Other
+
+- `SECURITY.md` added at repo root (GitHub auto-links as security policy); includes responsible disclosure process, response SLAs, and scope statement
+- `README.md`: Trust Center link added to Security section; new Sample Outputs section with file index
+- `npm downloads` badge added to README
+
+---
+
 ## What's new in v0.8.1
 
 ### Demo site — Resources tab

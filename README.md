@@ -1,6 +1,6 @@
 # iso27001-mcp
 
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.1)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.1)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.2)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.2)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![npm downloads](https://img.shields.io/npm/dt/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![Live Demo](https://img.shields.io/badge/demo-live-blue)](https://sushegaad.github.io/MCP-Server-for-ISO27001/)
@@ -50,8 +50,10 @@ Claude ──MCP──► iso27001-mcp ──► encrypted SQLite (isms.db)
 - [Architecture](#architecture)
 - [Modes](#modes)
 - [Integrations](#integrations)
+- [Sample Outputs](#sample-outputs)
 - [Development](#development)
 - [Security](#security)
+  - [Trust Center](https://github.com/Sushegaad/MCP-Server-for-ISO27001/tree/main/docs/security/) — threat model · hardening guide · data flow · supply chain · audit log integrity
 
 ---
 
@@ -1250,6 +1252,24 @@ Sessions expire after `SESSION_TTL_HOURS` hours of inactivity. In `NODE_ENV=prod
 
 ---
 
+## Sample Outputs
+
+The [`samples/`](samples/) directory contains auditor-ready example outputs generated from a demo ISMS for a fictitious organisation ("Acme Financial Services Ltd" — a UK payments processor preparing for ISO 27001:2022 certification). Each file states which tool(s) produced it.
+
+| Sample | Description |
+|--------|-------------|
+| [gap-assessment-summary.md](samples/gap-assessment-summary.md) | Complete gap assessment across all 93 controls |
+| [remediation-roadmap.md](samples/remediation-roadmap.md) | 26-week prioritised remediation plan with owners and effort estimates |
+| [risk-register.csv](samples/risk-register.csv) | Risk register with 10 risks, scores, and treatment plans |
+| [statement-of-applicability.csv](samples/statement-of-applicability.csv) | Full SoA — all 93 ISO 27001:2022 controls with applicability justifications |
+| [access-control-policy.md](samples/access-control-policy.md) | Generated access control policy (Annex A 5.15–5.18, 8.2–8.5) |
+| [incident-handling-procedure.md](samples/incident-handling-procedure.md) | Incident handling procedure with severity tiers and GDPR notification |
+| [internal-audit-report.md](samples/internal-audit-report.md) | Internal audit report — 3 major NCs, 4 minor NCs, 2 positive observations |
+| [corrective-action-record.md](samples/corrective-action-record.md) | Two corrective action records: one in progress, one closed and verified |
+| [evidence-package.md](samples/evidence-package.md) | 47-item evidence inventory with 28-control gap analysis |
+
+---
+
 ## Integrations
 
 ### Jira
@@ -1380,6 +1400,8 @@ tests/
 ---
 
 ## Security
+
+For a full security profile — threat model, hardening guide, data flow documentation, supply chain attestation, and audit log integrity verification — see the **[Trust Center](https://github.com/Sushegaad/MCP-Server-for-ISO27001/tree/main/docs/security/)**.
 
 ### API Key Storage
 
