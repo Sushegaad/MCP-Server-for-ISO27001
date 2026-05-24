@@ -1,3 +1,33 @@
+## What's new in v0.8.4
+
+### MCP Registry listing
+
+`iso27001-mcp` is now published to the [official MCP Registry](https://registry.modelcontextprotocol.io) at `io.github.Sushegaad/iso27001-mcp`. The server will appear in MCP-aware clients and tools that query the registry for available servers.
+
+- `server.json` added at repo root — registry metadata (name, description, transport, environment variables)
+- `mcpName` field added to `package.json` to satisfy npm package ownership verification required by the registry
+
+### README overhaul
+
+Complete restructure of `README.md` for discoverability and faster onboarding:
+
+- New top-line pitch: *"Turn Claude into an ISO 27001 compliance assistant"*
+- Added 6th badge: `ISO 27001:2022` shield
+- New **What Claude can do with it** section — 10-row capability-to-prompt table replacing the prose list
+- Quick Start updated to the exact 4-command flow with full `doctor` output shown and 5 "aha" prompts
+- New **Tool Categories** section — scannable 14-row summary table; no need to scroll to the full reference
+- New **Templates** section — all 30 Mustache templates listed with SEO keyword block
+- New **Security Model** section — full RBAC capability matrix (13 capabilities × 3 roles), data residency statement, and encryption summary, positioned before the Table of Contents
+- New **Roadmap** section
+- New **Contributing** section
+
+### Lint and coverage fixes
+
+- `runDoctor` — removed spurious `async` keyword (function has no `await` expressions); return type changed from `Promise<boolean>` to `boolean`; call sites in `index.ts` and `init.ts` updated accordingly
+- `src/cli/**` excluded from coverage thresholds in `vitest.config.ts` — interactive readline CLI tools are not unit-testable in CI
+
+---
+
 ## What's new in v0.8.3
 
 ### `iso27001-mcp init` — interactive setup wizard

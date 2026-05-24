@@ -2,7 +2,7 @@
 
 **Turn Claude into an ISO 27001 compliance assistant** — controls, risk register, policies, evidence tracking, SoA generation, and full audit workflows in one local encrypted MCP server.
 
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.3)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.3)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.4)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.4)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![npm downloads](https://img.shields.io/npm/dt/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![CI](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml/badge.svg)](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml)
