@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.sushegaad/iso27001-mcp",
+  "name": "io.github.Sushegaad/iso27001-mcp",
   "description": "ISO 27001 compliance workspace for Claude. Risks, policies, SoA, evidence, and audit workflows.",
   "repository": {
     "url": "https://github.com/Sushegaad/MCP-Server-for-ISO27001",
