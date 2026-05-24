@@ -1,7 +1,7 @@
 {
   "name": "iso27001-mcp",
-  "version": "0.8.2",
-  "description": "Stateful ISO 27001:2022 ISMS management for Claude — gap analysis, risk register, policies, audits, and evidence tracking via the Model Context Protocol",
+  "version": "0.8.3",
+  "description": "ISO 27001 compliance workspace for Claude — controls, risks, policies, evidence, audits, and SoA in one local encrypted MCP server",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -14,15 +14,25 @@
   "keywords": [
     "iso27001",
     "iso-27001",
+    "iso27001-2022",
     "isms",
     "mcp",
     "model-context-protocol",
     "claude",
     "compliance",
-    "security",
-    "audit",
+    "information-security",
+    "security-audit",
     "gap-analysis",
-    "risk-management"
+    "risk-management",
+    "risk-register",
+    "statement-of-applicability",
+    "soa",
+    "annex-a",
+    "corrective-action",
+    "evidence-tracking",
+    "policy-management",
+    "certification-readiness",
+    "grc"
   ],
   "engines": {
     "node": ">=20.11.0"

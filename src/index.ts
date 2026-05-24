@@ -3,6 +3,8 @@
  * iso27001-mcp — CLI entry point
  *
  * Usage:
+ *   iso27001-mcp init    — interactive setup wizard (first-time setup)
+ *   iso27001-mcp doctor  — health check (verify installation)
  *   iso27001-mcp [--mode local|team|ci|hosted] [--db <path>]
  *   iso27001-mcp keygen  --label <label> --role viewer|analyst|admin [--expires 90d|1y|YYYY-MM-DD]
  *   iso27001-mcp keys    list
@@ -23,6 +25,8 @@ import {
   parseExpiresFlag,
 } from "./auth/api-key.js";
 import type { Role } from "./auth/api-key.js";
+import { runInit }   from "./cli/init.js";
+import { runDoctor } from "./cli/doctor.js";
 
 // ── Parse argv ────────────────────────────────────────────────
 
@@ -48,7 +52,19 @@ process.on("SIGINT",  shutdown);
 
 // ── Sub-commands ──────────────────────────────────────────────
 
-if (subCommand === "keygen") {
+if (subCommand === "init") {
+  // iso27001-mcp init — interactive setup wizard
+  runInit().catch((err) => {
+    console.error("[init] FATAL:", err);
+    process.exit(1);
+  });
+} else if (subCommand === "doctor") {
+  // iso27001-mcp doctor — health check
+  runDoctor().catch((err) => {
+    console.error("[doctor] FATAL:", err);
+    process.exit(1);
+  });
+} else if (subCommand === "keygen") {
   // iso27001-mcp keygen --label "Alice" --role analyst --expires 90d
   handleKeygen();
 } else if (subCommand === "keys") {

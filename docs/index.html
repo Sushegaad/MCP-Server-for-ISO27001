@@ -245,7 +245,7 @@
     </div>
   </nav>
   <div class="sidebar-footer">
-    <p style="margin-bottom:4px">v0.8.2 · 63 tools · 14 groups</p>
+    <p style="margin-bottom:4px">v0.8.3 · 63 tools · 14 groups</p>
     <p>Real server: <a href="https://npmjs.com/package/iso27001-mcp" target="_blank">npm install -g iso27001-mcp</a></p>
   </div>
 </aside>
@@ -1086,7 +1086,7 @@
             <div class="res-hero-stat-label">Templates</div>
           </div>
           <div class="res-hero-stat">
-            <div class="res-hero-stat-value" style="font-size:20px">v0.8.2</div>
+            <div class="res-hero-stat-value" style="font-size:20px">v0.8.3</div>
             <div class="res-hero-stat-label">Latest</div>
           </div>
         </div>
@@ -1129,7 +1129,7 @@
       <!-- Installation -->
       <div class="res-install-card">
         <div class="res-install-title">Installation &amp; Quick Start</div>
-        <div class="res-install-sub">Get connected to Claude Desktop in five steps · Requires Node.js ≥ 20.11.0</div>
+        <div class="res-install-sub">Get connected to Claude Desktop in three commands · No openssl required · Requires Node.js ≥ 20.11.0</div>
 
         <div class="res-step">
           <div class="res-step-num">1</div>
@@ -1143,53 +1143,30 @@
         <div class="res-step">
           <div class="res-step-num">2</div>
           <div class="res-step-body">
-            <div class="res-step-title">Generate two secrets</div>
-            <div class="res-step-desc">One encrypts your database, the other signs API keys. Keep both — you'll need them in every restart.</div>
-            <div class="res-code"><span class="comment"># Run each command twice — save both outputs</span>
-<span class="cmd">openssl rand -hex 32</span>   <span class="comment"># → DB_ENCRYPTION_KEY</span>
-<span class="cmd">openssl rand -hex 32</span>   <span class="comment"># → HMAC_SECRET</span></div>
+            <div class="res-step-title">Run the setup wizard</div>
+            <div class="res-step-desc">One guided command does everything: generates AES-256 / HMAC-SHA256 secrets, creates and seeds the encrypted database with all 93 ISO 27001:2022 controls, generates your admin API key, and adds the entry to your Claude Desktop config automatically.</div>
+            <div class="res-code"><span class="cmd">iso27001-mcp init</span></div>
           </div>
         </div>
 
         <div class="res-step">
           <div class="res-step-num">3</div>
           <div class="res-step-body">
-            <div class="res-step-title">Generate your API key</div>
-            <div class="res-step-desc">The raw key is printed <strong>once</strong> and never stored. Copy it immediately.</div>
-            <div class="res-code"><span class="cmd">export</span> <span class="key">HMAC_SECRET</span>=<span class="val">&lt;your_hmac_secret&gt;</span>
-<span class="cmd">export</span> <span class="key">DB_ENCRYPTION_KEY</span>=<span class="val">&lt;your_db_key&gt;</span>
-<span class="cmd">iso27001-mcp keygen</span> --label <span class="val">"Me"</span> --role <span class="val">admin</span></div>
+            <div class="res-step-title">Verify and connect</div>
+            <div class="res-step-desc">Run the health check, then restart Claude Desktop (quit fully and reopen). You should see <strong>63 tools</strong> in the tools panel.</div>
+            <div class="res-code"><span class="cmd">iso27001-mcp doctor</span>
+<span class="comment"># All 10 checks should show ✅</span>
+<span class="comment"># Then restart Claude Desktop</span></div>
           </div>
         </div>
 
         <div class="res-step">
-          <div class="res-step-num">4</div>
+          <div class="res-step-num">✦</div>
           <div class="res-step-body">
-            <div class="res-step-title">Add to Claude Desktop config</div>
-            <div class="res-step-desc">macOS: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></div>
-            <div class="res-code">{
-  <span class="key">"mcpServers"</span>: {
-    <span class="key">"iso27001"</span>: {
-      <span class="key">"command"</span>: <span class="val">"iso27001-mcp"</span>,
-      <span class="key">"env"</span>: {
-        <span class="key">"HMAC_SECRET"</span>:        <span class="val">"your_hmac_secret"</span>,
-        <span class="key">"DB_ENCRYPTION_KEY"</span>: <span class="val">"your_db_key"</span>,
-        <span class="key">"MCP_API_KEY"</span>:       <span class="val">"iso27001_your_key"</span>,
-        <span class="key">"DB_PATH"</span>:           <span class="val">"/Users/you/.iso27001/isms.db"</span>
-      }
-    }
-  }
-}</div>
-          </div>
-        </div>
-
-        <div class="res-step">
-          <div class="res-step-num">5</div>
-          <div class="res-step-body">
-            <div class="res-step-title">Restart Claude Desktop and verify</div>
-            <div class="res-step-desc">You should see <strong>63 tools</strong> in the tools panel. Then ask Claude:</div>
-            <div class="res-code"><span class="val">"Use get_server_info to check the server is running."</span>
-<span class="val">"Create a gap assessment for Acme Ltd covering all ISO 27001:2022 controls."</span>
+            <div class="res-step-title">Try it with Claude</div>
+            <div class="res-step-desc">Ask Claude any of these to get started:</div>
+            <div class="res-code"><span class="val">"Use get_server_info to verify the server is running."</span>
+<span class="val">"Run an ISO 27001 gap assessment for a 50-person SaaS company."</span>
 <span class="val">"Register a new risk: our customer DB is exposed to SQL injection — likelihood 4, impact 5."</span></div>
           </div>
         </div>

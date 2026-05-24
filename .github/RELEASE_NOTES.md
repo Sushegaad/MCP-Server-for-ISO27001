@@ -1,3 +1,48 @@
+## What's new in v0.8.3
+
+### `iso27001-mcp init` — interactive setup wizard
+
+First-time setup is now a single guided command. No `openssl` required.
+
+```bash
+iso27001-mcp init
+```
+
+The 11-step wizard:
+
+1. Detects any existing configuration and offers to preserve or overwrite it
+2. Lets you choose where secrets and the database are stored (home dir / current dir / custom path)
+3. Generates `DB_ENCRYPTION_KEY` and `HMAC_SECRET` (AES-256 / HMAC-SHA256, 64 hex chars each) using Node's `crypto.randomBytes`
+4. Writes `~/.iso27001/.env` with `chmod 600` (owner read/write only; silently skipped on Windows)
+5. Creates and seeds the encrypted SQLite database with all 93 ISO 27001:2022 controls
+6. Generates an `admin` API key (print-once delivery)
+7. Detects your Claude Desktop config and offers to add the `iso27001-mcp` entry automatically
+8. Runs `iso27001-mcp doctor` inline to verify the full installation before exiting
+9. Prints a success summary with next steps
+
+### `iso27001-mcp doctor` — health check
+
+```bash
+iso27001-mcp doctor
+```
+
+Runs 10 checks and prints `✅ / ❌ / --` for each. Dependent checks are marked `--` (skipped) rather than `❌` to keep output actionable. Exits with code `1` if any check fails.
+
+Checks: `DB_ENCRYPTION_KEY` set (64 hex), `HMAC_SECRET` set (64 hex), `MCP_API_KEY` set, database file exists, database accessible, 6/6 migrations applied, ≥93 ISO 27001:2022 controls seeded, ≥1 active non-expired API key, Claude Desktop config found, `iso27001-mcp` entry present in `mcpServers`.
+
+### README restructured for onboarding
+
+- New bold tagline and "Why this exists" section with 5 example Claude prompts
+- Quick Start reduced to 3 commands: `npm install -g iso27001-mcp` → `iso27001-mcp init` → `iso27001-mcp doctor`
+- Installation section updated to lead with the `init` wizard; manual `openssl`-based flow moved to "Advanced / Manual Setup" subsection
+- Project structure updated to document the new `src/cli/` directory
+
+### Demo site updated
+
+Installation card in the Resources tab updated from the old 5-step flow (with `openssl rand` commands and manual JSON editing) to the new 3-step flow. Subtitle reads "three commands · No openssl required."
+
+---
+
 ## What's new in v0.8.2
 
 ### Security hardening (3 fixes)

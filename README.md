@@ -1,160 +1,209 @@
 # iso27001-mcp
 
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.2)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.2)
+**Turn Claude into an ISO 27001 compliance assistant** — controls, risk register, policies, evidence tracking, SoA generation, and full audit workflows in one local encrypted MCP server.
+
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.3)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.3)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![npm downloads](https://img.shields.io/npm/dt/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
-[![Live Demo](https://img.shields.io/badge/demo-live-blue)](https://sushegaad.github.io/MCP-Server-for-ISO27001/)
+[![CI](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml/badge.svg)](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![ISO 27001:2022](https://img.shields.io/badge/ISO%2027001-2022-blue.svg)](https://www.iso.org/standard/27001)
 
 **[▶ Live Interactive Demo](https://sushegaad.github.io/MCP-Server-for-ISO27001/)**
 
-A stateful [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that gives Claude a complete ISO 27001:2022 Information Security Management System (ISMS). Ask Claude to run gap assessments, manage risks, generate policies, track evidence, and run audits — all backed by an encrypted SQLite database on your own machine.
+---
 
-```
-Claude ──MCP──► iso27001-mcp ──► encrypted SQLite (isms.db)
-                    │
-                    ├── 93 ISO 27001:2022 controls (seeded)
-                    ├── 114 ISO 27001:2013 controls (seeded)
-                    ├── Gap assessments & remediation roadmaps
-                    ├── Risk register & treatment plans
-                    ├── Policy & procedure documents (Mustache templates)
-                    ├── Statement of Applicability
-                    ├── Audit findings & corrective actions
-                    └── Evidence tracking (+ Jira / GitHub)
-```
+## Why this exists
+
+ISO 27001 compliance work is typically scattered across spreadsheets, Word docs, ticketing systems, and shared drives. Security teams and consultants spend more time chasing evidence and reformatting documents than actually improving security posture.
+
+**`iso27001-mcp` solves this by giving Claude a live, stateful ISMS** — all 93 ISO 27001:2022 controls seeded and ready, a real risk register, policy and procedure generators, evidence tracking, audit workflows, and a Statement of Applicability, backed by an encrypted local database that never leaves your machine.
+
+The difference from generating static documents: Claude can *query, reason, and update* across your entire ISMS in a single conversation. Ask it to run a gap assessment, identify which open risks are linked to unimplemented controls, generate the policies that close those gaps, and produce a remediation roadmap — all without switching tools.
+
+**Who it's for:** Security teams · Compliance consultants · GRC engineers · Startups preparing for ISO 27001 · Internal audit functions
 
 ---
 
-## Table of Contents
+## What Claude can do with it
 
-- [Quick Start](#quick-start)
-- [Use Cases](#use-cases)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Connecting to Claude](#connecting-to-claude)
-- [Tools Reference](#tools-reference)
-  - [Group 1 — Control Registry](#group-1--control-registry-minimum-role-viewer)
-  - [Group 2 — Gap Analysis](#group-2--gap-analysis-reads-viewer-writes-analyst)
-  - [Group 3 — Risk Management](#group-3--risk-management-reads-viewer-writes-analyst)
-  - [Group 4 — Policy Management](#group-4--policy-management-reads-viewer-create-analyst-update-admin)
-  - [Group 5 — Statement of Applicability](#group-5--statement-of-applicability-minimum-role-analyst)
-  - [Group 6 — Audit Management](#group-6--audit-management-reads-viewer-writes-admin)
-  - [Group 7 — Evidence Tracking](#group-7--evidence-tracking-reads-viewer-writes-analyst)
-  - [Group 8 — Server Info](#group-8--server-info-minimum-role-viewer)
-  - [Group 9 — Admin & Key Management](#group-9--admin--key-management-minimum-role-admin)
-  - [Group 10 — Organisation Profile](#group-10--organisation-profile-minimum-role-admin-for-writes-viewer-for-reads)
-  - [Group 11 — Procedure Management](#group-11--procedure-management-reads-viewer-createexport-analyst-update-admin)
-  - [Group 12 — Management Review](#group-12--management-review-reads-viewer-writes-admin--clause-93)
-  - [Group 13 — Improvement Plan](#group-13--improvement-plan-reads-viewer-writes-analyst--clause-101)
-  - [Group 14 — Evidence Templates](#group-14--evidence-templates-reads-viewer-generate-analyst)
-- [MCP Resources](#mcp-resources)
-- [Architecture](#architecture)
-- [Modes](#modes)
-- [Integrations](#integrations)
-- [Sample Outputs](#sample-outputs)
-- [Development](#development)
-- [Security](#security)
-  - [Trust Center](https://github.com/Sushegaad/MCP-Server-for-ISO27001/tree/main/docs/security/) — threat model · hardening guide · data flow · supply chain · audit log integrity
+| Capability | Example prompt |
+|------------|----------------|
+| **Gap assessment** | *"Run an ISO 27001:2022 gap assessment for a 50-person SaaS company."* |
+| **Risk register** | *"Create a risk register for a startup using AWS, GitHub, Slack, and Google Workspace."* |
+| **Statement of Applicability** | *"Generate a Statement of Applicability for all 93 ISO 27001:2022 controls."* |
+| **Policy generation** | *"Create an Access Control Policy mapped to ISO 27001 controls."* |
+| **Procedure generation** | *"Generate an Incident Handling Procedure with GDPR breach notification triggers."* |
+| **Internal audit** | *"Plan an internal audit for clause 9.1 — Performance Evaluation."* |
+| **Corrective actions** | *"List open audit findings and suggest corrective actions."* |
+| **Evidence tracking** | *"Show me all implemented controls with no current evidence."* |
+| **Remediation roadmap** | *"Generate a 26-week remediation roadmap grouped by risk level."* |
+| **Management review** | *"Prepare agenda items for our Clause 9.3 management review."* |
 
 ---
 
 ## Quick Start
 
-Get the server connected to Claude Desktop in five steps.
-
 ### Prerequisites
 
-- **Node.js 20.11.0 or later** — download from [nodejs.org](https://nodejs.org) or use [nvm](https://github.com/nvm-sh/nvm) / [Volta](https://volta.sh)
-
-  ```bash
-  node --version   # should print v20.x.x or higher
-  ```
-
-- **Build tools** — required by the encrypted SQLite native module:
+- **Node.js 20.11.0+** — [nodejs.org](https://nodejs.org) or [nvm](https://github.com/nvm-sh/nvm) / [Volta](https://volta.sh)
+- **Build tools** (for the encrypted SQLite native module):
   - **macOS:** `xcode-select --install`
   - **Ubuntu/Debian:** `sudo apt-get install build-essential python3`
-  - **Windows:** Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) → "Build Tools for Visual Studio" → check "Desktop development with C++"
+  - **Windows:** [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) → "Desktop development with C++"
 
-### Step 1 — Install
-
-```bash
-npm install -g iso27001-mcp
-```
-
-This installs the `iso27001-mcp` command globally. The encrypted SQLite module downloads a prebuilt binary on macOS and Linux x64 automatically; it compiles from source on other platforms.
-
-### Step 2 — Generate your secrets
-
-Two secrets are required: one encrypts your database, the other signs API keys. Generate them with `openssl`:
+### Four commands to get running
 
 ```bash
-openssl rand -hex 32   # → save this as your DB_ENCRYPTION_KEY
-openssl rand -hex 32   # → save this as your HMAC_SECRET
+npm install -g iso27001-mcp   # 1. install globally
+iso27001-mcp init              # 2. interactive setup wizard
+iso27001-mcp keygen --label "me" --role admin   # 3. generate admin API key (if not already done by init)
+iso27001-mcp doctor            # 4. verify everything is working
 ```
 
-Keep these values — you'll need them in Steps 3 and 4.
-
-### Step 3 — Generate an API key
-
-The server uses API keys to authenticate and authorise every tool call. Set your secrets as environment variables first, then run the keygen command:
-
-```bash
-export HMAC_SECRET=<your_hmac_secret>
-export DB_ENCRYPTION_KEY=<your_db_key>
-export DB_PATH=$HOME/.iso27001/isms.db
-
-iso27001-mcp keygen --label "Me" --role admin
-```
-
-The raw key (`iso27001_...`) is printed **once** and never stored in plaintext. Copy it immediately.
-
-> Three roles are available: `viewer` (31 read-only tools), `analyst` (49 tools), `admin` (all 63 tools). Use `admin` for your personal key.
-
-### Step 4 — Add to Claude Desktop
-
-Open your Claude Desktop config file:
-
-- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-
-Add the following block, substituting your values from Steps 2 and 3:
-
-```json
-{
-  "mcpServers": {
-    "iso27001": {
-      "command": "iso27001-mcp",
-      "env": {
-        "HMAC_SECRET": "your_hmac_secret",
-        "DB_ENCRYPTION_KEY": "your_db_encryption_key",
-        "MCP_API_KEY": "iso27001_your_api_key_here",
-        "DB_PATH": "/Users/you/.iso27001/isms.db"
-      }
-    }
-  }
-}
-```
-
-> **Tip:** Store `isms.db` in a stable location like `~/.iso27001/isms.db` so it persists across package upgrades.
-
-### Step 5 — Restart Claude Desktop and verify
-
-Fully quit and reopen Claude Desktop. You should see 63 tools in the MCP tools panel (hammer icon). Then ask Claude:
-
-> *"Use get_server_info to check the server is running."*
-
-Claude will call `get_server_info` and return the version, uptime, and database stats — confirming all 93 ISO 27001:2022 and 114 ISO 27001:2013 controls are seeded and ready.
-
-### First things to try
+After running `iso27001-mcp doctor` you should see:
 
 ```
-"Create a gap assessment for Acme Ltd covering all ISO 27001:2022 controls."
-"Show me the gap summary and generate a remediation roadmap with a 26-week timeline."
-"Register a new risk: our customer database is exposed to SQL injection — likelihood 4, impact 5."
-"Set our organisation profile: Acme Ltd, scope: all cloud-hosted systems and remote employees."
-"Generate an Access Control Policy for Acme Ltd. Owner: CISO. Effective from 1 July 2026."
-"Create an Incident Handling Procedure linked to our Information Security Policy."
-"Create an internal audit for Q3 covering clause 9.1 — Performance Evaluation."
+iso27001-mcp — health check
+────────────────────────────────────────────────────────
+✅  DB_ENCRYPTION_KEY      set (64 hex chars)
+✅  HMAC_SECRET            set (64 hex chars)
+✅  MCP_API_KEY            set (starts with iso27001_)
+✅  Database file          /Users/you/.iso27001/isms.db
+✅  Database accessible    opened and queried successfully
+✅  Migrations             6/6 applied
+✅  Controls seeded        93 ISO 27001:2022 controls
+✅  Active API key         1 active key found
+✅  Claude Desktop config  /Users/you/.../claude_desktop_config.json
+✅  iso27001-mcp entry     present in mcpServers
+────────────────────────────────────────────────────────
+  All 10 checks passed. Restart Claude Desktop if you just ran init.
 ```
+
+Then **restart Claude Desktop** (quit fully and reopen). You should see 63 tools in the tools panel.
+
+### Five prompts to try first
+
+```
+"Use get_server_info to verify the server is running."
+"Run an ISO 27001 gap assessment for a 50-person SaaS company."
+"Create a risk register for a startup using AWS, GitHub, Slack, and Google Workspace."
+"Generate a Statement of Applicability for ISO 27001:2022."
+"Create an Access Control Policy mapped to ISO 27001 controls."
+```
+
+---
+
+## Tool Categories
+
+63 tools across 14 groups. All require an API key; minimum role is shown.
+
+| Group | Tools | Min. role | What it does |
+|-------|-------|-----------|--------------|
+| **Control Registry** | 7 | viewer | Search, filter, and compare ISO 27001:2022 and 2013 controls; browse clause requirements |
+| **Gap Analysis** | 7 | viewer / analyst | Create and track gap assessments; export gap reports; generate remediation roadmaps |
+| **Risk Management** | 8 | viewer / analyst | Risk register with likelihood × impact scoring, treatment plans, and heat-map summaries |
+| **Policy Management** | 4 | viewer / analyst / admin | Generate, version, and export policies from 12 Mustache templates |
+| **Statement of Applicability** | 3 | analyst | Build and export SoA from a gap assessment; all 93 controls with applicability decisions |
+| **Audit Management** | 5 | viewer / admin | Plan audits, record findings (NCs, OFIs), raise CARs, and close with effectiveness check |
+| **Evidence Tracking** | 5 | viewer / analyst | Register evidence artefacts, spot gaps, link to Jira / GitHub issues |
+| **Server Info** | 1 | viewer | Server version, tool count, capability summary |
+| **Admin & Key Management** | 6 | admin | Generate / revoke API keys, query the HMAC audit log |
+| **Organisation Profile** | 2 | admin (write) / viewer (read) | Set org name, scope, and defaults used by all templates |
+| **Procedure Management** | 5 | viewer / analyst / admin | Generate, version, and export procedures from 12 Mustache templates |
+| **Management Review** | 6 | viewer / admin | Full Clause 9.3 lifecycle — inputs, outputs, completion (enforces all 7 required input categories) |
+| **Improvement Plan** | 4 | viewer / analyst | Clause 10.1 improvement opportunities — track, link, and report |
+| **Evidence Templates** | 3 | viewer / analyst | Generate Mustache-rendered evidence documents; dual-write to evidence and generated_evidence tables |
+
+---
+
+## Templates
+
+The server ships 30 Mustache templates that Claude renders on demand with your organisation's name, scope, and control references automatically injected.
+
+### ISO 27001 Policy Templates
+
+Generate any of these with a single Claude prompt:
+
+`information_security` · `access_control` · `risk_management` · `asset_management` · `incident_response` · `business_continuity` · `supplier_security` · `cryptography` · `physical_security` · `acceptable_use` · `data_classification` · `secure_development`
+
+### ISO 27001 Procedure Templates
+
+`incident_handling` · `access_provisioning` · `asset_onboarding_offboarding` · `audit_log_review` · `backup_restore` · `bcp_testing` · `change_management` · `cryptographic_key_management` · `data_classification_handling` · `secure_development_workflow` · `supplier_onboarding` · `vulnerability_management`
+
+### Evidence Document Templates
+
+Pre-structured evidence documents for auditor submissions: `risk_assessment` · `internal_audit` · `management_review` · `access_review` · `incident_review` · `bcp_test`
+
+### Sample Outputs
+
+The [`samples/`](samples/) directory contains auditor-ready example outputs for a fictitious organisation ("Acme Financial Services Ltd") — a full gap assessment, remediation roadmap, risk register CSV, SoA CSV, access control policy, incident handling procedure, internal audit report, corrective action records, and evidence package. See [Sample Outputs](#sample-outputs) for the full index.
+
+> **ISO 27001 keywords:** ISO 27001 Statement of Applicability generator · ISO 27001 risk register template · ISO 27001 gap assessment tool · ISO 27001 audit evidence tracker · ISO 27001 MCP server · Claude ISO 27001 compliance assistant · AI GRC tool open source
+
+---
+
+## Security Model
+
+### Role-Based Access Control (RBAC)
+
+Three roles with strict hierarchy. A key can only call tools at or below its assigned role level.
+
+| Capability | Viewer | Analyst | Admin |
+|------------|--------|---------|-------|
+| Read controls, clauses, version mappings | ✅ | ✅ | ✅ |
+| Read gap assessments, risks, policies, audits, evidence | ✅ | ✅ | ✅ |
+| Create / update gap assessments and control statuses | — | ✅ | ✅ |
+| Create and manage risks and treatment plans | — | ✅ | ✅ |
+| Generate policies and procedures | — | ✅ | ✅ |
+| Create and export Statements of Applicability | — | ✅ | ✅ |
+| Track and link evidence artefacts | — | ✅ | ✅ |
+| Record and track improvement opportunities | — | ✅ | ✅ |
+| Plan and close internal audits; raise CARs | — | — | ✅ |
+| Set organisation profile | — | — | ✅ |
+| Run management reviews (Clause 9.3) | — | — | ✅ |
+| View and query the audit log | — | — | ✅ |
+| Generate and revoke API keys | — | — | ✅ |
+
+**Tool counts:** Viewer — 31 tools · Analyst — 49 tools · Admin — 63 tools
+
+### What never leaves your machine
+
+In `local` mode (stdio, the default), no data leaves the machine. The encrypted SQLite database, the `.env` secrets file, and the append-only audit log are all stored locally. There is no telemetry, no cloud sync, and no outbound network calls — unless you explicitly configure the optional Jira or GitHub integrations.
+
+For the full security profile — threat model, hardening guide, supply chain attestation, and audit log integrity verification — see the **[Trust Center](https://github.com/Sushegaad/MCP-Server-for-ISO27001/tree/main/docs/security/)**.
+
+### Encryption and audit trail summary
+
+- **Database** — AES-256 encrypted SQLite via `better-sqlite3-multiple-ciphers`
+- **API keys** — HMAC-SHA256 hashed; raw key printed once and never stored
+- **Audit log** — HMAC-SHA256 hash chain; every row linked to its predecessor — insertion, deletion, or reordering is detectable
+- **Prompt injection** — free-text fields sanitised before passing to any handler
+
+---
+
+## Table of Contents
+
+- [Why this exists](#why-this-exists)
+- [What Claude can do with it](#what-claude-can-do-with-it)
+- [Quick Start](#quick-start)
+- [Tool Categories](#tool-categories)
+- [Templates](#templates)
+- [Security Model](#security-model)
+- [Use Cases](#use-cases)
+- [Installation](#installation)
+- [Connecting to Claude](#connecting-to-claude)
+- [Advanced / Manual Setup](#advanced--manual-setup)
+- [Tools Reference](#tools-reference)
+- [MCP Resources](#mcp-resources)
+- [Architecture](#architecture)
+- [Modes](#modes)
+- [Sample Outputs](#sample-outputs)
+- [Integrations](#integrations)
+- [Roadmap](#roadmap)
+- [Development](#development)
+- [Contributing](#contributing)
+- [Security](#security)
 
 ---
 
@@ -271,38 +320,132 @@ npm install -g iso27001-mcp
 
 The `iso27001-mcp` command is now available globally. The encrypted SQLite module (`better-sqlite3-multiple-ciphers`) downloads a prebuilt binary on supported platforms; it compiles from source if none is available.
 
-**Run from source** (for development or to get the latest unreleased changes):
+### Step 2 — Run the setup wizard
 
 ```bash
-git clone https://github.com/Sushegaad/MCP-Server-for-ISO27001
-cd iso27001-mcp
-npm install
-npm run build
-# Use `node dist/index.js` instead of `iso27001-mcp` in all commands below
+iso27001-mcp init
 ```
 
-### Step 2 — Set Up Environment Variables
+The wizard handles everything in one guided session — no `openssl` required:
+
+- Generates `DB_ENCRYPTION_KEY` and `HMAC_SECRET` (AES-256 / HMAC-SHA256, 64 hex chars each)
+- Writes a `~/.iso27001/.env` file with mode `600`
+- Creates and seeds the encrypted SQLite database with all 93 ISO 27001:2022 controls
+- Generates an admin API key
+- Detects your Claude Desktop config and offers to add the `iso27001-mcp` entry automatically
+
+### Step 3 — Verify
 
 ```bash
-cp .env.example .env
+iso27001-mcp doctor
 ```
 
-Edit `.env` and fill in the two required secrets:
+Runs 10 health checks and prints `✅ / ❌ / --` for each. All green means Claude Desktop is ready.
+
+### Step 4 — Restart Claude Desktop
+
+Quit the app fully and reopen it. The ISO 27001 tools will appear in the tools panel.
+
+> **Tip:** Ask Claude `"Use get_server_info to verify the server is running"` to confirm the connection.
+
+---
+
+## Connecting to Claude
+
+### Claude Desktop (automatic via `init`)
+
+`iso27001-mcp init` writes the following entry into `claude_desktop_config.json` automatically. You can also add or update it manually:
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "iso27001-mcp": {
+      "command": "iso27001-mcp",
+      "env": {
+        "DB_ENCRYPTION_KEY": "<generated by init>",
+        "HMAC_SECRET": "<generated by init>",
+        "MCP_API_KEY": "<generated by init>",
+        "DB_PATH": "/Users/you/.iso27001/isms.db",
+        "AUDIT_LOG_PATH": "/Users/you/.iso27001/audit.jsonl"
+      }
+    }
+  }
+}
+```
+
+### Claude Code
 
 ```bash
-# Generate a 32-byte HMAC signing secret
-openssl rand -hex 32   # → paste into HMAC_SECRET
-
-# Generate a 32-byte AES-256 database encryption key
-openssl rand -hex 32   # → paste into DB_ENCRYPTION_KEY
+# Add to your project's MCP config
+claude mcp add iso27001-mcp iso27001-mcp
 ```
 
-Full variable reference:
+Then set the required env vars in your shell or `.env`:
+
+```bash
+export DB_ENCRYPTION_KEY=your_db_encryption_key
+export HMAC_SECRET=your_hmac_secret
+export MCP_API_KEY=iso27001_your_key_here
+export DB_PATH=$HOME/.iso27001/isms.db
+```
+
+### Managing API Keys
+
+```bash
+# Generate additional keys for team members
+iso27001-mcp keygen --label "Alice" --role viewer       # read-only, 31 tools
+iso27001-mcp keygen --label "Bob"   --role analyst --expires 90d  # 49 tools
+iso27001-mcp keygen --label "CISO"  --role admin  --expires 1y    # all 63 tools
+
+# List all keys
+iso27001-mcp keys list
+
+# Revoke a key immediately
+iso27001-mcp keys revoke --label "Alice"
+```
+
+The raw key is printed **once** and never stored in plaintext. Save it immediately.
+
+---
+
+## Advanced / Manual Setup
+
+> Use this path if you need a custom database location, CI/CD integration, or prefer to manage secrets without the wizard.
+
+**1. Generate secrets:**
+
+```bash
+openssl rand -hex 32   # → DB_ENCRYPTION_KEY
+openssl rand -hex 32   # → HMAC_SECRET
+```
+
+**2. Create `.env`** (store outside your project root, never commit):
+
+```bash
+DB_ENCRYPTION_KEY=<64 hex chars>
+HMAC_SECRET=<64 hex chars>
+DB_PATH=/path/to/isms.db
+AUDIT_LOG_PATH=/path/to/audit.jsonl
+```
+
+**3. Generate an admin API key:**
+
+```bash
+source /path/to/.env   # or export vars individually
+iso27001-mcp keygen --label admin --role admin
+```
+
+**4. Add the `iso27001-mcp` entry** to `claude_desktop_config.json` manually (see JSON block above), then restart Claude Desktop.
+
+**Full environment variable reference:**
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `HMAC_SECRET` | ✅ | — | 32-byte hex secret for HMAC-signing API keys |
 | `DB_ENCRYPTION_KEY` | ✅ | — | 32-byte hex key for AES-256 SQLite encryption |
+| `HMAC_SECRET` | ✅ | — | 32-byte hex secret for HMAC-signing API keys |
 | `DB_PATH` | | `./isms.db` | Path to the encrypted database file |
 | `AUDIT_LOG_PATH` | | `./audit.jsonl` | Path for the append-only JSON-L audit log (`.jsonl` or `.log` only) |
 | `RATE_LIMIT_RPM` | | `500` | Tool calls per minute per API key |
@@ -317,76 +460,14 @@ Full variable reference:
 | `GITHUB_TOKEN` | | — | GitHub personal access token (scope: `issues:write`) |
 | `GITHUB_REPO` | | — | e.g. `your-org/your-repo` |
 
-### Step 3 — Generate an API Key
-
-The server requires an API key on every tool call. Generate one for yourself:
+**Run from source** (for development or to get the latest unreleased changes):
 
 ```bash
-# Viewer — read-only access to 25 tools
-iso27001-mcp keygen --label "Alice" --role viewer
-
-# Analyst — read + write for gap/risk/policy/procedure/evidence tools (49 tools)
-iso27001-mcp keygen --label "Bob" --role analyst --expires 90d
-
-# Admin — all 63 tools including audit log and key management
-iso27001-mcp keygen --label "CISO" --role admin --expires 1y
-```
-
-The raw key is printed **once** and never stored in plaintext. Save it immediately.
-
-```bash
-# List all keys
-iso27001-mcp keys list
-
-# Revoke a key immediately
-iso27001-mcp keys revoke --label "Alice"
-```
-
----
-
-## Connecting to Claude
-
-### Claude Desktop
-
-Add the server to your Claude Desktop MCP configuration file:
-
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "iso27001": {
-      "command": "iso27001-mcp",
-      "env": {
-        "HMAC_SECRET": "your_hmac_secret",
-        "DB_ENCRYPTION_KEY": "your_db_encryption_key",
-        "MCP_API_KEY": "iso27001_your_api_key_here",
-        "DB_PATH": "/Users/you/.iso27001/isms.db"
-      }
-    }
-  }
-}
-```
-
-Restart Claude Desktop. The ISO 27001 tools will appear in the tools panel.
-
-> **Tip:** Store your `isms.db` in a stable location like `~/.iso27001/isms.db` so it persists across upgrades.
-
-### Claude Code
-
-```bash
-# Add to your project's MCP config
-claude mcp add iso27001 iso27001-mcp
-```
-
-Then set the required env vars in your shell or `.env`:
-
-```bash
-export HMAC_SECRET=your_hmac_secret
-export DB_ENCRYPTION_KEY=your_db_encryption_key
-export MCP_API_KEY=iso27001_your_key_here
-export DB_PATH=$HOME/.iso27001/isms.db
+git clone https://github.com/Sushegaad/MCP-Server-for-ISO27001
+cd MCP-server-for-ISO27001
+npm install
+npm run build
+# Use `node dist/index.js` instead of `iso27001-mcp` in all commands below
 ```
 
 ---
@@ -1294,6 +1375,32 @@ Use `link_github_issue` to create an issue with `compliance` and `iso27001` labe
 
 ---
 
+## Roadmap
+
+The following features are planned or under consideration. Contributions welcome — see [Contributing](#contributing).
+
+### Near-term (next 1–2 releases)
+
+- **ISO 27001:2022 ↔ SOC 2 control mapping** — show which ISO 27001 controls satisfy which SOC 2 Trust Services Criteria
+- **Evidence expiry alerts** — surface evidence artefacts approaching their `expiry_date` in gap summaries and audit reports
+- **Bulk control status import** — accept a CSV to batch-update control statuses in a gap assessment
+- **HTML export** — add `html` as an export format for gap reports, SoA, and the risk register
+
+### Medium-term
+
+- **ISO 27001:2022 ↔ NIST CSF 2.0 mapping** — cross-reference controls to NIST Cybersecurity Framework 2.0 functions and categories
+- **PostgreSQL backend** — optional PostgreSQL transport via a pluggable DB adapter (SQLite stays default for local use)
+- **Supplier risk register** — track third-party suppliers against ISO 27001 Annex A 5.19–5.22 controls
+- **Multi-ISMS support** — scope-isolated tenants sharing a single server instance (hosted mode)
+
+### Under consideration
+
+- GDPR Article 30 RoPA generation linked to the risk register
+- NIS2 control mapping
+- Automated evidence collection via API integrations (AWS Config, GitHub Security Advisories, etc.)
+
+---
+
 ## Development
 
 ```bash
@@ -1326,8 +1433,13 @@ npm run dev
 
 ```
 src/
-├── index.ts                  CLI entry (keygen, keys, server startup)
+├── index.ts                  CLI entry (init, doctor, keygen, keys, server startup)
 ├── server.ts                 McpServer factory — registers tools + resources
+├── cli/
+│   ├── init.ts               Interactive setup wizard (iso27001-mcp init)
+│   ├── doctor.ts             10-check health report (iso27001-mcp doctor)
+│   ├── prompt.ts             Lazy readline wrapper — ask, confirm, banner, check
+│   └── claude-config.ts      Claude Desktop config detection + entry builder
 ├── auth/
 │   ├── api-key.ts            Key generation, HMAC validation, expiry, revocation
 │   ├── rbac.ts               Permission matrix (63 tools × 3 roles)
@@ -1342,7 +1454,7 @@ src/
 ├── db/
 │   ├── connection.ts         Encrypted SQLite open/close/migrate
 │   ├── dal.ts                Shared helpers: newId, now, toJson, fromJsonArray, computeEvidenceStatus
-│   └── migrations/           0001_initial.sql, 0002_fts_index.sql, 0003_org_profile_procedures.sql
+│   └── migrations/           0001_initial.sql through 0006_audit_log_hmac.sql
 ├── seed/
 │   ├── seeder.ts             Idempotent seed runner with checksum verification
 │   ├── controls-2022.json    93 ISO 27001:2022 Annex A controls
@@ -1399,9 +1511,41 @@ tests/
 
 ---
 
+## Contributing
+
+Contributions are welcome — bug fixes, new policy/procedure templates, additional integrations, and documentation improvements are all valuable.
+
+**Getting started:**
+
+```bash
+git clone https://github.com/Sushegaad/MCP-Server-for-ISO27001
+cd MCP-server-for-ISO27001
+npm install
+npm test          # should pass before any changes
+npm run typecheck # zero errors required
+```
+
+**Before opening a PR:**
+
+- Run `npm run typecheck` — zero TypeScript errors required
+- Run `npm test` — all tests must pass
+- Run `npm run lint` — no new lint errors
+- If adding seed data, run `npm run generate-checksums` and commit the updated checksums file
+
+**Areas where help is most needed:**
+
+- Additional policy and procedure templates (currently 12 + 12; ISO 27001 has room for more)
+- More evidence document templates
+- ISO 27001 ↔ other framework mappings (SOC 2, NIST CSF, CIS Controls)
+- Windows and Linux testing (most development is on macOS)
+
+Please open an issue before starting significant work so we can align on direction.
+
+---
+
 ## Security
 
-For a full security profile — threat model, hardening guide, data flow documentation, supply chain attestation, and audit log integrity verification — see the **[Trust Center](https://github.com/Sushegaad/MCP-Server-for-ISO27001/tree/main/docs/security/)**.
+For the full security profile — threat model, hardening guide, data flow documentation, supply chain attestation, and audit log integrity verification — see the **[Trust Center](https://github.com/Sushegaad/MCP-Server-for-ISO27001/tree/main/docs/security/)**.
 
 ### API Key Storage
 
