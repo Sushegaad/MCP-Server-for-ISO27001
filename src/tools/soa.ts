@@ -7,6 +7,7 @@
 import { getDb } from "../db/connection.js";
 import { newId, now, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
+import { renderHtmlDocument } from "./template-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -208,6 +209,49 @@ export function handleExportSoa(args: Record<string, unknown>): ToolResult {
 
   const includedCount = entries.filter((e) => e.included === 1).length;
   const excludedCount = entries.filter((e) => e.included === 0).length;
+
+  const ORG_PROFILE_ID_SOA = "00000000-0000-4000-8000-000000000001";
+
+  if (format === "html") {
+    const profileRow = db.prepare(
+      "SELECT legal_entity_name, logo_url, primary_color, document_footer FROM organization_profile WHERE id = ?"
+    ).get(ORG_PROFILE_ID_SOA) as { legal_entity_name?: string; logo_url?: string; primary_color?: string; document_footer?: string } | undefined;
+
+    const tableRows = entries.map((e) => {
+      const inc = e.included === 1;
+      return `<tr>
+        <td><strong>${e.control_id}</strong></td>
+        <td>${e.control_name ?? "—"}</td>
+        <td>${e.theme ?? "—"}</td>
+        <td style="color:${inc ? "#065f46" : "#991b1b"};font-weight:600">${inc ? "✓ Yes" : "✗ No"}</td>
+        <td>${e.justification}</td>
+        <td>${e.status ?? "—"}</td>
+        <td>${e.responsible_party ?? "—"}</td>
+      </tr>`;
+    }).join("\n");
+
+    const bodyHtml = `
+      <p><strong>ISMS Version:</strong> ISO 27001:${soa.isms_version} &nbsp;·&nbsp;
+         <strong>Total:</strong> ${entries.length} &nbsp;·&nbsp;
+         <strong>Included:</strong> ${includedCount} &nbsp;·&nbsp;
+         <strong>Excluded:</strong> ${excludedCount}</p>
+      <table>
+        <thead>
+          <tr><th>Control ID</th><th>Name</th><th>Theme</th><th>Included</th><th>Justification</th><th>Status</th><th>Responsible Party</th></tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>`;
+
+    const html = renderHtmlDocument(bodyHtml, {
+      title:             "Statement of Applicability",
+      organisation_name: profileRow?.legal_entity_name ?? "Organisation",
+      logo_url:          profileRow?.logo_url,
+      primary_color:     profileRow?.primary_color,
+      document_footer:   profileRow?.document_footer,
+      doc_type:          `ISO 27001:${soa.isms_version}`,
+    });
+    return ok({ format: "html", content: html });
+  }
 
   if (format === "csv") {
     const header = "control_id,name,theme,included,justification,status,responsible_party";

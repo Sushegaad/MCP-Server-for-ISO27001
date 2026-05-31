@@ -23,17 +23,18 @@ describe.skipIf(!!process.env.CI || !supportsNativeDb)("DB operations — migrat
 
   // ── Migration integrity ────────────────────────────────────
 
-  it("migrations create the _migrations table with exactly 6 rows", () => {
+  it("migrations create the _migrations table with exactly 7 rows", () => {
     const rows = db
       .prepare("SELECT filename FROM _migrations ORDER BY id")
       .all() as { filename: string }[];
-    expect(rows).toHaveLength(6);
+    expect(rows).toHaveLength(7);
     expect(rows[0].filename).toBe("0001_initial.sql");
     expect(rows[1].filename).toBe("0002_fts_index.sql");
     expect(rows[2].filename).toBe("0003_org_profile_procedures.sql");
     expect(rows[3].filename).toBe("0004_management_review_improvement.sql");
     expect(rows[4].filename).toBe("0005_evidence_documents.sql");
     expect(rows[5].filename).toBe("0006_audit_log_hmac.sql");
+    expect(rows[6].filename).toBe("0007_org_profile_branding.sql");
   });
 
   it("all expected core tables exist after migration", () => {

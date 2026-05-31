@@ -35,6 +35,10 @@ interface OrgProfileRow {
   review_cadence_months:   number;
   created_at:              string;
   updated_at:              string;
+  logo_url:           string | null;
+  primary_color:      string | null;
+  document_footer:    string | null;
+  certification_body: string | null;
 }
 
 type ToolResult = { content: Array<{ type: "text"; text: string }>; isError: boolean };
@@ -55,18 +59,22 @@ function ok(data: unknown): ToolResult {
  */
 export function loadOrgProfileDefaults(
   db: Database,
-): { organisation_name: string; scope: string } | null {
+): { organisation_name: string; scope: string; logo_url: string | null; primary_color: string | null; document_footer: string | null; certification_body: string | null } | null {
   const row = db
-    .prepare("SELECT legal_entity_name, isms_scope_statement FROM organization_profile WHERE id = ?")
+    .prepare("SELECT legal_entity_name, isms_scope_statement, logo_url, primary_color, document_footer, certification_body FROM organization_profile WHERE id = ?")
     .get(ORG_PROFILE_ID) as
-    | { legal_entity_name: string; isms_scope_statement: string }
+    | { legal_entity_name: string; isms_scope_statement: string; logo_url: string | null; primary_color: string | null; document_footer: string | null; certification_body: string | null }
     | undefined;
 
   if (!row) return null;
 
   return {
-    organisation_name: row.legal_entity_name,
-    scope:             row.isms_scope_statement,
+    organisation_name:  row.legal_entity_name,
+    scope:              row.isms_scope_statement,
+    logo_url:           row.logo_url,
+    primary_color:      row.primary_color,
+    document_footer:    row.document_footer,
+    certification_body: row.certification_body,
   };
 }
 
@@ -82,6 +90,10 @@ export function handleSetOrganizationProfile(args: Record<string, unknown>): Too
     declared_exclusions,
     raci_roles,
     review_cadence_months = 12,
+    logo_url,
+    primary_color,
+    document_footer,
+    certification_body,
   } = args as {
     legal_entity_name:       string;
     registered_jurisdiction: string;
@@ -97,6 +109,10 @@ export function handleSetOrganizationProfile(args: Record<string, unknown>): Too
       internal_auditor?:  string;
     };
     review_cadence_months?: number;
+    logo_url?:           string;
+    primary_color?:      string;
+    document_footer?:    string;
+    certification_body?: string;
   };
 
   const ts = now();
@@ -105,10 +121,11 @@ export function handleSetOrganizationProfile(args: Record<string, unknown>): Too
     INSERT OR REPLACE INTO organization_profile
       (id, legal_entity_name, registered_jurisdiction, regulatory_licences,
        in_scope_activities, isms_scope_statement, declared_exclusions,
-       raci_roles, review_cadence_months, created_at, updated_at)
+       raci_roles, review_cadence_months, created_at, updated_at,
+       logo_url, primary_color, document_footer, certification_body)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(
       (SELECT created_at FROM organization_profile WHERE id = ?), ?
-    ), ?)
+    ), ?, ?, ?, ?, ?)
   `).run(
     ORG_PROFILE_ID,
     legal_entity_name,
@@ -122,6 +139,10 @@ export function handleSetOrganizationProfile(args: Record<string, unknown>): Too
     ORG_PROFILE_ID,
     ts,
     ts,
+    logo_url ?? null,
+    primary_color ?? null,
+    document_footer ?? null,
+    certification_body ?? null,
   );
 
   return ok({

@@ -28,8 +28,6 @@ const paginationOffset = z.number().int().min(0).optional().default(0);
 // Reusable enums
 const versionEnum      = z.enum(["2022", "2013"]);
 const formatMarkdownCsvJson = z.enum(["markdown", "csv", "json"]);
-const formatMarkdownCsv     = z.enum(["markdown", "csv"]);
-const formatMarkdownJson    = z.enum(["markdown", "json"]);
 const riskLevelEnum    = z.enum(["Low", "Medium", "High", "Critical"]);
 const likelihood1to5   = z.number().int().min(1).max(5);
 const roleEnum         = z.enum(["viewer", "analyst", "admin"]);
@@ -299,7 +297,7 @@ export const UpdateSoaEntrySchema = z.object({
 
 export const ExportSoaSchema = z.object({
   soa_id: uuid,
-  format: formatMarkdownCsv,
+  format: z.enum(["markdown", "csv", "html"]),
 });
 
 // ── Group 6: Audit Management ────────────────────────────────
@@ -343,7 +341,7 @@ export const UpdateCorrectiveActionSchema = z.object({
 
 export const GenerateAuditReportSchema = z.object({
   audit_id: uuid,
-  format:   formatMarkdownJson,
+  format:   z.enum(["markdown", "json", "html"]),
 });
 
 // ── Group 7: Evidence Tracking ───────────────────────────────
@@ -427,6 +425,10 @@ export const SetOrganizationProfileSchema = z.object({
     internal_auditor:  shortText(200).optional(),
   }).optional(),
   review_cadence_months: z.number().int().min(1).max(36).optional().default(12),
+  logo_url:           z.string().url().max(2000).optional(),
+  primary_color:      z.string().regex(/^#[0-9a-fA-F]{6}$/, "must be 6-digit hex e.g. #1e3a5f").optional(),
+  document_footer:    z.string().max(500).optional(),
+  certification_body: z.string().max(200).optional(),
 });
 
 export const GetOrganizationProfileSchema = z.object({});
@@ -488,7 +490,7 @@ export const ListProceduresSchema = z.object({
 
 export const ExportProcedureSchema = z.object({
   procedure_id: uuid,
-  format:       formatMarkdownJson,
+  format:       z.enum(["markdown", "json", "html"]),
 });
 
 // ── Group 12: Management Review (Clause 9.3) ─────────────────

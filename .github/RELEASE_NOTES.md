@@ -1,3 +1,53 @@
+## What's new in v0.8.5
+
+### Internal Audit interactive mask (demo site)
+
+The live demo now includes a full **Internal Audit** guided panel under a new sidebar nav item, positioned between Procedures and Management Review. The panel follows the same 3-phase flow used by Claude internally:
+
+**Phase 1 — Plan Audit** — collects audit name, lead auditor, planned date, controls in scope, clauses in scope, and scope description. Simulates `create_audit`.
+
+**Phase 2 — Record Findings** — supports NC (major/minor), OBS (observation), and OFI (opportunity for improvement) finding types. Severity is enforced for NC findings. Simulates `record_finding`. Live stats bar shows NC / OBS / OFI counts.
+
+**Phase 3 — CARs & Close** — raise corrective action requests against NC findings, mark them effective (`effectiveness_verified`), and close the audit. The Close button is disabled until every NC finding has a verified CAR — directly encoding the ISO 27001:2022 Clause 10.1 business rule. Simulates `create_corrective_action`, `update_corrective_action`, and `close_audit`.
+
+### Organisation profile branding fields (Migration 0007)
+
+`set_organization_profile` and `get_organization_profile` now support four new optional fields for document personalisation:
+
+- **`logo_url`** — URL or data URL for the organisation logo, embedded in HTML document headers
+- **`primary_color`** — 6-digit hex colour (e.g. `#1e3a5f`) used for header bars and table accents in generated HTML documents
+- **`document_footer`** — company address, legal entity name, or registration number for document footers
+- **`certification_body`** — name of the external certification body (e.g. BSI, DNV, Bureau Veritas)
+
+Migration 0007 adds the four columns to `organization_profile` as nullable ALTERs — fully backward-compatible with existing databases.
+
+### HTML export format for documents
+
+Three tools now accept `format: "html"` alongside their existing formats:
+
+- **`export_procedure`** — `markdown` | `json` | **`html`**
+- **`export_soa`** — `markdown` | `csv` | **`html`**
+- **`generate_audit_report`** — `markdown` | `json` | **`html`**
+
+The HTML output is a fully self-contained, print-ready document with inline CSS. It picks up `logo_url`, `primary_color`, and `document_footer` from the organisation profile automatically — so every generated document is branded for the client company with no extra arguments.
+
+Two new utilities added to `src/tools/template-utils.ts`:
+
+- `markdownToHtml(md)` — converts structured ISMS Markdown (headings, bold, tables, lists, hr) to HTML without any external dependency
+- `renderHtmlDocument(bodyHtml, meta)` — wraps in a branded, paginated HTML shell with `@media print` CSS
+
+Opening any HTML export in a browser and using File → Print → Save as PDF produces a clean paginated PDF.
+
+### Print CSS (demo site)
+
+`@media print` styles added to the demo site. Sidebar, topbar, and action buttons are suppressed; page margins set to 1.5cm. Any active demo section can now be printed directly to PDF from the browser.
+
+### Test suite updated
+
+`tests/integration/db-operations.test.ts` updated to expect 7 migrations (was 6) and assert the new `0007_org_profile_branding.sql` filename.
+
+---
+
 ## What's new in v0.8.4
 
 ### MCP Registry listing

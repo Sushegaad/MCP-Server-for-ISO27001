@@ -597,6 +597,17 @@ const MIGRATION_0006 = `-- =====================================================
 ALTER TABLE audit_log ADD COLUMN prev_hash TEXT;
 `;
 
+const MIGRATION_0007 = `-- ============================================================
+-- iso27001-mcp  Migration 0007 — Organisation Profile Branding
+-- Adds optional branding and document personalisation fields.
+-- !! Never edit this file after it has been applied !!
+-- ============================================================
+ALTER TABLE organization_profile ADD COLUMN logo_url TEXT;
+ALTER TABLE organization_profile ADD COLUMN primary_color TEXT;
+ALTER TABLE organization_profile ADD COLUMN document_footer TEXT;
+ALTER TABLE organization_profile ADD COLUMN certification_body TEXT;
+`;
+
 /**
  * All migrations in application order.
  * The runner applies them sequentially, skipping already-applied ones.
@@ -609,4 +620,5 @@ export const MIGRATIONS: Migration[] = [
   { filename: "0004_management_review_improvement.sql",    sql: MIGRATION_0004 },
   { filename: "0005_evidence_documents.sql",               sql: MIGRATION_0005 },
   { filename: "0006_audit_log_hmac.sql",                   sql: MIGRATION_0006 },
+  { filename: "0007_org_profile_branding.sql",             sql: MIGRATION_0007 },
 ];

@@ -12,7 +12,7 @@ import Mustache from "mustache";
 import { getDb } from "../db/connection.js";
 import { newId, now, addMonths, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
-import { loadTemplate, loadPartials, stripFrontmatter } from "./template-utils.js";
+import { loadTemplate, loadPartials, stripFrontmatter, markdownToHtml, renderHtmlDocument } from "./template-utils.js";
 import { loadOrgProfileDefaults } from "./org-profile.js";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -386,7 +386,7 @@ export function handleUpdateProcedure(args: Record<string, unknown>): ToolResult
 export function handleExportProcedure(args: Record<string, unknown>): ToolResult {
   const { procedure_id, format } = args as {
     procedure_id: string;
-    format:       "markdown" | "json";
+    format:       "markdown" | "json" | "html";
   };
 
   const db  = getDb();
@@ -395,6 +395,24 @@ export function handleExportProcedure(args: Record<string, unknown>): ToolResult
     .get(procedure_id) as ProcedureRow | undefined;
 
   if (!row) throw notFound("procedure", procedure_id);
+
+  if (format === "html") {
+    const db2      = getDb();
+    const defaults = loadOrgProfileDefaults(db2);
+    const bodyHtml = markdownToHtml(row.content);
+    const html     = renderHtmlDocument(bodyHtml, {
+      title:             row.procedure_type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) + " Procedure",
+      organisation_name: row.organisation_name,
+      logo_url:          defaults?.logo_url,
+      primary_color:     defaults?.primary_color,
+      document_footer:   defaults?.document_footer,
+      version:           String(row.version),
+      effective_date:    row.effective_date,
+      owner:             row.owner,
+      doc_type:          "Procedure",
+    });
+    return ok({ format: "html", content: html });
+  }
 
   if (format === "markdown") {
     const relatedControls = fromJsonArray<string>(row.related_controls);

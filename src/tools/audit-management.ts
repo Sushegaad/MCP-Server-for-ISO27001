@@ -8,6 +8,7 @@
 import { getDb } from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
+import { markdownToHtml, renderHtmlDocument } from "./template-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -256,6 +257,50 @@ export function handleGenerateAuditReport(args: Record<string, unknown>): ToolRe
   }
 
   const countByType = (type: string): number => findings.filter((f) => f.type === type).length;
+
+  if (args.format === "html") {
+    // Build the markdown first then convert to HTML
+    const mdLines: string[] = [
+      `# ${audit.name}`,
+      ``,
+      `**Auditor:** ${audit.auditor}  `,
+      `**Planned Date:** ${audit.planned_date}  `,
+      `**Status:** ${audit.status}  `,
+      `**Scope:** ${audit.scope}`,
+      ``,
+      `## Findings (${findings.length})`,
+      ``,
+      `| ID | Type | Severity | Clause/Control | Description |`,
+      `|---|---|---|---|---|`,
+      ...findings.map((f: FindingRow) =>
+        `| ${f.id.slice(-8)} | ${f.type.toUpperCase()} | ${f.severity ?? "—"} | ${f.clause_or_control} | ${f.description.slice(0, 80)} |`
+      ),
+      ``,
+      `## Corrective Actions (${cars.length})`,
+      ``,
+      `| CAR ID | Finding | Owner | Due Date | Status | Verified |`,
+      `|---|---|---|---|---|---|`,
+      ...cars.map((c: CarRow) =>
+        `| ${c.id.slice(-8)} | ${c.finding_id.slice(-8)} | ${c.owner} | ${c.due_date} | ${c.status} | ${c.effectiveness_verified ? "✓ Yes" : "No"} |`
+      ),
+    ];
+
+    const db2 = getDb();
+    const ORG_PROFILE_ID_AUDIT = "00000000-0000-4000-8000-000000000001";
+    const profileRow = db2.prepare(
+      "SELECT legal_entity_name, logo_url, primary_color, document_footer FROM organization_profile WHERE id = ?"
+    ).get(ORG_PROFILE_ID_AUDIT) as { legal_entity_name?: string; logo_url?: string; primary_color?: string; document_footer?: string } | undefined;
+
+    const html = renderHtmlDocument(markdownToHtml(mdLines.join("\n")), {
+      title:             audit.name,
+      organisation_name: profileRow?.legal_entity_name ?? "Organisation",
+      logo_url:          profileRow?.logo_url,
+      primary_color:     profileRow?.primary_color,
+      document_footer:   profileRow?.document_footer,
+      doc_type:          "Internal Audit Report",
+    });
+    return ok({ format: "html", content: html });
+  }
 
   if (format === "json") {
     return ok({

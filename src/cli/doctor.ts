@@ -137,12 +137,12 @@ export function runDoctor(
       const rows = openDb(dbPath)
         .prepare("SELECT filename FROM _migrations ORDER BY id")
         .all() as { filename: string }[];
-      const passed = rows.length >= 6;
+      const passed = rows.length >= 7;
       check(
         "Migrations",
         passed,
         false,
-        `${rows.length}/6 applied${passed ? "" : " — DB may need re-initialisation"}`,
+        `${rows.length}/7 applied${passed ? "" : " — DB may need re-initialisation"}`,
       );
       record(passed);
     } catch {
