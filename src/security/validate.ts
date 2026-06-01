@@ -22,14 +22,40 @@ const uuid    = z.string().uuid("must be a valid UUID");
 const freeText = (max = 2000): z.ZodString => z.string().min(1).max(max);
 const shortText = (max = 200): z.ZodString => z.string().min(1).max(max);
 
-const paginationLimit  = z.number().int().min(1).max(100).optional().default(50);
-const paginationOffset = z.number().int().min(0).optional().default(0);
+// Coerce numeric inputs — Claude's MCP framework sometimes serialises
+// integer parameters as JSON strings ("4" instead of 4).
+// z.coerce.number() calls Number(input) before validation, so both
+// the number 4 and the string "4" pass z.coerce.number().int().min(1).max(5).
+const paginationLimit  = z.coerce.number().int().min(1).max(100).optional().default(50);
+const paginationOffset = z.coerce.number().int().min(0).optional().default(0);
+
+// Boolean coercion — MCP framework may also serialise booleans as strings.
+// z.coerce.boolean() cannot be used because Boolean("false") === true.
+// null is converted to undefined so .optional() short-circuits cleanly.
+const coerceBool = z.preprocess(
+  (v) => v == null ? undefined : v === "true" ? true : v === "false" ? false : v,
+  z.boolean(),
+);
+
+// Title-case enum normalisation — Claude may send "technological" or
+// "ORGANIZATIONAL" for values that the DB stores as "Technological".
+// The preprocess finds the matching enum value case-insensitively.
+function normEnum<T extends string>(vals: readonly T[]) {
+  return z.preprocess(
+    (v: unknown) => {
+      if (typeof v !== "string") return v;
+      const lo = v.toLowerCase();
+      return vals.find((o) => o.toLowerCase() === lo) ?? v;
+    },
+    z.enum(vals as unknown as [T, ...T[]]),
+  );
+}
 
 // Reusable enums
 const versionEnum      = z.enum(["2022", "2013"]);
 const formatMarkdownCsvJson = z.enum(["markdown", "csv", "json"]);
 const riskLevelEnum    = z.enum(["Low", "Medium", "High", "Critical"]);
-const likelihood1to5   = z.number().int().min(1).max(5);
+const likelihood1to5   = z.coerce.number().int().min(1).max(5);
 const roleEnum         = z.enum(["viewer", "analyst", "admin"]);
 const outcomeEnum      = z.enum(["success", "denied", "error"]);
 
@@ -79,13 +105,10 @@ const carStatusEnum = z.enum([
   "open", "in_progress", "implemented", "verified", "closed",
 ]);
 
-const themeEnum = z.enum([
-  "Organizational", "People", "Physical", "Technological",
-]);
-
-const cybersecurityConceptEnum = z.enum([
-  "Identify", "Protect", "Detect", "Respond", "Recover",
-]);
+// Case-insensitive versions so "technological" → "Technological", etc.
+const normTheme           = normEnum(["Organizational", "People", "Physical", "Technological"] as const);
+const normCybersecConcept = normEnum(["Identify", "Protect", "Detect", "Respond", "Recover"] as const);
+const normControlType     = normEnum(["Preventive", "Detective", "Corrective"] as const);
 
 // ── Group 1: Control Registry ────────────────────────────────
 
@@ -97,10 +120,10 @@ export const GetControlSchema = z.object({
 export const ListControlsSchema = z.object({
   version:              versionEnum.optional(),
   theme:                z.string().max(100).optional(),
-  control_type:         z.enum(["Preventive", "Detective", "Corrective"]).optional(),
-  new_in_2022:          z.boolean().optional(),
-  cybersecurity_concept:cybersecurityConceptEnum.optional(),
-  include_guidance:     z.boolean().optional().default(false),
+  control_type:         normControlType.optional(),
+  new_in_2022:          coerceBool.optional(),
+  cybersecurity_concept:normCybersecConcept.optional(),
+  include_guidance:     coerceBool.optional().default(false),
   limit:                paginationLimit,
   offset:               paginationOffset,
 });
@@ -108,7 +131,7 @@ export const ListControlsSchema = z.object({
 export const SearchControlsSchema = z.object({
   query:   freeText(200),
   version: versionEnum.optional(),
-  limit:   z.number().int().min(1).max(50).optional().default(10),
+  limit:   z.coerce.number().int().min(1).max(50).optional().default(10),
   offset:  paginationOffset,
 });
 
@@ -126,7 +149,7 @@ export const CompareVersionsSchema = z.object({
 
 export const GetClauseRequirementSchema = z.object({
   clause_id:           z.string().min(1).max(10),
-  include_sub_clauses: z.boolean().optional().default(false),
+  include_sub_clauses: coerceBool.optional().default(false),
 });
 
 export const ListClauseRequirementsSchema = z.object({
@@ -139,7 +162,7 @@ export const CreateGapAssessmentSchema = z.object({
   name:                 shortText(200),
   scope:                freeText(2000).optional(),
   isms_version:         versionEnum.optional().default("2022"),
-  themes_in_scope:      z.array(themeEnum).optional(),
+  themes_in_scope:      z.array(normTheme).optional(),
   exclude_controls:     z.array(z.string().max(20)).optional(),
   exclude_justification:freeText(1000).optional(),
 });
@@ -170,7 +193,7 @@ export const ExportGapReportSchema = z.object({
 
 export const GenerateRemediationRoadmapSchema = z.object({
   assessment_id:  uuid,
-  timeline_weeks: z.number().int().min(1).max(52).optional().default(12),
+  timeline_weeks: z.coerce.number().int().min(1).max(52).optional().default(12),
 });
 
 export const ArchiveGapAssessmentSchema = z.object({
@@ -193,7 +216,7 @@ export const CreateRiskSchema = z.object({
 
 export const GetRiskSchema = z.object({
   risk_id:            uuid,
-  include_treatments: z.boolean().optional().default(false),
+  include_treatments: coerceBool.optional().default(false),
 });
 
 export const UpdateRiskSchema = z.object({
@@ -252,13 +275,13 @@ export const CreatePolicySchema = z.object({
   scope:                freeText(2000).optional(),    // falls back to org profile if omitted
   owner:                shortText(200),
   approver:             shortText(200).optional(),
-  review_cycle_months:  z.number().int().min(1).max(36).optional().default(12),
+  review_cycle_months:  z.coerce.number().int().min(1).max(36).optional().default(12),
   effective_date:       date,
 });
 
 export const GetPolicySchema = z.object({
   policy_id:        uuid,
-  include_versions: z.boolean().optional().default(false),
+  include_versions: coerceBool.optional().default(false),
 });
 
 export const UpdatePolicySchema = z.object({
@@ -274,7 +297,7 @@ export const ListPoliciesSchema = z.object({
   status:      policyStatusEnum.optional(),
   type:        policyTypeEnum.optional(),
   owner:       shortText(200).optional(),
-  overdue_only:z.boolean().optional().default(false),
+  overdue_only:coerceBool.optional().default(false),
   limit:       paginationLimit,
   offset:      paginationOffset,
 });
@@ -289,7 +312,7 @@ export const GenerateSoaSchema = z.object({
 export const UpdateSoaEntrySchema = z.object({
   soa_id:            uuid,
   control_id:        z.string().min(1).max(20),
-  included:          z.boolean(),
+  included:          coerceBool,
   justification:     freeText(1000),
   status:            controlStatusEnum.optional(),
   responsible_party: shortText(200).optional(),
@@ -335,7 +358,7 @@ export const UpdateCorrectiveActionSchema = z.object({
   due_date:                date.optional(),
   status:                  carStatusEnum.optional(),
   root_cause:              freeText(2000).optional(),
-  effectiveness_verified:  z.boolean().optional(),
+  effectiveness_verified:  coerceBool.optional(),
   evidence_ref:            shortText(200).optional(),
 });
 
@@ -377,7 +400,7 @@ export const LinkJiraTicketSchema = z.object({
 
 export const LinkGithubIssueSchema = z.object({
   evidence_id:  uuid,
-  issue_number: z.number().int().positive().optional(),
+  issue_number: z.coerce.number().int().positive().optional(),
   title:        shortText(200).optional(),
   body:         freeText(2000).optional(),
 }).refine(
@@ -424,7 +447,7 @@ export const SetOrganizationProfileSchema = z.object({
     isms_manager:      shortText(200).optional(),
     internal_auditor:  shortText(200).optional(),
   }).optional(),
-  review_cadence_months: z.number().int().min(1).max(36).optional().default(12),
+  review_cadence_months: z.coerce.number().int().min(1).max(36).optional().default(12),
   logo_url:           z.string().url().max(2000).optional(),
   primary_color:      z.string().regex(/^#[0-9a-fA-F]{6}$/, "must be 6-digit hex e.g. #1e3a5f").optional(),
   document_footer:    z.string().max(500).optional(),
@@ -460,13 +483,13 @@ export const CreateProcedureSchema = z.object({
   approver:             shortText(200).optional(),
   policy_id:            uuid.optional(),
   related_controls:     z.array(z.string().max(20)).optional(),
-  review_cycle_months:  z.number().int().min(1).max(36).optional().default(12),
+  review_cycle_months:  z.coerce.number().int().min(1).max(36).optional().default(12),
   effective_date:       date,
 });
 
 export const GetProcedureSchema = z.object({
   procedure_id:     uuid,
-  include_versions: z.boolean().optional().default(false),
+  include_versions: coerceBool.optional().default(false),
 });
 
 export const UpdateProcedureSchema = z.object({
@@ -483,7 +506,7 @@ export const ListProceduresSchema = z.object({
   procedure_type: procedureTypeEnum.optional(),
   status:         procedureStatusEnum.optional(),
   policy_id:      uuid.optional(),
-  overdue_only:   z.boolean().optional().default(false),
+  overdue_only:   coerceBool.optional().default(false),
   limit:          paginationLimit,
   offset:         paginationOffset,
 });

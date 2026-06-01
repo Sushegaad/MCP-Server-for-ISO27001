@@ -1,3 +1,21 @@
+## What's new in v0.8.7
+
+### Tool parameter type coercion — all 63 tools
+
+A comprehensive audit of field type compatibility between what Claude's MCP framework sends and what the Zod schemas accept found and fixed six categories of mismatch.
+
+**Numeric coercion (`z.coerce.number()`)** — the MCP framework sometimes serialises integer parameters as JSON strings (e.g. `"4"` instead of `4`). All numeric fields now use `z.coerce.number()` which calls `Number(input)` before validation. Affects: `likelihood`, `impact`, `residual_likelihood`, `residual_impact`, `timeline_weeks`, `review_cycle_months`, `limit`, `offset`, and the search controls `limit`.
+
+**Boolean coercion (`coerceBool` preprocess)** — `z.coerce.boolean()` cannot be used directly because `Boolean("false") === true`. A preprocess is applied to all boolean fields that converts `"true"`→`true` and `"false"`→`false` before Zod validates. `null` is converted to `undefined` so `.optional()` short-circuits cleanly instead of throwing.
+
+**Boolean fields now visible to Claude** — `coerceBool` uses `z.preprocess()` which produces a `ZodEffects` node. The MCP SDK's JSON Schema generator does not know how to represent `ZodEffects` and was emitting empty `{}` schemas for all 10 boolean fields, meaning Claude had no type hint and would often omit them. The `extractShape()` function in `src/tools/index.ts` now recursively unwraps field-level `ZodEffects`, `ZodOptional`, and `ZodDefault` nodes before returning the shape to the SDK. Claude now sees `{type: "boolean"}` for all boolean fields. A companion `unwrapFieldSchema()` helper was added; runtime validation still uses the original full schema via `schema.safeParse()`.
+
+**Title-case enum normalisation** — three enums use Title Case values that Claude may send in lowercase: `themeEnum` (`"Organizational"`, `"Technological"` etc.), `cybersecurityConceptEnum` (`"Identify"`, `"Protect"` etc.), and the `control_type` enum (`"Preventive"`, `"Detective"`, `"Corrective"`). A `normEnum()` helper applies a case-insensitive preprocess that resolves the canonical value regardless of case. The affected schema fields are `create_gap_assessment.themes_in_scope`, `list_controls.cybersecurity_concept`, and `list_controls.control_type`.
+
+**`null` vs `undefined` for optional fields** — Zod `.optional()` only accepts `undefined`, not `null`. The `coerceBool` preprocess now converts `null → undefined` before reaching `.optional()`. For non-boolean optional fields, MCP's standard behaviour is to omit absent params (not send `null`), so no additional change is needed.
+
+---
+
 ## What's new in v0.8.6
 
 ### Installation reliability — `init`, `doctor`, and `keygen` hardened

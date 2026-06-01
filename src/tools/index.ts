@@ -114,13 +114,44 @@ type ToolHandler = (args: Record<string, unknown>) => ToolResult | Promise<ToolR
 // MCP SDK registerTool() expects a ZodRawShape, not a full ZodObject.
 // Schemas built with .refine() are ZodEffects — loop to unwrap ALL
 // levels so nested .refine().refine() chains don't silently lose shape.
+//
+// unwrapFieldSchema() additionally unwraps field-level ZodEffects
+// (ZodPreprocess / ZodTransform) so the MCP SDK can emit correct
+// JSON Schema for each field and Claude receives accurate type hints.
+// Runtime validation still uses the original schema.safeParse() in
+// the security pipeline — this only affects what Claude sees.
+
+function unwrapFieldSchema(field: z.ZodTypeAny): z.ZodTypeAny {
+  // Unwrap preprocess / transform / refine to the representable inner type
+  if (field instanceof z.ZodEffects) {
+    return unwrapFieldSchema(field.innerType() as z.ZodTypeAny);
+  }
+  // Preserve the optional wrapper, but unwrap what's inside it
+  if (field instanceof z.ZodOptional) {
+    return unwrapFieldSchema(field.unwrap()).optional();
+  }
+  // Preserve the default wrapper, but unwrap what's inside it
+  if (field instanceof z.ZodDefault) {
+    const inner    = unwrapFieldSchema(field.removeDefault());
+    const defValue = (field._def as { defaultValue: () => unknown }).defaultValue();
+    return inner.optional().default(defValue);
+  }
+  return field;
+}
 
 function extractShape(schema: z.ZodTypeAny): z.ZodRawShape {
   let s: z.ZodTypeAny = schema;
   while (s instanceof z.ZodEffects) {
     s = s.innerType() as z.ZodTypeAny;
   }
-  return (s as z.ZodObject<z.ZodRawShape>).shape;
+  const rawShape = (s as z.ZodObject<z.ZodRawShape>).shape;
+
+  // Unwrap field-level ZodEffects so the SDK generates correct JSON Schema
+  const cleanShape: z.ZodRawShape = {};
+  for (const [key, val] of Object.entries(rawShape)) {
+    cleanShape[key] = unwrapFieldSchema(val as z.ZodTypeAny);
+  }
+  return cleanShape;
 }
 
 // ── ok / err helpers ──────────────────────────────────────────
