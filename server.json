@@ -6,12 +6,12 @@
     "url": "https://github.com/Sushegaad/MCP-Server-for-ISO27001",
     "source": "github"
   },
-  "version": "0.8.5",
+  "version": "0.8.6",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "iso27001-mcp",
-      "version": "0.8.5",
+      "version": "0.8.6",
       "transport": {
         "type": "stdio"
       },

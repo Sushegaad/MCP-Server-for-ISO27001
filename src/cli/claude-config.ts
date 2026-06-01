@@ -44,15 +44,25 @@ export function findClaudeDesktopConfig(): string | null {
 
 // ── Config entry builder ──────────────────────────────────────
 
+/** Normalise a filesystem path for JSON — always use forward slashes. */
+function normPath(p: string): string {
+  return p.replace(/\\/g, "/");
+}
+
 /**
  * Return the JSON object that should be merged under `mcpServers`
  * in claude_desktop_config.json.
+ *
+ * auditLogPath is included so the server writes its audit log next to
+ * the database rather than in whatever the process CWD happens to be.
+ * All paths are normalised to forward slashes for cross-platform JSON.
  */
 export function buildMcpEntry(
   dbEncryptionKey: string,
   hmacSecret:      string,
   apiKey:          string,
   dbPath:          string,
+  auditLogPath:    string,
 ): Record<string, unknown> {
   return {
     command: "iso27001-mcp",
@@ -60,7 +70,8 @@ export function buildMcpEntry(
       DB_ENCRYPTION_KEY: dbEncryptionKey,
       HMAC_SECRET:       hmacSecret,
       MCP_API_KEY:       apiKey,
-      DB_PATH:           dbPath,
+      DB_PATH:           normPath(dbPath),
+      AUDIT_LOG_PATH:    normPath(auditLogPath),
     },
   };
 }
@@ -74,9 +85,10 @@ export function manualConfigBlock(
   hmacSecret:      string,
   apiKey:          string,
   dbPath:          string,
+  auditLogPath:    string,
 ): string {
   const snippet = {
-    "iso27001-mcp": buildMcpEntry(dbEncryptionKey, hmacSecret, apiKey, dbPath),
+    "iso27001-mcp": buildMcpEntry(dbEncryptionKey, hmacSecret, apiKey, dbPath, auditLogPath),
   };
   return JSON.stringify(snippet, null, 2);
 }

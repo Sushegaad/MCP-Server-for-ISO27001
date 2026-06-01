@@ -25,8 +25,9 @@ import {
   parseExpiresFlag,
 } from "./auth/api-key.js";
 import type { Role } from "./auth/api-key.js";
-import { runInit }   from "./cli/init.js";
-import { runDoctor } from "./cli/doctor.js";
+import { runInit }        from "./cli/init.js";
+import { runDoctor }      from "./cli/doctor.js";
+import { loadDotEnvFile } from "./cli/env-loader.js";
 
 // ── Parse argv ────────────────────────────────────────────────
 
@@ -60,6 +61,9 @@ if (subCommand === "init") {
   });
 } else if (subCommand === "doctor") {
   // iso27001-mcp doctor — health check
+  // Load .env before inspecting env vars so the doctor works from the shell
+  // without needing the user to manually source the file.
+  loadDotEnvFile();
   try {
     runDoctor();
   } catch (err) {
@@ -68,8 +72,10 @@ if (subCommand === "init") {
   }
 } else if (subCommand === "keygen") {
   // iso27001-mcp keygen --label "Alice" --role analyst --expires 90d
+  loadDotEnvFile();
   handleKeygen();
 } else if (subCommand === "keys") {
+  loadDotEnvFile();
   handleKeys();
 } else {
   // Default: start the server (async — catch top-level rejections)

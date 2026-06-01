@@ -203,22 +203,34 @@ export function runDoctor(
   }
 
   // ── Check 9: Claude Desktop config ───────────────────────
-  const configPath = findClaudeDesktopConfig();
+  // Claude Desktop is only available on macOS and Windows.
+  // On Linux, skip these checks rather than failing — users on Linux
+  // connect via Claude Code or the API, not Claude Desktop.
+  const isDesktopPlatform = process.platform === "darwin" || process.platform === "win32";
+  const configPath = isDesktopPlatform ? findClaudeDesktopConfig() : null;
   {
-    const passed = configPath !== null;
-    check(
-      "Claude Desktop config",
-      passed,
-      false,
-      passed ? configPath : "not found — install Claude Desktop or add config manually",
-    );
-    record(passed);
+    if (!isDesktopPlatform) {
+      check("Claude Desktop config", false, true, "skipped (not applicable on Linux — use Claude Code)");
+      record(false, true);
+    } else {
+      const passed = configPath !== null;
+      check(
+        "Claude Desktop config",
+        passed,
+        false,
+        passed ? configPath : "not found — install Claude Desktop or add config manually",
+      );
+      record(passed);
+    }
   }
 
-  const configOk = configPath !== null;
+  const configOk = isDesktopPlatform && configPath !== null;
 
   // ── Check 10: iso27001-mcp entry ─────────────────────────
-  if (!configOk) {
+  if (!isDesktopPlatform) {
+    check("iso27001-mcp entry", false, true, "skipped (not applicable on Linux — use Claude Code)");
+    record(false, true);
+  } else if (!configOk) {
     check("iso27001-mcp entry", false, true, "skipped (config not found)");
     record(false, true);
   } else {
@@ -261,7 +273,12 @@ export function runDoctor(
       `. Run: iso27001-mcp init\n\n`,
     );
   } else {
-    process.stdout.write(`  ${skipped} checks skipped due to earlier failures.\n\n`);
+    // Skips only — either dependent checks (secrets/DB missing) or
+    // platform N/A checks (Claude Desktop not available on Linux).
+    process.stdout.write(
+      `  ${passed} check${passed === 1 ? "" : "s"} passed, ` +
+      `${skipped} skipped.\n\n`,
+    );
   }
 
   if (!calledFromInit) {

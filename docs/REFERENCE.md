@@ -25,6 +25,10 @@ npm install -g iso27001-mcp
 
 The `iso27001-mcp` command is now available globally. The encrypted SQLite module (`better-sqlite3-multiple-ciphers`) downloads a prebuilt binary on supported platforms; it compiles from source if none is available.
 
+> **Permission error on Linux/macOS?** Do not use `sudo npm install -g`. Instead, install Node.js via [nvm](https://github.com/nvm-sh/nvm) or [Volta](https://volta.sh) — both install Node into your home directory so global packages never need elevated privileges. Alternatively: `npm config set prefix '~/.npm-global'` and add `~/.npm-global/bin` to your `PATH`.
+
+> **`iso27001-mcp: command not found` on Windows?** Open a new terminal window after the install — the global npm bin folder is only added to `PATH` for new sessions.
+
 ### Step 2 — Run the setup wizard
 
 ```bash

@@ -104,9 +104,30 @@ export async function runInit(): Promise<void> {
     // Check for existing .env and ask before overwriting
     if (existsSync(envFilePath)) {
       info(`Found existing file: ${envFilePath}`);
-      const overwrite = await confirm("Overwrite it?", false);
+
+      // Warn if the associated database also exists — regenerating secrets
+      // will permanently lock the user out of their existing ISMS data.
+      try {
+        const existing  = readFileSync(envFilePath, "utf8");
+        const dbMatch   = existing.match(/^DB_PATH=(.+)$/m);
+        if (dbMatch) {
+          const oldDb = dbMatch[1].trim();
+          if (existsSync(oldDb)) {
+            blank();
+            info("  ⚠  WARNING: An existing database was found at:");
+            info(`     ${oldDb}`);
+            info("     Regenerating secrets will permanently lock you out of");
+            info("     your existing ISMS data. Run 'iso27001-mcp doctor'");
+            info("     to verify your current installation instead.");
+            blank();
+          }
+        }
+      } catch { /* ignore — if we can't read the old .env, proceed normally */ }
+
+      const overwrite = await confirm("Overwrite existing secrets? (this cannot be undone)", false);
       if (!overwrite) {
-        info("Cancelled. Run again to choose a different location.");
+        info("Cancelled. Existing installation preserved.");
+        info("Run: iso27001-mcp doctor  — to verify your current setup.");
         closePrompt();
         return;
       }
@@ -158,6 +179,16 @@ export async function runInit(): Promise<void> {
     try { chmodSync(envFilePath, 0o600); } catch { /* Windows */ }
 
     info("Written.");
+
+    // Write a pointer file at ~/.iso27001/.env-location so that
+    // loadDotEnvFile() can find this .env from any working directory,
+    // even when the user chose a non-default location.
+    try {
+      const ptrDir = join(homedir(), ".iso27001");
+      mkdirSync(ptrDir, { recursive: true });
+      writeFileSync(join(ptrDir, ".env-location"), envFilePath, { encoding: "utf8" });
+    } catch { /* non-critical — env-loader falls back to cwd search */ }
+
     blank();
 
     // ── Assign secrets to process.env so openDb() / generateKey() work ──
@@ -226,7 +257,7 @@ export async function runInit(): Promise<void> {
       info("Add the following entry manually under 'mcpServers' in");
       info("claude_desktop_config.json:");
       blank();
-      process.stdout.write(manualConfigBlock(dbEncryptionKey, hmacSecret, apiKey, dbPath));
+      process.stdout.write(manualConfigBlock(dbEncryptionKey, hmacSecret, apiKey, dbPath, auditLogPath));
       process.stdout.write("\n\n");
     } else {
       info(`Found: ${configPath}`);
@@ -269,6 +300,7 @@ export async function runInit(): Promise<void> {
             hmacSecret,
             apiKey,
             dbPath,
+            auditLogPath,
           );
 
           writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
@@ -279,13 +311,13 @@ export async function runInit(): Promise<void> {
           info(`Could not update config automatically: ${msg}`);
           info("Add this entry manually under 'mcpServers':");
           blank();
-          process.stdout.write(manualConfigBlock(dbEncryptionKey, hmacSecret, apiKey, dbPath));
+          process.stdout.write(manualConfigBlock(dbEncryptionKey, hmacSecret, apiKey, dbPath, auditLogPath));
           process.stdout.write("\n");
         }
       } else {
         info("Skipped. Add this entry manually under 'mcpServers':");
         blank();
-        process.stdout.write(manualConfigBlock(dbEncryptionKey, hmacSecret, apiKey, dbPath));
+        process.stdout.write(manualConfigBlock(dbEncryptionKey, hmacSecret, apiKey, dbPath, auditLogPath));
         process.stdout.write("\n");
       }
 

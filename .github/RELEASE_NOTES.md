@@ -1,3 +1,51 @@
+## What's new in v0.8.6
+
+### Installation reliability — `init`, `doctor`, and `keygen` hardened
+
+A comprehensive audit of the Quick Start flow found and fixed twelve failure cases across all three CLI commands.
+
+**`iso27001-mcp init` fixes:**
+- **Process hangs after completion** — `closePrompt()` now calls `process.stdin.unref()` so the event loop drains and the process exits naturally after the wizard finishes.
+- **Data loss warning on re-run** — when an existing `.env` and its associated database are both detected, `init` now reads the old `DB_PATH` from the file, confirms the database exists, and shows a prominent warning before asking for confirmation. Default answer is `n` (preserve existing installation).
+- **`AUDIT_LOG_PATH` missing from Claude Desktop config** — `buildMcpEntry` now includes `AUDIT_LOG_PATH` alongside `DB_PATH` so the server always writes its audit log next to the database, not in an unpredictable process CWD.
+- **Windows backslash paths in JSON** — all paths written into `claude_desktop_config.json` are normalised to forward slashes via `normPath()`.
+- **Pointer file for non-default install paths** — when the user chooses a non-default `.env` location, `init` writes `~/.iso27001/.env-location` so subsequent `doctor`, `keygen`, and `keys` commands can find the `.env` from any working directory.
+
+**`iso27001-mcp doctor` fixes:**
+- **False-negative on `MCP_API_KEY` check** — `MCP_API_KEY` is not stored in the `.env` file (it lives in the Claude Desktop config). A standalone `doctor` invocation would always fail Check 3, even after a successful install. The new env-loader now reads `MCP_API_KEY` from the Claude Desktop config as a fallback, eliminating the false-negative.
+- **Always exits with code 1 on Linux** — Checks 9 (Claude Desktop config) and 10 (iso27001-mcp entry) are now marked N/A (`--`) on Linux with the note "not applicable on Linux — use Claude Code". Doctor exits cleanly on Linux for fully configured installs.
+- **Summary message corrected** — the "only skipped" summary branch no longer says "due to earlier failures" when the skips are platform-related.
+
+**`iso27001-mcp keygen` / `iso27001-mcp keys` fixes:**
+- **Missing env vars in fresh shell** — both commands now call `loadDotEnvFile()` before `loadSecrets()`, auto-loading secrets from the `.env` file without requiring the user to `source` it manually.
+
+**New file: `src/cli/env-loader.ts`**
+
+`loadDotEnvFile()` searches for the `.env` in this order:
+1. Path recorded in `~/.iso27001/.env-location` (written by `init` for non-default paths)
+2. `~/.iso27001/.env` (default `init` location)
+3. `<cwd>/.env`
+4. `<dirname(DB_PATH)>/.env` (if `DB_PATH` is already in the environment)
+
+Only sets variables not already in `process.env` (shell exports always win). Only sets non-empty values. Never throws.
+
+### Quick Start simplified to 3 commands
+
+The redundant and misleading fourth step (`iso27001-mcp keygen`) has been removed from the Quick Start. `iso27001-mcp init` already generates an admin API key and writes it directly into the Claude Desktop config. Running `keygen` afterwards generates a new key but does not update the config — leaving Claude Desktop using the old key. The canonical Quick Start is now:
+
+```bash
+npm install -g iso27001-mcp
+iso27001-mcp init
+iso27001-mcp doctor
+```
+
+### Documentation updates
+
+- `docs/REFERENCE.md` — npm permission error note added after `npm install -g` (recommends nvm/Volta; `npm config set prefix` alternative; Windows "command not found" note)
+- README and REFERENCE.md reviewed for correctness; five issues fixed: duplicate `---` separator, broken internal anchor for Sample Outputs, wrong evidence template type names, stale migration range in project structure, missing `markdownToHtml`/`renderHtmlDocument` in `template-utils.ts` description
+
+---
+
 ## What's new in v0.8.5
 
 ### Internal Audit interactive mask (demo site)

@@ -105,4 +105,8 @@ export function closePrompt(): void {
     _rl.close();
     _rl = null;
   }
+  // Unref stdin so the event loop can exit naturally after the wizard
+  // or health-check completes. Without this the process hangs waiting
+  // for input that will never come.
+  try { process.stdin.unref(); } catch { /* not available in all envs */ }
 }

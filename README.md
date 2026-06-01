@@ -2,7 +2,7 @@
 
 **Turn Claude into an ISO 27001 compliance assistant** — controls, risk register, policies, evidence tracking, SoA generation, and full audit workflows in one local encrypted MCP server.
 
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.5)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.5)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.6)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.6)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![npm downloads](https://img.shields.io/npm/dt/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![CI](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml/badge.svg)](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml)
@@ -52,13 +52,12 @@ The difference from generating static documents: Claude can *query, reason, and 
   - **Ubuntu/Debian:** `sudo apt-get install build-essential python3`
   - **Windows:** [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) → "Desktop development with C++"
 
-### Four commands to get running
+### Three commands to get running
 
 ```bash
 npm install -g iso27001-mcp   # 1. install globally
-iso27001-mcp init              # 2. interactive setup wizard
-iso27001-mcp keygen --label "me" --role admin   # 3. generate admin API key (if not already done by init)
-iso27001-mcp doctor            # 4. verify everything is working
+iso27001-mcp init              # 2. interactive setup — secrets, database, API key, Claude config
+iso27001-mcp doctor            # 3. verify everything is working
 ```
 
 After running `iso27001-mcp doctor` you should see:
