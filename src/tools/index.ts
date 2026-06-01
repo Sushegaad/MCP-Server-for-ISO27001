@@ -128,11 +128,11 @@ function unwrapFieldSchema(field: z.ZodTypeAny): z.ZodTypeAny {
   }
   // Preserve the optional wrapper, but unwrap what's inside it
   if (field instanceof z.ZodOptional) {
-    return unwrapFieldSchema(field.unwrap()).optional();
+    return unwrapFieldSchema(field.unwrap() as z.ZodTypeAny).optional();
   }
   // Preserve the default wrapper, but unwrap what's inside it
   if (field instanceof z.ZodDefault) {
-    const inner    = unwrapFieldSchema(field.removeDefault());
+    const inner    = unwrapFieldSchema(field.removeDefault() as z.ZodTypeAny);
     const defValue = (field._def as { defaultValue: () => unknown }).defaultValue();
     return inner.optional().default(defValue);
   }
@@ -149,7 +149,7 @@ function extractShape(schema: z.ZodTypeAny): z.ZodRawShape {
   // Unwrap field-level ZodEffects so the SDK generates correct JSON Schema
   const cleanShape: z.ZodRawShape = {};
   for (const [key, val] of Object.entries(rawShape)) {
-    cleanShape[key] = unwrapFieldSchema(val as z.ZodTypeAny);
+    cleanShape[key] = unwrapFieldSchema(val as unknown as z.ZodTypeAny);
   }
   return cleanShape;
 }

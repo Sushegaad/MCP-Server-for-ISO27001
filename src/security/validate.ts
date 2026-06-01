@@ -40,7 +40,7 @@ const coerceBool = z.preprocess(
 // Title-case enum normalisation — Claude may send "technological" or
 // "ORGANIZATIONAL" for values that the DB stores as "Technological".
 // The preprocess finds the matching enum value case-insensitively.
-function normEnum<T extends string>(vals: readonly T[]) {
+function normEnum<T extends string>(vals: readonly T[]): z.ZodEffects<z.ZodEnum<[T, ...T[]]>, T, unknown> {
   return z.preprocess(
     (v: unknown) => {
       if (typeof v !== "string") return v;
