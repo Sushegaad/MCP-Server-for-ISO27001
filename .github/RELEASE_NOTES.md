@@ -1,3 +1,13 @@
+## What's new in v0.9.1
+
+### Getting Started video
+
+A **Getting Started** video is now embedded in the README directly below the Live Interactive Demo link. The thumbnail links to [https://youtu.be/BGHYTYbL8wE](https://youtu.be/BGHYTYbL8wE) and renders as a clickable image on GitHub (GitHub does not support `<iframe>` embeds in Markdown).
+
+No code changes in this release — tooling, database schema, and all 63 tools are identical to 0.9.0.
+
+---
+
 ## What's new in v0.9.0
 
 ### Better `doctor` checks — 2 new checks (12 total)
