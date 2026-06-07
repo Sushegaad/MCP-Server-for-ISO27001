@@ -207,4 +207,30 @@ describe("validateToolInput", () => {
       validateToolInput("list_evidence_documents", {}),
     ).not.toThrow();
   });
+
+  // normEnum non-string branch (validate.ts line 46)
+  // When a non-string is passed to a normEnum field, the preprocess returns
+  // the value unchanged (skipping the toLowerCase/find logic), then Zod's
+  // enum rejects it with a validation error.
+  it("normEnum preprocess passes non-string values through unchanged, triggering enum rejection", () => {
+    // list_controls uses normControlType.optional() for control_type.
+    // Passing the integer 42 exercises the `if (typeof v !== "string") return v` branch.
+    expect(() =>
+      validateToolInput("list_controls", { control_type: 42 }),
+    ).toThrow(McpError);
+
+    try {
+      validateToolInput("list_controls", { control_type: 42 });
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("VALIDATION_ERROR");
+    }
+  });
+
+  it("normEnum coerces string enum values case-insensitively (string branch)", () => {
+    // "technological" (lowercase) should be normalised to "Technological"
+    // and accepted by list_controls — exercises the string path of normEnum.
+    expect(() =>
+      validateToolInput("list_controls", { cybersecurity_concept: "protect" }),
+    ).not.toThrow();
+  });
 });

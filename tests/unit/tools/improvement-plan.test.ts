@@ -262,4 +262,63 @@ describe("handleListImprovementOpportunities — health rating", () => {
     const sql = mockDb.prepare.mock.calls[0]?.[0] as string;
     expect(sql).toContain("status = ?");
   });
+
+  it("applies source filter", () => {
+    withStats({ open: 1 });
+
+    handleListImprovementOpportunities({ source: "audit" });
+
+    const sql = mockDb.prepare.mock.calls[0]?.[0] as string;
+    expect(sql).toContain("source = ?");
+  });
+
+  it("applies priority filter", () => {
+    withStats({ open: 1 });
+
+    handleListImprovementOpportunities({ priority: "high" });
+
+    const sql = mockDb.prepare.mock.calls[0]?.[0] as string;
+    expect(sql).toContain("priority = ?");
+  });
+
+  it("applies review_id filter", () => {
+    withStats({ open: 1 });
+
+    handleListImprovementOpportunities({ review_id: "mr-001" });
+
+    const sql = mockDb.prepare.mock.calls[0]?.[0] as string;
+    expect(sql).toContain("review_id = ?");
+  });
+
+  it("defaults all null stats fields to 0 and returns excellent rating", () => {
+    // Simulate a DB row where every SUM column is NULL (SQLite returns NULL for
+    // SUM over an empty table).  The handler coalesces each field with ?? 0.
+    mockDb.prepare.mockReturnValueOnce({
+      all: vi.fn(() => []),
+      get: vi.fn(() => null),
+      run: vi.fn(),
+    }).mockReturnValueOnce({
+      all: vi.fn(() => []),
+      get: vi.fn(() => ({
+        open:        null,
+        in_progress: null,
+        implemented: null,
+        closed:      null,
+        overdue:     null,
+      })),
+      run: vi.fn(),
+    });
+
+    const result = handleListImprovementOpportunities({});
+    const data   = parse(result);
+    const health = data.health as Record<string, unknown>;
+
+    // All nulls → default to 0 → active (open + in_progress) = 0 → "excellent"
+    expect(health.open).toBe(0);
+    expect(health.in_progress).toBe(0);
+    expect(health.implemented).toBe(0);
+    expect(health.closed).toBe(0);
+    expect(health.overdue).toBe(0);
+    expect(health.rating).toBe("excellent");
+  });
 });

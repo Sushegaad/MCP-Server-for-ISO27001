@@ -1,3 +1,23 @@
+## What's new in v0.9.0
+
+### Better `doctor` checks — 2 new checks (12 total)
+
+The `iso27001-mcp doctor` command now runs 12 checks (up from 10).
+
+**Check 11 — Database writable**: After Check 5 confirms the database is readable, Check 11 attempts a PRAGMA `user_version` round-trip (read current value, write same value back). This catches read-only file permissions and full-disk conditions that would silently drop writes at runtime.
+
+**Check 12 — Env vars in Claude Desktop config**: After Check 10 confirms the `iso27001-mcp` entry is present in `mcpServers`, Check 12 parses the config JSON and verifies that all three required secrets (`DB_ENCRYPTION_KEY`, `HMAC_SECRET`, `MCP_API_KEY`) are present under `mcpServers.iso27001-mcp.env`. A missing secret is the most common cause of "server starts but tools return auth errors". Both checks are skipped gracefully on Linux (no Claude Desktop) and when dependent checks failed.
+
+### Coverage improvements
+
+Three areas of the codebase with low branch coverage were tightened:
+
+- **`soa.ts` HTML export** (`handleExportSoa`): Added tests covering the `format: "html"` branch including org profile lookup, HTML rendering with and without an org profile row.
+- **`improvement-plan.ts` filter branches** (`handleListImprovementOpportunities`): Added tests for `source`, `priority`, and `review_id` filter parameters (which generate independent WHERE conditions) and a null-stats test confirming all `?? 0` coalescing defaults produce `rating: "excellent"`.
+- **`validate.ts` normEnum** (line 46): Added a test covering the `if (typeof v !== "string") return v` early-return path — passing an integer to a `normEnum`-wrapped field exercises the branch and confirms a `VALIDATION_ERROR` is returned.
+
+---
+
 ## What's new in v0.8.8
 
 ### Security — dependency audit clear

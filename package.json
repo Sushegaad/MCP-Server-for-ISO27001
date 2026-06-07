@@ -1,6 +1,6 @@
 {
   "name": "iso27001-mcp",
-  "version": "0.8.8",
+  "version": "0.9.0",
   "mcpName": "io.github.Sushegaad/iso27001-mcp",
   "description": "ISO 27001 compliance workspace for Claude — controls, risks, policies, evidence, audits, and SoA in one local encrypted MCP server",
   "license": "MIT",
@@ -50,7 +50,6 @@
     "dist"
   ],
   "scripts": {
-    "preinstall": "node -e \"const v=process.versions.node.split('.').map(Number);if(v[0]<20||(v[0]===20&&v[1]<11)){process.stderr.write('\\nERROR: iso27001-mcp requires Node.js 20.11.0 or later.\\n       Found: '+process.version+'\\n       Install: https://nodejs.org (or use nvm / Volta)\\n\\n');process.exit(1)}\"",
     "build": "tsup",
     "postbuild": "rm -rf dist/seed && mkdir -p dist/seed && cp -r src/seed/policy-templates dist/seed/policy-templates && cp -r src/seed/procedure-templates dist/seed/procedure-templates && cp -r src/seed/evidence-templates dist/seed/evidence-templates && cp -r src/seed/partials dist/seed/partials",
     "prepack": "npm run build",

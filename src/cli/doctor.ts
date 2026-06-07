@@ -3,7 +3,7 @@
  *
  * Usage: iso27001-mcp doctor
  *
- * Runs 10 checks and prints ✅ / ❌ / -- for each.
+ * Runs 12 checks and prints ✅ / ❌ / -- for each.
  * Exits with code 1 if any check fails, 0 if all pass.
  *
  * Design rules:
@@ -238,6 +238,9 @@ export function runDoctor(
 
   const configOk = isDesktopPlatform && configPath !== null;
 
+  // Track whether the iso27001-mcp mcpServers entry is valid (used by Check 12).
+  let mcpEntryPresent = false;
+
   // ── Check 10: iso27001-mcp entry ─────────────────────────
   if (!isDesktopPlatform) {
     check("iso27001-mcp entry", false, true, "skipped (not applicable on Linux — use Claude Code)");
@@ -270,10 +273,68 @@ export function runDoctor(
         }
       }
 
+      mcpEntryPresent = passed;
       check("iso27001-mcp entry", passed, false, detail);
       record(passed);
     } catch {
       check("iso27001-mcp entry", false, false, "could not parse claude_desktop_config.json");
+      record(false);
+    }
+  }
+
+  // ── Check 11: Database writable ──────────────────────────────
+  // Attempts a PRAGMA user_version round-trip to confirm the DB file is
+  // writable.  This catches read-only file permissions without touching any
+  // application table.
+  if (!dbOk) {
+    check("Database writable", false, true, "skipped (database not accessible)");
+    record(false, true);
+  } else {
+    try {
+      const db = openDb(dbPath);
+      const { user_version } = db.prepare("PRAGMA user_version").get() as { user_version: number };
+      db.prepare(`PRAGMA user_version = ${user_version}`).run();
+      check("Database writable", true, false, "read-write test passed");
+      record(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      check("Database writable", false, false, `read-write test failed: ${msg}`);
+      record(false);
+    }
+  }
+
+  // ── Check 12: Required env vars in Claude Desktop config ─────
+  // Verifies that mcpServers["iso27001-mcp"].env contains all three required
+  // secrets so Claude Desktop can inject them when launching the server.
+  if (!isDesktopPlatform) {
+    check("Env vars in config", false, true, "skipped (not applicable on Linux)");
+    record(false, true);
+  } else if (!configOk || !mcpEntryPresent) {
+    check("Env vars in config", false, true, "skipped (config entry not present)");
+    record(false, true);
+  } else {
+    try {
+      const raw    = readFileSync(configPath, "utf8");
+      const config = JSON.parse(raw) as {
+        mcpServers?: Record<string, { env?: Record<string, string> }>
+      };
+      const env    = config.mcpServers?.["iso27001-mcp"]?.env ?? {};
+      const missing: string[] = [];
+      if (!env["DB_ENCRYPTION_KEY"]) missing.push("DB_ENCRYPTION_KEY");
+      if (!env["HMAC_SECRET"])       missing.push("HMAC_SECRET");
+      if (!env["MCP_API_KEY"])       missing.push("MCP_API_KEY");
+      const passed = missing.length === 0;
+      check(
+        "Env vars in config",
+        passed,
+        false,
+        passed
+          ? "DB_ENCRYPTION_KEY, HMAC_SECRET, MCP_API_KEY all present"
+          : `missing: ${missing.join(", ")} — re-run: iso27001-mcp init`,
+      );
+      record(passed);
+    } catch {
+      check("Env vars in config", false, false, "could not parse claude_desktop_config.json");
       record(false);
     }
   }

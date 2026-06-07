@@ -309,6 +309,56 @@ describe("handleExportSoa", () => {
     expect(data.content).toContain("5.1");
   });
 
+  it("exports SoA in html format with org branding", () => {
+    const soaStmt     = { get: vi.fn(() => SOA_ROW), all: vi.fn(() => []), run: vi.fn() };
+    const entriesStmt = { get: vi.fn(), all: vi.fn(() => ENTRY_ROWS), run: vi.fn() };
+    // HTML path also queries organization_profile for branding fields.
+    const profileStmt = {
+      get: vi.fn(() => ({
+        legal_entity_name: "Acme Corp Ltd",
+        logo_url:          null,
+        primary_color:     "#1e3a5f",
+        document_footer:   null,
+      })),
+      all: vi.fn(() => []),
+      run: vi.fn(),
+    };
+    mockDb.prepare
+      .mockReturnValueOnce(soaStmt)
+      .mockReturnValueOnce(entriesStmt)
+      .mockReturnValueOnce(profileStmt);
+
+    const result = handleExportSoa({ soa_id: "soa-1", format: "html" });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.format).toBe("html");
+    expect(data.content).toContain("<!DOCTYPE html>");
+    // Org name from profile used as document title / footer
+    expect(data.content).toContain("Acme Corp Ltd");
+    // Both entries should appear in the HTML table
+    expect(data.content).toContain("5.1");
+    expect(data.content).toContain("5.2");
+  });
+
+  it("exports SoA in html format when org profile is missing (undefined row)", () => {
+    const soaStmt     = { get: vi.fn(() => SOA_ROW), all: vi.fn(() => []), run: vi.fn() };
+    const entriesStmt = { get: vi.fn(), all: vi.fn(() => ENTRY_ROWS), run: vi.fn() };
+    // No org profile row → undefined → handler uses SoA title as fallback
+    const profileStmt = { get: vi.fn(() => undefined), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare
+      .mockReturnValueOnce(soaStmt)
+      .mockReturnValueOnce(entriesStmt)
+      .mockReturnValueOnce(profileStmt);
+
+    const result = handleExportSoa({ soa_id: "soa-1", format: "html" });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.format).toBe("html");
+    expect(data.content).toContain("<!DOCTYPE html>");
+  });
+
   it("throws NOT_FOUND for a non-existent soa_id", () => {
     const soaStmt = { get: vi.fn(() => undefined), all: vi.fn(() => []), run: vi.fn() };
     mockDb.prepare.mockReturnValueOnce(soaStmt);
