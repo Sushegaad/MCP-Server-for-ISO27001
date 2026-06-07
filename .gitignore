@@ -37,3 +37,6 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Claude Code project instructions (local only — contains internal paths)
+CLAUDE.md
