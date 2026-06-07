@@ -1,6 +1,6 @@
 {
   "name": "iso27001-mcp",
-  "version": "0.8.7",
+  "version": "0.8.8",
   "mcpName": "io.github.Sushegaad/iso27001-mcp",
   "description": "ISO 27001 compliance workspace for Claude — controls, risks, policies, evidence, audits, and SoA in one local encrypted MCP server",
   "license": "MIT",
@@ -50,6 +50,7 @@
     "dist"
   ],
   "scripts": {
+    "preinstall": "node -e \"const v=process.versions.node.split('.').map(Number);if(v[0]<20||(v[0]===20&&v[1]<11)){process.stderr.write('\\nERROR: iso27001-mcp requires Node.js 20.11.0 or later.\\n       Found: '+process.version+'\\n       Install: https://nodejs.org (or use nvm / Volta)\\n\\n');process.exit(1)}\"",
     "build": "tsup",
     "postbuild": "rm -rf dist/seed && mkdir -p dist/seed && cp -r src/seed/policy-templates dist/seed/policy-templates && cp -r src/seed/procedure-templates dist/seed/procedure-templates && cp -r src/seed/evidence-templates dist/seed/evidence-templates && cp -r src/seed/partials dist/seed/partials",
     "prepack": "npm run build",
@@ -69,7 +70,7 @@
     "zod": "3.25.76"
   },
   "optionalDependencies": {
-    "express": "4.22.1",
+    "express": "^4.22.2",
     "express-rate-limit": "7.5.1"
   },
   "overrides": {
@@ -82,12 +83,12 @@
     "@types/node": "20.19.39",
     "@typescript-eslint/eslint-plugin": "7.18.0",
     "@typescript-eslint/parser": "7.18.0",
-    "@vitest/coverage-istanbul": "1.6.1",
-    "@vitest/coverage-v8": "1.6.1",
+    "@vitest/coverage-istanbul": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.8",
     "eslint": "8.57.1",
     "tsup": "8.4.0",
     "tsx": "4.21.0",
     "typescript": "5.4.5",
-    "vitest": "1.6.1"
+    "vitest": "^4.1.8"
   }
 }

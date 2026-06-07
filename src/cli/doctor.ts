@@ -79,8 +79,23 @@ export function runDoctor(
 
   const secretsOk2 = secretsOk && results[1].passed;
 
+  // Claude Desktop is only available on macOS and Windows.
+  // Declare here so all checks below can use it (Checks 3, 9, 10).
+  const isDesktopPlatform = process.platform === "darwin" || process.platform === "win32";
+
   // ── Check 3: MCP_API_KEY ──────────────────────────────────
-  {
+  // On Linux there is no Claude Desktop, so MCP_API_KEY is injected via
+  // Claude Code / CLAUDE.md env — it will not be in process.env when the
+  // doctor runs from a shell.  Skip rather than fail to avoid a misleading ❌.
+  if (!isDesktopPlatform) {
+    check(
+      "MCP_API_KEY",
+      false,
+      true,
+      "skipped (not applicable on Linux — inject via Claude Code env or CLAUDE.md)",
+    );
+    record(false, true);
+  } else {
     const val    = process.env["MCP_API_KEY"] ?? "";
     const passed = val.startsWith("iso27001_") && val.length > 15;
     check(
@@ -203,10 +218,7 @@ export function runDoctor(
   }
 
   // ── Check 9: Claude Desktop config ───────────────────────
-  // Claude Desktop is only available on macOS and Windows.
-  // On Linux, skip these checks rather than failing — users on Linux
-  // connect via Claude Code or the API, not Claude Desktop.
-  const isDesktopPlatform = process.platform === "darwin" || process.platform === "win32";
+  // isDesktopPlatform was declared before Check 3 so all checks share it.
   const configPath = isDesktopPlatform ? findClaudeDesktopConfig() : null;
   {
     if (!isDesktopPlatform) {
@@ -237,13 +249,28 @@ export function runDoctor(
     try {
       const raw    = readFileSync(configPath, "utf8");
       const config = JSON.parse(raw) as { mcpServers?: Record<string, unknown> };
-      const passed = !!(config.mcpServers?.["iso27001-mcp"]);
-      check(
-        "iso27001-mcp entry",
-        passed,
-        false,
-        passed ? "present in mcpServers" : "missing — run: iso27001-mcp init",
-      );
+      const entry  = config.mcpServers?.["iso27001-mcp"] as
+        { command?: string } | undefined;
+
+      let passed = !!entry;
+      let detail = passed ? "present in mcpServers" : "missing — run: iso27001-mcp init";
+
+      // Extra validation: if init wrote an absolute command path (the nvm/Volta
+      // fix), verify that path still exists on disk.  After a Node version
+      // upgrade the path could point to a deleted binary — the entry looks
+      // correct but Claude Desktop silently fails to launch the server.
+      if (passed && entry?.command) {
+        const cmd = entry.command;
+        const isAbsPath = cmd.startsWith("/") || /^[A-Za-z]:[/\\]/.test(cmd);
+        if (isAbsPath && !existsSync(cmd)) {
+          passed = false;
+          detail =
+            `command path no longer exists: ${cmd}\n` +
+            `       → Re-run: iso27001-mcp init  (Node version may have changed)`;
+        }
+      }
+
+      check("iso27001-mcp entry", passed, false, detail);
       record(passed);
     } catch {
       check("iso27001-mcp entry", false, false, "could not parse claude_desktop_config.json");

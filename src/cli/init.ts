@@ -1,7 +1,10 @@
 /**
  * iso27001-mcp — Interactive setup wizard
  *
- * Usage: iso27001-mcp init
+ * Usage:
+ *   iso27001-mcp init          — interactive (prompts for all choices)
+ *   iso27001-mcp init --yes    — non-interactive (all defaults, no prompts)
+ *   iso27001-mcp init -y       — alias for --yes
  *
  * Replaces the manual 5-step setup (openssl → .env → keygen → JSON edit)
  * with a single guided command. No openssl required.
@@ -23,6 +26,11 @@
  *   After writing the .env in step 5, secrets are assigned directly to
  *   process.env so that openDb() and generateKey() (which call requireEnv())
  *   work without loading the file from disk. No dotenv dependency.
+ *
+ * --yes / -y flag:
+ *   Accepts all defaults without prompting — ideal for scripted or CI
+ *   first-time setups. Safety gate: if an existing database is detected,
+ *   --yes aborts rather than risking silent data loss.
  */
 
 import { randomBytes }                        from "node:crypto";
@@ -36,7 +44,8 @@ import { ask, confirm, banner, step,
          blank, info, closePrompt }            from "./prompt.js";
 import { findClaudeDesktopConfig,
          buildMcpEntry,
-         manualConfigBlock }                   from "./claude-config.js";
+         manualConfigBlock,
+         normPath }                            from "./claude-config.js";
 import { runDoctor }                           from "./doctor.js";
 import { openDb, closeDb }                     from "../db/connection.js";
 import { seedAll }                             from "../seed/seeder.js";
@@ -52,10 +61,20 @@ function defaultDbPath(): string {
   return join(homedir(), ".iso27001", "isms.db");
 }
 
+/**
+ * Ask the user where to store a file.
+ * In --yes mode, silently accepts the default without prompting.
+ */
 async function chooseLocation(
   promptLabel: string,
   defaultPath: string,
+  useDefaults: boolean,
 ): Promise<string> {
+  if (useDefaults) {
+    info(`${promptLabel}: ${defaultPath}  (default)`);
+    return defaultPath;
+  }
+
   info(`${promptLabel}`);
   info(`  [1] ${defaultPath}  (recommended)`);
   info(`  [2] Current directory`);
@@ -63,10 +82,12 @@ async function chooseLocation(
   const choice = await ask("Choice", "1");
 
   switch (choice) {
-    case "2": return resolve(process.cwd(), promptLabel.includes("secret") ? ".env" : "isms.db");
+    case "2": return resolve(process.cwd(), promptLabel.toLowerCase().includes("secret") ? ".env" : "isms.db");
     case "3": {
       const custom = await ask("Enter full path");
-      return resolve(custom);
+      // Expand leading ~ so users can type paths like ~/my/isms without
+      // resolve() treating ~ as a literal directory name under cwd.
+      return resolve(custom.replace(/^~(?=[/\\]|$)/, homedir()));
     }
     default:  return defaultPath;
   }
@@ -74,7 +95,12 @@ async function chooseLocation(
 
 // ── runInit ───────────────────────────────────────────────────
 
-export async function runInit(): Promise<void> {
+/**
+ * @param useDefaults  When true (--yes / -y flag), all prompts are skipped
+ *                     and default values are used. Aborts if an existing
+ *                     database is found to prevent accidental data loss.
+ */
+export async function runInit(useDefaults = false): Promise<void> {
   const TOTAL = 11;
   let   dbWasOpened = false;
 
@@ -87,6 +113,7 @@ export async function runInit(): Promise<void> {
       "",
       "Turn Claude into an ISO 27001 compliance assistant in minutes.",
       "No openssl required.  Ctrl-C to cancel at any time.",
+      ...(useDefaults ? ["", "  Mode: --yes (all defaults accepted, no prompts)"] : []),
     ]);
 
     step(1, TOTAL, "Checking for existing configuration...");
@@ -95,34 +122,49 @@ export async function runInit(): Promise<void> {
     // ────────────────────────────────────────────────────────
     //  STEP 2 — Choose secrets file location
     // ────────────────────────────────────────────────────────
-    step(2, TOTAL, "Where should secrets be stored?");
+    step(2, TOTAL, "Secrets file location");
     blank();
 
-    const envFilePath = await chooseLocation("secret file location", defaultEnvPath());
+    const envFilePath = await chooseLocation("Secrets file", defaultEnvPath(), useDefaults);
     blank();
 
-    // Check for existing .env and ask before overwriting
+    // Check for existing .env and ask before overwriting.
     if (existsSync(envFilePath)) {
       info(`Found existing file: ${envFilePath}`);
 
-      // Warn if the associated database also exists — regenerating secrets
-      // will permanently lock the user out of their existing ISMS data.
+      // Try to identify the associated database for a more informative warning.
+      let existingDbPath: string | null = null;
       try {
-        const existing  = readFileSync(envFilePath, "utf8");
-        const dbMatch   = existing.match(/^DB_PATH=(.+)$/m);
-        if (dbMatch) {
-          const oldDb = dbMatch[1].trim();
-          if (existsSync(oldDb)) {
-            blank();
-            info("  ⚠  WARNING: An existing database was found at:");
-            info(`     ${oldDb}`);
-            info("     Regenerating secrets will permanently lock you out of");
-            info("     your existing ISMS data. Run 'iso27001-mcp doctor'");
-            info("     to verify your current installation instead.");
-            blank();
-          }
-        }
-      } catch { /* ignore — if we can't read the old .env, proceed normally */ }
+        const existing = readFileSync(envFilePath, "utf8");
+        const dbMatch  = existing.match(/^DB_PATH=(.+)$/m);
+        if (dbMatch) existingDbPath = dbMatch[1].trim();
+      } catch { /* ignore read errors — proceed to overwrite prompt */ }
+
+      // Show a loud warning regardless of whether the DB file still exists.
+      // The .env alone contains live encryption secrets; any existing DB
+      // encrypted with those secrets becomes inaccessible if secrets change.
+      banner([
+        "⚠  WARNING — EXISTING INSTALLATION DETECTED",
+        "",
+        `  Secrets file : ${envFilePath}`,
+        ...(existingDbPath ? [`  Database     : ${existingDbPath}`] : []),
+        "",
+        "  Regenerating secrets will PERMANENTLY LOCK YOU OUT of",
+        "  your existing ISMS data.  All existing API keys will",
+        "  stop working.  This cannot be undone.",
+        "",
+        "  Run 'iso27001-mcp doctor' to verify your current setup",
+        "  before proceeding.",
+      ]);
+
+      if (useDefaults) {
+        // --yes safety gate: never silently destroy an existing installation.
+        // Require explicit interactive confirmation when secrets already exist.
+        info("Aborting (--yes safety gate): existing secrets file detected.");
+        info("Run 'iso27001-mcp init' without --yes to confirm overwrite.");
+        closePrompt();
+        return;
+      }
 
       const overwrite = await confirm("Overwrite existing secrets? (this cannot be undone)", false);
       if (!overwrite) {
@@ -137,10 +179,10 @@ export async function runInit(): Promise<void> {
     // ────────────────────────────────────────────────────────
     //  STEP 3 — Choose database location
     // ────────────────────────────────────────────────────────
-    step(3, TOTAL, "Where should the database live?");
+    step(3, TOTAL, "Database location");
     blank();
 
-    const dbPath = await chooseLocation("database location", defaultDbPath());
+    const dbPath = await chooseLocation("Database file", defaultDbPath(), useDefaults);
     blank();
 
     // ────────────────────────────────────────────────────────
@@ -229,13 +271,18 @@ export async function runInit(): Promise<void> {
     step(7, TOTAL, "Generating admin API key...");
     blank();
 
+    // Reassure the user BEFORE the key box appears so the "save now" message
+    // in generateKey() is not alarming — the key is written to config automatically.
+    info("Generating admin API key...");
+    info("The key will be written into your Claude Desktop config automatically.");
+    info("You do not need to copy or store it separately.");
+    blank();
+
     // generateKey() prints the key box itself and returns the raw key
     const apiKey = generateKey("admin-key", "admin", null);
 
     // Expose to doctor check when called in-process below
     process.env["MCP_API_KEY"] = apiKey;
-
-    info("The key will be written into your Claude Desktop config automatically.");
     blank();
 
     // ────────────────────────────────────────────────────────
@@ -248,14 +295,30 @@ export async function runInit(): Promise<void> {
     step(8, TOTAL, "Looking for Claude Desktop config...");
     blank();
 
+    // Capture absolute bin paths now, while we know them from process context.
+    // Claude Desktop is a GUI app and does not source shell startup files
+    // (.zshrc, .bashrc), so "iso27001-mcp" may not be on its PATH even when
+    // it resolves fine in a terminal.  Using absolute paths bypasses PATH
+    // entirely — critical for nvm / Volta / Homebrew Node users on macOS.
+    const resolvedBin = (process.argv[1])
+      ? { node: normPath(process.execPath), script: normPath(process.argv[1]) }
+      : undefined;
+
     const configPath = findClaudeDesktopConfig();
 
     let configWritten = false;
 
     if (!configPath) {
+      // ── FIX 6: guide the user to install Claude Desktop if not found ──
       info("Claude Desktop config not found.");
-      info("Add the following entry manually under 'mcpServers' in");
-      info("claude_desktop_config.json:");
+      blank();
+      info("  Haven't installed Claude Desktop yet?");
+      info("  → Download: https://claude.ai/download");
+      info("  Once installed, run 'iso27001-mcp init' again to configure");
+      info("  automatically — your database and API key will be preserved.");
+      blank();
+      info("  Or add the entry manually under 'mcpServers' in");
+      info("  claude_desktop_config.json:");
       blank();
       process.stdout.write(manualConfigBlock(dbEncryptionKey, hmacSecret, apiKey, dbPath, auditLogPath));
       process.stdout.write("\n\n");
@@ -280,10 +343,11 @@ export async function runInit(): Promise<void> {
       step(9, TOTAL, "Update Claude Desktop config?");
       blank();
 
-      const doWrite = await confirm(
-        "Add iso27001-mcp to Claude Desktop config?",
-        true,
-      );
+      // In --yes mode, auto-accept writing the config (same as pressing Enter
+      // at the default-yes prompt).
+      const doWrite = useDefaults
+        ? true
+        : await confirm("Add iso27001-mcp to Claude Desktop config?", true);
 
       if (doWrite) {
         try {
@@ -301,6 +365,7 @@ export async function runInit(): Promise<void> {
             apiKey,
             dbPath,
             auditLogPath,
+            resolvedBin,  // absolute node + script paths — avoids PATH issues
           );
 
           writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
@@ -311,11 +376,19 @@ export async function runInit(): Promise<void> {
           info(`Could not update config automatically: ${msg}`);
           info("Add this entry manually under 'mcpServers':");
           blank();
+          info("  ⚠  nvm / Volta users: replace \"iso27001-mcp\" with the absolute path:");
+          info("     macOS/Linux:  $(which iso27001-mcp)");
+          info("     Windows:      result of: where iso27001-mcp");
+          blank();
           process.stdout.write(manualConfigBlock(dbEncryptionKey, hmacSecret, apiKey, dbPath, auditLogPath));
           process.stdout.write("\n");
         }
       } else {
         info("Skipped. Add this entry manually under 'mcpServers':");
+        blank();
+        info("  ⚠  nvm / Volta users: replace \"iso27001-mcp\" with the absolute path:");
+        info("     macOS/Linux:  $(which iso27001-mcp)");
+        info("     Windows:      result of: where iso27001-mcp");
         blank();
         process.stdout.write(manualConfigBlock(dbEncryptionKey, hmacSecret, apiKey, dbPath, auditLogPath));
         process.stdout.write("\n");
@@ -337,6 +410,13 @@ export async function runInit(): Promise<void> {
     // ────────────────────────────────────────────────────────
     step(11, TOTAL, "Setup complete!");
 
+    // ── FIX 4: platform-specific quit instructions ──
+    const restartInstructions = process.platform === "win32"
+      ? "       Windows — right-click the taskbar icon → Quit"
+      : process.platform === "darwin"
+        ? "       macOS — press Cmd+Q (red dot only closes the window)"
+        : "       Restart your Claude client or MCP host";
+
     banner([
       "Setup complete!",
       "",
@@ -347,11 +427,13 @@ export async function runInit(): Promise<void> {
         ? `  Claude config: ${configPath}`
         : `  Claude config: add manually (see JSON block above)`,
       "",
-      "  IMPORTANT: Your API key is in your Claude Desktop config.",
+      "  IMPORTANT: Your API key is in your Claude Desktop config under",
+      `             mcpServers → iso27001-mcp → env → MCP_API_KEY.`,
       "             Never commit the .env file to git.",
       "",
       "  NEXT STEPS:",
-      "    1. Restart Claude Desktop (quit fully, then reopen)",
+      "    1. Restart Claude Desktop fully:",
+      restartInstructions,
       "    2. Ask Claude: \"Use get_server_info to verify the server is running\"",
       "    3. Try: \"Run an ISO 27001 gap assessment for a 50-person SaaS company\"",
       "",

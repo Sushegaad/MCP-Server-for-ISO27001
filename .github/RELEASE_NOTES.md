@@ -1,3 +1,31 @@
+## What's new in v0.8.8
+
+### Security — dependency audit clear
+
+Two vulnerability chains that were blocking the CI release step are resolved. `npm audit --audit-level=high` now exits clean.
+
+**esbuild ≤0.24.2 (GHSA-67mh-4wv8-2f99, moderate)** — the esbuild dev server accepted requests from any origin and echoed responses without CORS restriction. The vulnerability lived in the transitive chain `vitest → vite → esbuild`. Fixed by upgrading the test toolchain: `vitest`, `@vitest/coverage-v8`, and `@vitest/coverage-istanbul` from **1.6.1 → 4.1.8**. vitest 4.x ships with vite 6.x, which uses esbuild 0.25.12 (above the affected range). This is a dev-only dependency with zero exposure at runtime.
+
+**qs 6.11.1–6.15.1 (GHSA-q8mj-m7cp-5q26, moderate)** — `qs.stringify` crashes with a `TypeError` on `null`/`undefined` entries in comma-format arrays when `encodeValuesOnly` is set. The vulnerability lived in `express → qs`. Fixed by bumping `express` in `optionalDependencies` from **4.22.1 → ^4.22.2**. Patch release — no breaking changes. Only affects the optional SSE transport (`--mode team/hosted`); the default stdio transport does not use express.
+
+### Quick Start hardening — six more improvements
+
+A third pass over the install flow found and fixed six failure modes that survived earlier rounds.
+
+**Doctor Check 10 now validates the command path exists on disk.** The init wizard writes an absolute node binary path into `claude_desktop_config.json` (e.g. `/Users/alice/.nvm/versions/node/v20.11.0/bin/node`) to bypass Claude Desktop's PATH limitations. After a Node version upgrade via nvm, that binary is deleted — but Check 10 previously reported ✅ because it only verified the JSON entry existed. Check 10 now calls `existsSync()` on the command path when it is absolute. A stale path produces ❌ with: `command path no longer exists: /path/to/node — Re-run: iso27001-mcp init (Node version may have changed)`.
+
+**Tilde expansion in interactive custom path entry.** Choosing option `[3] Custom path` in the init wizard and typing `~/my/isms` would previously resolve to `<cwd>/~/my/isms` — a literal `~` directory under the current working directory. `path.resolve()` does not expand tildes. Fixed with `custom.replace(/^~(?=[/\\]|$)/, homedir())` before the resolve call.
+
+**Pre-emptive framing before the API key box.** `generateKey()` prints `"API Key generated (save now — NOT stored in plaintext):"` which is the correct message for the standalone `keygen` command, but alarming during `init` where the key is written to the Claude Desktop config automatically. Three info lines now appear before the key box: `"Generating admin API key..."`, `"The key will be written into your Claude Desktop config automatically."`, `"You do not need to copy or store it separately."`.
+
+**nvm/PATH guidance on manual config blocks.** When the Claude Desktop config auto-write fails (malformed JSON) or the user skips it, the init wizard shows a JSON block with `"command": "iso27001-mcp"`. An nvm/Volta user who manually pastes this portable form will hit the exact PATH problem that init was designed to solve. A three-line note now appears above the block: `⚠ nvm / Volta users: replace "iso27001-mcp" with the absolute path — macOS/Linux: $(which iso27001-mcp) / Windows: where iso27001-mcp`.
+
+**Success banner shows the exact JSON key path for MCP_API_KEY.** The previous wording `"Your API key is in your Claude Desktop config"` left users guessing where in the JSON to look. Changed to: `"Your API key is in your Claude Desktop config under mcpServers → iso27001-mcp → env → MCP_API_KEY."` Useful for anyone setting up Claude Code or a second client that needs the raw `iso27001_…` token.
+
+**README troubleshooting note for Node version upgrades.** A callout added to the "Tools not appearing" section: if tools stop working after switching Node versions via nvm or Volta, re-run `iso27001-mcp init` to update the absolute node binary path in the Claude Desktop config. The wizard preserves the existing database and API keys.
+
+---
+
 ## What's new in v0.8.7
 
 ### Tool parameter type coercion — all 63 tools

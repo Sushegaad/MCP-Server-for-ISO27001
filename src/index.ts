@@ -55,7 +55,9 @@ process.on("SIGINT",  shutdown);
 
 if (subCommand === "init") {
   // iso27001-mcp init — interactive setup wizard
-  runInit().catch((err) => {
+  // --yes / -y: accept all defaults without prompting (safe for fresh installs)
+  const useDefaults = args.includes("--yes") || args.includes("-y");
+  runInit(useDefaults).catch((err) => {
     console.error("[init] FATAL:", err);
     process.exit(1);
   });

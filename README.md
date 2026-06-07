@@ -2,7 +2,7 @@
 
 **Turn Claude into an ISO 27001 compliance assistant** — controls, risk register, policies, evidence tracking, SoA generation, and full audit workflows in one local encrypted MCP server.
 
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.7)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.7)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.8.8)](https://socket.dev/npm/package/iso27001-mcp/overview/0.8.8)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![npm downloads](https://img.shields.io/npm/dt/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![CI](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml/badge.svg)](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml)
@@ -47,17 +47,36 @@ The difference from generating static documents: Claude can *query, reason, and 
 ### Prerequisites
 
 - **Node.js 20.11.0+** — [nodejs.org](https://nodejs.org) or [nvm](https://github.com/nvm-sh/nvm) / [Volta](https://volta.sh)
-- **Build tools** (for the encrypted SQLite native module):
-  - **macOS:** `xcode-select --install`
-  - **Ubuntu/Debian:** `sudo apt-get install build-essential python3`
-  - **Windows:** [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) → "Desktop development with C++"
+
+> **Build tools are usually not needed.** The package ships pre-built binaries for macOS (arm64 + x64), Windows (x64), and Linux (x64/glibc). Try `npm install -g iso27001-mcp` first — if it succeeds, you're done.
+>
+> <details><summary>↳ If the install fails with a <code>node-gyp</code> error, expand for OS-specific fix</summary>
+>
+> - **macOS:** `xcode-select --install`
+> - **Ubuntu / Debian:** `sudo apt-get install build-essential python3`
+> - **Windows:** [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) → "Desktop development with C++"
+>
+> </details>
+>
+> <details><summary>↳ If you get an <code>EACCES</code> permission error on macOS or Linux</summary>
+>
+> Your Node.js was installed system-wide and `npm install -g` needs write access to a root-owned directory. **Do not use `sudo npm install -g`** — it causes other issues. Instead, install Node via [nvm](https://github.com/nvm-sh/nvm) or [Volta](https://volta.sh), which place Node in your home directory where no elevated permissions are required.
+>
+> </details>
+>
+> <details><summary>↳ If you get <code>command not found</code> on Windows after a successful install</summary>
+>
+> The npm global bin directory (`%APPDATA%\npm`) may not be on your PATH yet. **Open a new terminal window** — the installer updates PATH for new sessions but not the one already open. If it still fails, add `%APPDATA%\npm` to your PATH manually in System Settings → Environment Variables.
+>
+> </details>
 
 ### Three commands to get running
 
 ```bash
-npm install -g iso27001-mcp   # 1. install globally
-iso27001-mcp init              # 2. interactive setup — secrets, database, API key, Claude config
-iso27001-mcp doctor            # 3. verify everything is working
+npm install -g iso27001-mcp     # 1. install globally
+iso27001-mcp init --yes         # 2. one-shot setup — all defaults, no prompts
+                                #    (omit --yes to choose custom paths interactively)
+iso27001-mcp doctor             # 3. verify everything is working
 ```
 
 After running `iso27001-mcp doctor` you should see:
@@ -79,7 +98,23 @@ iso27001-mcp — health check
   All 10 checks passed. Restart Claude Desktop if you just ran init.
 ```
 
-Then **restart Claude Desktop** (quit fully and reopen). You should see 63 tools in the tools panel.
+Then **restart Claude Desktop fully** and you should see 63 tools in the tools panel.
+
+> **macOS:** press **Cmd+Q** to quit (clicking the red dot only closes the window — the server won't reload).  
+> **Windows:** right-click the taskbar icon → **Quit**.
+
+### Tools not appearing after restart?
+
+Check the MCP server log — Claude Desktop writes server stderr here:
+
+```
+macOS:   ~/Library/Logs/Claude/mcp-server-iso27001-mcp.log
+Windows: %APPDATA%\Claude\Logs\mcp-server-iso27001-mcp.log
+```
+
+Common causes: wrong Node.js version loaded by Claude Desktop, missing `DB_ENCRYPTION_KEY` in the config, or a database path that doesn't exist yet. Run `iso27001-mcp doctor` in a fresh terminal for a guided diagnosis.
+
+> **Switched Node versions with nvm or Volta?** The absolute Node.js path baked into your Claude Desktop config at init time now points to a deleted binary. Re-run `iso27001-mcp init` — it will detect your current setup and update the path. Your existing database and API keys are preserved (the wizard aborts if your secrets file already exists and you run with `--yes`).
 
 ### Five prompts to try first
 
