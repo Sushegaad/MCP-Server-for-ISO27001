@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.11.0'
+          node-version: '20'    # vitest 4.x needs >=20.12.0 (styleText in node:util)
           cache: 'npm'
       - run: npm ci
       - run: npx tsc --noEmit
@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.11.0'
+          node-version: '20'    # keep in sync with build-and-test
           cache: 'npm'
       - run: npm ci
       - run: npm run verify-checksums
