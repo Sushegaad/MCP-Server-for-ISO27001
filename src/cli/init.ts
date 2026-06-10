@@ -162,8 +162,13 @@ export async function runInit(useDefaults = false): Promise<void> {
         // Require explicit interactive confirmation when secrets already exist.
         info("Aborting (--yes safety gate): existing secrets file detected.");
         info("Run 'iso27001-mcp init' without --yes to confirm overwrite.");
+        blank();
+        // process.stdin.unref() alone is not sufficient to drain the event loop
+        // on a macOS/Linux TTY when readline was never created (no ask() call
+        // happened before this abort path).  Call process.exit() to guarantee
+        // a clean exit rather than leaving the process waiting on stdin.
         closePrompt();
-        return;
+        process.exit(1);
       }
 
       const overwrite = await confirm("Overwrite existing secrets? (this cannot be undone)", false);

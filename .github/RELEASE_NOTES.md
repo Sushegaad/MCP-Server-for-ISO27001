@@ -1,3 +1,23 @@
+## What's new in v0.9.2
+
+### Bug fix — `init --yes` now exits cleanly on existing installations
+
+Running `iso27001-mcp init --yes` when an existing installation was detected would print the abort message and then hang indefinitely, requiring the user to press Ctrl-C to regain their shell.
+
+**Root cause:** In the `--yes` abort path, no interactive `ask()` call is ever made, so the readline interface (`_rl`) is never created. `closePrompt()` therefore skips the `_rl.close()` block and falls through to `process.stdin.unref()`. On macOS and Linux TTYs under Node.js 20, `unref()` alone is not sufficient to drain the libuv event loop when the TTY handle was never put into flowing mode by readline — the process stays alive waiting on stdin indefinitely.
+
+**Fix:** `process.exit(1)` is now called explicitly after the abort message, guaranteeing an immediate clean exit with a non-zero status code (appropriate since the command did not complete its intended action).
+
+### README — Getting Started video thumbnail improved
+
+The YouTube thumbnail embed was changed from a raw Markdown image link (`maxresdefault.jpg` at 1280×720, left-aligned, full-width) to a centred HTML block with `width="480"` and a labelled caption link. This renders correctly on both npm and GitHub: the thumbnail is appropriately sized, centred, and accompanied by a "▶ Getting Started — watch on YouTube" caption so users know it is a clickable video link.
+
+### README — Author section added
+
+An **Author** section has been added directly above the License section, listing Hemant Naik with LinkedIn and email contact details.
+
+---
+
 ## What's new in v0.9.1
 
 ### Getting Started video

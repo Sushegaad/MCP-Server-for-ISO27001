@@ -2,7 +2,7 @@
 
 **Turn Claude into an ISO 27001 compliance assistant** — controls, risk register, policies, evidence tracking, SoA generation, and full audit workflows in one local encrypted MCP server.
 
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.1)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.1)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.2)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.2)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![npm downloads](https://img.shields.io/npm/dt/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![CI](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml/badge.svg)](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml)
@@ -11,9 +11,13 @@
 
 **[▶ Live Interactive Demo](https://sushegaad.github.io/MCP-Server-for-ISO27001/)**
 
-**▶ Getting Started Video**
-
-[![Getting Started with iso27001-mcp](https://img.youtube.com/vi/BGHYTYbL8wE/maxresdefault.jpg)](https://youtu.be/BGHYTYbL8wE)
+<div align="center">
+  <a href="https://youtu.be/BGHYTYbL8wE">
+    <img src="https://img.youtube.com/vi/BGHYTYbL8wE/hqdefault.jpg" alt="▶ Getting Started with iso27001-mcp (YouTube)" width="480">
+  </a>
+  <br/>
+  <sub>▶ <a href="https://youtu.be/BGHYTYbL8wE">Getting Started — watch on YouTube</a></sub>
+</div>
 
 ---
 
@@ -342,6 +346,12 @@ The detailed documentation has been moved to keep this page scannable. Everythin
 - [Integrations](docs/REFERENCE.md#integrations) — Jira and GitHub issue linking
 - [Development](docs/REFERENCE.md#development) — build, test, typecheck, project structure
 - [Security](docs/REFERENCE.md#security) — API key storage, encryption, audit trail, production checklist
+
+---
+
+## Author
+
+**Hemant Naik** · [LinkedIn](https://www.linkedin.com/in/tanaji-naik/) · [hemant.naik@gmail.com](mailto:hemant.naik@gmail.com) · Built April 2026
 
 ---
 
