@@ -1,3 +1,30 @@
+## What's new in v0.9.3
+
+### Copyright compliance — all seeded control text rewritten
+
+455 text blocks across three seed files have been replaced with original interpretive summaries. No sentence from the ISO/IEC 27001:2022 standard is reproduced verbatim.
+
+**Files changed:**
+- `src/seed/controls-2022.json` — `description` and `guidance` fields for all 93 Annex A controls rewritten
+- `src/seed/controls-2013.json` — `description` and `guidance` fields for all 114 Annex A controls rewritten
+- `src/seed/clause-requirements.json` — `requirement_text` fields for all 41 normative clause requirements rewritten
+
+The rewrites preserve the full technical meaning and scope of each control, add interpretive context (why the control matters, what it prevents, what implementation looks like), and use active voice throughout. The `version-mapping.json` file is unchanged.
+
+`src/seed/checksums.json` has been regenerated for the three modified files. `npm run verify-checksums` passes cleanly.
+
+### Build provenance — `commit_sha` and `build_timestamp` now populated
+
+`get_server_info` previously returned `"commit_sha": null` and `"build_timestamp": null` for all published releases, undermining the "provenance-attested build" claim.
+
+**Fix:** `tsup.config.ts` now includes a `define` block that bakes `GIT_COMMIT_SHA` and `BUILD_TIMESTAMP` into the bundle as string literals at compile time. The release workflow (`.github/workflows/release.yml`) sets both environment variables before running `npm run build`, so every npm-published build carries the exact GitHub commit SHA and ISO 8601 timestamp. Local builds (without the env vars) fall back to `null` as before.
+
+### `init --yes` clean exit on existing installation (backported note)
+
+This fix shipped in v0.9.2 but was omitted from that release's notes. Running `iso27001-mcp init --yes` when an existing installation was detected would print the abort message and then hang, requiring Ctrl-C. Fixed with an explicit `process.exit(1)` after the abort message.
+
+---
+
 ## What's new in v0.9.2
 
 ### Bug fix — `init --yes` now exits cleanly on existing installations

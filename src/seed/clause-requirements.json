@@ -3,7 +3,7 @@
     "clause_id": "4",
     "parent_id": null,
     "title": "Context of the organisation",
-    "requirement_text": "The organisation shall determine external and internal issues that are relevant to its purpose and that affect its ability to achieve the intended outcome(s) of its information security management system.",
+    "requirement_text": "Addresses the obligation for an organization to identify and assess the external and internal factors that shape its operating environment and bear on whether the ISMS can deliver its intended outcomes. Auditors typically look for a documented context register showing both dimensions have been considered.",
     "implementation_notes": "Review annually and when significant changes occur. Document findings in a context register. Consider PESTLE analysis for external factors and SWOT for internal factors.",
     "related_controls": [
       "5.1",
@@ -14,7 +14,7 @@
     "clause_id": "4.1",
     "parent_id": "4",
     "title": "Understanding the organisation and its context",
-    "requirement_text": "The organisation shall determine external and internal issues that are relevant to its purpose and that affect its ability to achieve the intended outcome(s) of its information security management system.",
+    "requirement_text": "Requires the organization to identify and document the external and internal factors — strategic, operational, regulatory, and environmental — that are material to the ISMS and that influence whether its intended outcomes can be achieved. In practice this means maintaining a living record of the issues, not just a one-time exercise.",
     "implementation_notes": "External issues include legal, regulatory, financial, technological, competitive, market, cultural, social and economic factors. Internal issues include values, culture, knowledge, performance and structure. Document issues that may pose risks or opportunities.",
     "related_controls": [
       "5.1",
@@ -25,7 +25,7 @@
     "clause_id": "4.2",
     "parent_id": "4",
     "title": "Understanding the needs and expectations of interested parties",
-    "requirement_text": "The organisation shall determine: a) the interested parties that are relevant to the information security management system; b) the relevant requirements of these interested parties; c) which of these requirements will be addressed through the information security management system.",
+    "requirement_text": "Calls for the organization to systematically identify the parties with a stake in its information security — customers, regulators, suppliers, employees, and others — and to determine which of their expectations and obligations the ISMS must address. Auditors examine whether the resulting list of requirements is traceable into ISMS scope and controls.",
     "implementation_notes": "Interested parties include customers, regulators, suppliers, shareholders, employees, and partners. Document their requirements. Review and update when relationships change. Map requirements to ISMS scope and controls.",
     "related_controls": [
       "5.19",
@@ -37,7 +37,7 @@
     "clause_id": "4.3",
     "parent_id": "4",
     "title": "Determining the scope of the information security management system",
-    "requirement_text": "The organisation shall determine the boundaries and applicability of the information security management system to establish its scope. When determining this scope, the organisation shall consider: a) the external and internal issues referred to in 4.1; b) the requirements referred to in 4.2; c) interfaces and dependencies between activities performed by the organisation, and those that are performed by other organisations.",
+    "requirement_text": "Obliges the organization to define the boundaries and coverage of its ISMS as a maintained documented statement, drawing on the contextual factors from clause 4.1, the stakeholder requirements from 4.2, and any interfaces or dependencies with external parties. Any exclusions from the scope must be justifiable, and the resulting document must be kept current.",
     "implementation_notes": "Scope should be documented and available as a maintained document. Clearly define what is included and excluded. Exclusions must be justified. Consider organisational boundaries, locations, assets, and technology. The scope must be a maintained document.",
     "related_controls": [
       "5.1"
@@ -47,7 +47,7 @@
     "clause_id": "4.4",
     "parent_id": "4",
     "title": "Information security management system",
-    "requirement_text": "The organisation shall establish, implement, maintain and continually improve an information security management system, including the processes needed and their interactions, in accordance with the requirements of this document.",
+    "requirement_text": "Establishes the foundational obligation to build, put into practice, sustain, and continuously strengthen an information security management system — including the underlying processes and their interactions — in conformance with the standard's requirements. This is the parent commitment that every other clause operationalizes.",
     "implementation_notes": "The ISMS is a systematic approach to managing sensitive information. Document the processes and their interactions. Assign process owners. Establish monitoring and measurement mechanisms. Plan for continual improvement.",
     "related_controls": [
       "5.1",
@@ -60,7 +60,7 @@
     "clause_id": "5",
     "parent_id": null,
     "title": "Leadership",
-    "requirement_text": "Top management shall demonstrate leadership and commitment with respect to the information security management system by taking accountability for the effectiveness of the information security management system.",
+    "requirement_text": "Addresses the accountability of top management for the ISMS as a whole, placing ownership of its effectiveness squarely at senior leadership level rather than delegating it entirely to a security function. Auditors assess whether management can demonstrate active stewardship, not just nominal sponsorship.",
     "implementation_notes": "Leadership engagement is critical to ISMS success. Document management's commitment through policy endorsement, resource allocation, and active participation in reviews.",
     "related_controls": [
       "5.1",
@@ -72,7 +72,7 @@
     "clause_id": "5.1",
     "parent_id": "5",
     "title": "Leadership and commitment",
-    "requirement_text": "Top management shall demonstrate leadership and commitment with respect to the information security management system by: a) ensuring the information security policy and the information security objectives are established and are compatible with the strategic direction of the organisation; b) ensuring the integration of the information security management system requirements into the organisation's processes; c) ensuring that the resources needed for the information security management system are available; d) communicating the importance of effective information security management and of conforming to the information security management system requirements; e) ensuring that the information security management system achieves its intended outcome(s); f) directing persons to contribute to the effectiveness of the information security management system; g) promoting continual improvement; h) supporting other relevant management roles to demonstrate their leadership as it applies to their areas of responsibility.",
+    "requirement_text": "Enumerates the specific ways in which top management must visibly lead the ISMS: aligning the security policy and objectives with organizational strategy, embedding ISMS requirements into business processes, securing adequate resources, communicating the importance of conformance, driving continual improvement, and actively enabling other managers to fulfil their security responsibilities. Evidence of each commitment is expected at audit.",
     "implementation_notes": "Evidence of leadership commitment includes signed policy documents, management meeting minutes discussing ISMS, resource allocation records, and management review records. Top management should be able to articulate the ISMS scope and objectives.",
     "related_controls": [
       "5.1",
@@ -83,7 +83,7 @@
     "clause_id": "5.2",
     "parent_id": "5",
     "title": "Policy",
-    "requirement_text": "Top management shall establish an information security policy that: a) is appropriate to the purpose of the organisation; b) includes information security objectives or provides the framework for setting information security objectives; c) includes a commitment to satisfy applicable requirements related to information security; d) includes a commitment to continual improvement of the information security management system. The information security policy shall: be available as documented information; be communicated within the organisation; be available to interested parties, as appropriate.",
+    "requirement_text": "Requires top management to produce and maintain a high-level information security policy that fits the organization's purpose, either sets or provides a framework for security objectives, and commits to satisfying applicable legal and contractual requirements as well as to ongoing ISMS improvement. The policy must be documented, distributed internally, and made accessible to relevant external parties as appropriate.",
     "implementation_notes": "The policy should be a concise, high-level document approved by the most senior appropriate manager. It should be reviewed and updated at least annually. Evidence of communication should be retained (e.g. email records, training attendance).",
     "related_controls": [
       "5.1"
@@ -93,7 +93,7 @@
     "clause_id": "5.3",
     "parent_id": "5",
     "title": "Organisational roles, responsibilities and authorities",
-    "requirement_text": "Top management shall ensure that the responsibilities and authorities for roles relevant to information security are assigned and communicated. Top management shall assign the responsibility and authority for: a) ensuring that the information security management system conforms to the requirements of this document; b) reporting on the performance of the information security management system to top management.",
+    "requirement_text": "Obliges top management to formally assign and communicate the responsibilities and authorities needed for ISMS conformance and performance reporting. At minimum, someone must be accountable for ensuring the ISMS meets the standard's requirements and for bringing ISMS performance results back to senior leadership — responsibilities that may sit with a single role or be distributed.",
     "implementation_notes": "Roles may include CISO, data protection officer, system owners, and process owners. Document role descriptions and authority levels. Communicate assignments via job descriptions, organisational charts, and policy documents. Ensure accountability is clear at all levels.",
     "related_controls": [
       "5.2",
@@ -104,7 +104,7 @@
     "clause_id": "6",
     "parent_id": null,
     "title": "Planning",
-    "requirement_text": "When planning for the information security management system, the organisation shall consider the issues referred to in 4.1 and the requirements referred to in 4.2 and determine the risks and opportunities that need to be addressed.",
+    "requirement_text": "Covers the planning layer of the ISMS, requiring the organization to factor in the contextual issues identified in 4.1 and the stakeholder requirements from 4.2 when designing the system, and to determine which risks and opportunities must be actively managed. Planning outputs directly feed the risk treatment, objectives, and change-management processes.",
     "implementation_notes": "Planning integrates risk management, objectives setting, and control selection. Document the planning process and decisions. Link planning outputs to action plans with owners and timelines.",
     "related_controls": [
       "5.1"
@@ -114,7 +114,7 @@
     "clause_id": "6.1",
     "parent_id": "6",
     "title": "Actions to address risks and opportunities",
-    "requirement_text": "When planning for the information security management system, the organisation shall consider the issues referred to in 4.1 and the requirements referred to in 4.2 and determine the risks and opportunities that need to be addressed to: a) ensure the information security management system can achieve its intended outcome(s); b) prevent, or reduce, undesired effects; c) achieve continual improvement.",
+    "requirement_text": "Requires the organization to determine, from its context and stakeholder analysis, the specific risks and opportunities that must be managed so that the ISMS can reliably achieve its outcomes, prevent undesired effects, and improve over time. The identified items must then be turned into concrete actions with measurable effectiveness.",
     "implementation_notes": "Document risks and opportunities identified from context analysis. Define treatment plans. Integrate with the risk assessment process. Maintain a risk register. Review risks and opportunities regularly.",
     "related_controls": [
       "5.1",
@@ -125,7 +125,7 @@
     "clause_id": "6.1.1",
     "parent_id": "6.1",
     "title": "General (risk and opportunity management)",
-    "requirement_text": "The organisation shall plan actions to address these risks and opportunities, and how to integrate and implement the actions into its information security management system processes, and evaluate the effectiveness of these actions.",
+    "requirement_text": "Calls for the organization to translate identified risks and opportunities into planned actions, embed those actions within ISMS processes, and subsequently assess whether the actions have worked as intended. This general clause underpins both the risk assessment and risk treatment sub-clauses that follow.",
     "implementation_notes": "Actions should be proportionate to the assessed risks and opportunities. Assign owners and due dates. Integrate actions into ISMS processes. Measure effectiveness using defined criteria.",
     "related_controls": [
       "5.1"
@@ -135,7 +135,7 @@
     "clause_id": "6.1.2",
     "parent_id": "6.1",
     "title": "Information security risk assessment",
-    "requirement_text": "The organisation shall define and apply an information security risk assessment process that: a) establishes and maintains information security risk criteria including: 1) the risk acceptance criteria; 2) criteria for performing information security risk assessments; b) ensures that repeated information security risk assessments produce consistent, valid and comparable results; c) identifies the information security risks: 1) applies the information security risk assessment process to identify risks associated with the loss of confidentiality, integrity and availability for information within the scope of the information security management system; 2) identifies the risk owners; d) analyses the information security risks: 1) assesses the potential consequences that would result if the risks identified were to materialise; 2) assesses the realistic likelihood of the occurrence of the risks identified; 3) determines the levels of risk; e) evaluates the information security risks: 1) compares the results of risk analysis with the risk criteria established in 6.1.2 a); 2) prioritises the analysed risks for risk treatment. The organisation shall retain documented information about the information security risk assessment process.",
+    "requirement_text": "Calls for the organization to design and consistently apply a risk assessment process that establishes criteria for acceptable risk and for how assessments are conducted; identifies information security risks and their owners across the ISMS scope; and analyses and evaluates those risks against the defined criteria to produce a prioritized treatment list. Documented evidence of the process and its outputs must be retained.",
     "implementation_notes": "Use a consistent risk assessment methodology. Document criteria for likelihood and impact ratings (typically 1-5 scales). Conduct risk assessments at planned intervals and when significant changes occur. Retain risk assessment records as documented information. Consider using a risk register to track all identified risks.",
     "related_controls": [
       "5.1",
@@ -146,7 +146,7 @@
     "clause_id": "6.1.3",
     "parent_id": "6.1",
     "title": "Information security risk treatment",
-    "requirement_text": "The organisation shall define and apply an information security risk treatment process to: a) select appropriate information security risk treatment options, taking account of the risk assessment results; b) determine all controls that are necessary to implement the information security risk treatment option(s) chosen; c) compare the controls determined in 6.1.3 b) with those in Annex A and verify that no necessary controls have been omitted; d) produce a Statement of Applicability that contains: 1) the necessary controls; 2) justification for their inclusion; 3) whether the necessary controls are implemented or not; 4) the justification for excluding any of the controls in Annex A; e) formulate an information security risk treatment plan; f) obtain risk owners' approval of the information security risk treatment plan and acceptance of the residual information security risks. The organisation shall retain documented information about the information security risk treatment process.",
+    "requirement_text": "Obliges the organization to select risk treatment options informed by assessment results, identify all controls needed to execute the chosen options, and cross-check those controls against Annex A to confirm none are inadvertently omitted. A Statement of Applicability must be produced documenting every control's inclusion or exclusion with justification, and a formal risk treatment plan must be approved by risk owners who also accept the residual risks that remain.",
     "implementation_notes": "Risk treatment options include modification (mitigate), retention (accept), avoidance, and sharing (transfer). The Statement of Applicability (SoA) is a mandatory document. Document justification for each Annex A control inclusion or exclusion. Risk owners must formally accept residual risks.",
     "related_controls": [
       "5.1",
@@ -159,7 +159,7 @@
     "clause_id": "6.2",
     "parent_id": "6",
     "title": "Information security objectives and planning to achieve them",
-    "requirement_text": "The organisation shall establish information security objectives at relevant functions and levels. The information security objectives shall: a) be consistent with the information security policy; b) be measurable (if practicable); c) take into account applicable information security requirements, and results from risk assessment and risk treatment; d) be monitored; e) be communicated; f) be updated as appropriate; g) be available as documented information. The organisation shall retain documented information on the information security objectives.",
+    "requirement_text": "Requires the organization to define information security objectives at all relevant levels and functions, ensuring they are consistent with the security policy, measurable where feasible, grounded in risk assessment and treatment outcomes, actively monitored and communicated, and documented. The objectives must be updated whenever circumstances change and retained as documented information.",
     "implementation_notes": "Objectives should be SMART (Specific, Measurable, Achievable, Relevant, Time-bound). Examples: reduce critical vulnerabilities within 30 days, achieve 95% staff awareness training completion, reduce mean time to detect incidents. Review objectives at management reviews. Link objectives to risk treatment outcomes.",
     "related_controls": [
       "5.1",
@@ -170,7 +170,7 @@
     "clause_id": "6.3",
     "parent_id": "6",
     "title": "Planning of changes",
-    "requirement_text": "When the organisation determines the need for changes to the information security management system, the changes shall be carried out in a planned manner.",
+    "requirement_text": "Establishes that any changes to the ISMS must be handled in a structured, deliberate manner rather than implemented ad hoc — a requirement introduced in the 2022 version to make change governance an explicit ISMS obligation. Auditors look for evidence that change impacts on effectiveness were considered and documented before implementation.",
     "implementation_notes": "Changes to the ISMS should be planned and managed through a formal change process. Assess the impact of proposed changes on the ISMS effectiveness. Communicate changes to relevant stakeholders. Update documentation as changes are implemented. This clause was added in the 2022 version.",
     "related_controls": [
       "8.32"
@@ -180,7 +180,7 @@
     "clause_id": "7",
     "parent_id": null,
     "title": "Support",
-    "requirement_text": "The organisation shall determine and provide the resources needed for the establishment, implementation, maintenance and continual improvement of the information security management system.",
+    "requirement_text": "Addresses the enabling conditions the ISMS depends on: the right resources, competent people, an aware workforce, structured communications, and a controlled body of documented information. This section ensures the management system has the operational backbone to function reliably.",
     "implementation_notes": "Resources include human resources (personnel with appropriate competence), infrastructure, technology, and financial resources. Document resource requirements and allocations. Review adequacy at management reviews.",
     "related_controls": [
       "5.2",
@@ -192,7 +192,7 @@
     "clause_id": "7.1",
     "parent_id": "7",
     "title": "Resources",
-    "requirement_text": "The organisation shall determine and provide the resources needed for the establishment, implementation, maintenance and continual improvement of the information security management system.",
+    "requirement_text": "Requires the organization to identify and secure all resources necessary to establish, implement, sustain, and keep improving the ISMS — covering budget, personnel, tooling, and time. Adequacy of resources is a standard agenda item at management reviews, and gaps must be tracked and resolved.",
     "implementation_notes": "Resources include budget, personnel, tools, and time. Document resource allocation decisions. Ensure resources are adequate for the ISMS scope. Review resource adequacy at management reviews and when scope changes.",
     "related_controls": [
       "5.4"
@@ -202,7 +202,7 @@
     "clause_id": "7.2",
     "parent_id": "7",
     "title": "Competence",
-    "requirement_text": "The organisation shall: a) determine the necessary competence of person(s) doing work under its control that affects its information security performance; b) ensure that these persons are competent on the basis of appropriate education, training, or experience; c) where applicable, take actions to acquire the necessary competence, and evaluate the effectiveness of the actions taken; d) retain appropriate documented information as evidence of competence.",
+    "requirement_text": "Obliges the organization to define the competences needed by anyone whose work affects information security performance, verify that those individuals are qualified through education, experience, or training, take corrective steps where gaps exist and confirm those steps worked, and retain records that demonstrate competence. Role descriptions and training records are the typical audit evidence.",
     "implementation_notes": "Maintain competency records for all personnel with ISMS responsibilities. Define required competencies in job descriptions. Provide training and development. Assess competency through testing or performance review. Retain training records and certificates.",
     "related_controls": [
       "6.3"
@@ -212,7 +212,7 @@
     "clause_id": "7.3",
     "parent_id": "7",
     "title": "Awareness",
-    "requirement_text": "Persons doing work under the organisation's control shall be aware of: a) the information security policy; b) their contribution to the effectiveness of the information security management system, including the benefits of improved information security performance; c) the implications of not conforming with the information security management system requirements.",
+    "requirement_text": "Establishes that all personnel working under the organization's direction must understand the information security policy, appreciate how their own behaviour contributes to ISMS effectiveness and the benefits it brings, and recognise the consequences of non-compliance. Awareness must be demonstrated, not merely delivered — auditors will test whether staff can actually articulate these points.",
     "implementation_notes": "Awareness should be achieved through induction training, regular refresher training, newsletters, posters, and phishing simulations. Document awareness activities. Measure awareness through testing. Ensure contractors and third parties are also made aware.",
     "related_controls": [
       "6.3"
@@ -222,7 +222,7 @@
     "clause_id": "7.4",
     "parent_id": "7",
     "title": "Communication",
-    "requirement_text": "The organisation shall determine the need for internal and external communications relevant to the information security management system including: a) on what to communicate; b) when to communicate; c) with whom to communicate; d) how to communicate.",
+    "requirement_text": "Requires the organization to define a structured approach to ISMS-related communications by specifying what must be communicated, at what cadence, to which audiences, and through which channels — covering both internal stakeholders and relevant external parties. A documented communications plan is the expected artefact.",
     "implementation_notes": "Document a communications plan covering regular management reporting, incident communications, policy updates, and regulatory notifications. Define escalation paths. Ensure communications are appropriate for the audience.",
     "related_controls": [
       "5.1",
@@ -235,7 +235,7 @@
     "clause_id": "7.5",
     "parent_id": "7",
     "title": "Documented information",
-    "requirement_text": "The organisation's information security management system shall include: a) documented information required by this document; b) documented information determined by the organisation as being necessary for the effectiveness of the information security management system.",
+    "requirement_text": "Sets out the framework for ISMS documentation, covering both the items mandated by the standard itself and any additional documented information the organization determines is necessary for the system to function effectively. The sub-clauses that follow elaborate creation standards and operational controls.",
     "implementation_notes": "Mandatory documented information includes: scope, information security policy, risk assessment methodology, risk register, SoA, risk treatment plan, information security objectives, and evidence of monitoring. Establish a document control procedure. Version control all documents.",
     "related_controls": [
       "5.1",
@@ -246,7 +246,7 @@
     "clause_id": "7.5.1",
     "parent_id": "7.5",
     "title": "General (documented information)",
-    "requirement_text": "The organisation's information security management system shall include: a) documented information required by this document; b) documented information determined by the organisation as being necessary for the effectiveness of the information security management system.",
+    "requirement_text": "Specifies that the documented information forming the ISMS must encompass everything the standard explicitly mandates plus whatever else the organization judges necessary for the system to work. This clause sets the scope of the document corpus; 7.5.2 and 7.5.3 govern how that corpus is managed.",
     "implementation_notes": "Maintain an inventory of all ISMS documented information. Clearly distinguish between mandatory and optional documentation. Ensure documents are current and accessible to those who need them.",
     "related_controls": [
       "5.37"
@@ -256,7 +256,7 @@
     "clause_id": "7.5.2",
     "parent_id": "7.5",
     "title": "Creating and updating",
-    "requirement_text": "When creating and updating documented information, the organisation shall ensure appropriate: a) identification and description (e.g. a title, date, author or reference number); b) format (e.g. language, software version, graphics) and media (e.g. paper, electronic); c) review and approval for suitability and adequacy.",
+    "requirement_text": "Addresses the quality and consistency of ISMS documents at creation and update, requiring that each item carries appropriate identification and descriptive metadata, is produced in a suitable format and medium, and has passed review and approval for suitability before being put into use. Standard templates with version numbers, review dates, and named approvers are the typical implementation.",
     "implementation_notes": "Establish templates for ISMS documents. Include version number, review date, and approver in all documents. Use a document management system where practical. Ensure review cycles are defined and followed.",
     "related_controls": [
       "5.37"
@@ -266,7 +266,7 @@
     "clause_id": "7.5.3",
     "parent_id": "7.5",
     "title": "Control of documented information",
-    "requirement_text": "Documented information required by the information security management system and by this document shall be controlled to ensure: a) it is available and suitable for use, where and when it is needed; b) it is adequately protected (e.g. from loss of confidentiality, improper use, or loss of integrity).",
+    "requirement_text": "Requires that all ISMS documented information be subject to controls ensuring it is accessible and fit for purpose wherever and whenever needed, and that it is adequately protected against unauthorized disclosure, misuse, or corruption. Controls must also address distribution, storage, version management, and disposition of superseded material.",
     "implementation_notes": "Control measures include access control, version control, backup, change management, and retention periods. Define who can create, modify, and approve documents. Archive superseded documents appropriately. Protect sensitive documentation.",
     "related_controls": [
       "5.12",
@@ -279,7 +279,7 @@
     "clause_id": "8",
     "parent_id": null,
     "title": "Operation",
-    "requirement_text": "The organisation shall plan, implement, control, evaluate and maintain the processes needed to meet information security requirements, and to implement the actions determined in Clause 6.",
+    "requirement_text": "Governs the execution layer of the ISMS, requiring that the organization plan, carry out, oversee, and sustain the processes that translate planning decisions into practice — including those driven by Clause 6 actions. Documented evidence that processes operated as designed is a key audit expectation.",
     "implementation_notes": "Operational planning translates ISMS decisions into day-to-day activities. Document procedures for all significant operational processes. Monitor process performance. Manage changes to processes.",
     "related_controls": [
       "5.37",
@@ -290,7 +290,7 @@
     "clause_id": "8.1",
     "parent_id": "8",
     "title": "Operational planning and control",
-    "requirement_text": "The organisation shall plan, implement, control, evaluate and maintain the processes needed to meet information security requirements, and to implement the actions determined in Clause 6, by: establishing criteria for the processes; implementing control of the processes in accordance with the criteria. Documented information shall be available to the extent necessary to have confidence that the processes have been carried out as planned. The organisation shall control planned changes and review the consequences of unintended changes, taking action to mitigate any adverse effects, as necessary. The organisation shall ensure that externally provided processes, products or services that are relevant to the information security management system are controlled.",
+    "requirement_text": "Requires the organization to plan and run ISMS-relevant processes against defined criteria, retain documented evidence sufficient to confirm the processes worked as intended, manage deliberate changes in a controlled way, address the fallout from unexpected changes, and ensure that externally sourced processes and services affecting the ISMS are brought under appropriate governance. Supplier management and change control are the principal audit focus areas.",
     "implementation_notes": "Establish documented procedures for critical ISMS processes. Define acceptance criteria and success metrics. Monitor process performance against criteria. Control changes through change management. Address externally provided services through supplier management.",
     "related_controls": [
       "5.19",
@@ -303,7 +303,7 @@
     "clause_id": "8.2",
     "parent_id": "8",
     "title": "Information security risk assessment",
-    "requirement_text": "The organisation shall perform information security risk assessments at planned intervals or when significant changes are proposed or occur, taking account of the criteria established in 6.1.2 a). The organisation shall retain documented information of the results of the information security risk assessments.",
+    "requirement_text": "Obliges the organization to carry out information security risk assessments on a scheduled basis and whenever significant changes are proposed or materialise, applying the criteria and methodology established under 6.1.2. Records of each assessment's results must be retained as documented information and are a core source of audit evidence.",
     "implementation_notes": "Conduct risk assessments at least annually and when significant changes occur (new systems, new regulations, major incidents, organisational changes). Use the risk assessment methodology established in 6.1.2. Retain risk assessment reports as evidence.",
     "related_controls": [
       "5.1",
@@ -314,7 +314,7 @@
     "clause_id": "8.3",
     "parent_id": "8",
     "title": "Information security risk treatment",
-    "requirement_text": "The organisation shall implement the information security risk treatment plan. The organisation shall retain documented information of the results of the information security risk treatment.",
+    "requirement_text": "Requires the organization to actively execute the risk treatment plan and to retain documented evidence of the outcomes. This operationalises the treatment decisions made in 6.1.3 and creates the traceable record auditors use to confirm that agreed treatments have moved from planned to implemented.",
     "implementation_notes": "Track implementation of risk treatment plans against agreed timelines. Report progress to risk owners and management. Update the risk register and SoA as treatments are implemented. Retain evidence of treatment implementation.",
     "related_controls": [
       "5.1",
@@ -327,7 +327,7 @@
     "clause_id": "9",
     "parent_id": null,
     "title": "Performance evaluation",
-    "requirement_text": "The organisation shall evaluate the information security performance and the effectiveness of the information security management system.",
+    "requirement_text": "Addresses the evaluation layer, requiring the organization to assess both its information security performance and the overall effectiveness of the ISMS. The sub-clauses under this section — monitoring and measurement, internal audit, and management review — together provide the evidence base for improvement decisions.",
     "implementation_notes": "Performance evaluation provides evidence of ISMS effectiveness and drives continual improvement. Use a combination of quantitative metrics and qualitative assessments. Report results to management regularly.",
     "related_controls": [
       "5.35",
@@ -338,7 +338,7 @@
     "clause_id": "9.1",
     "parent_id": "9",
     "title": "Monitoring, measurement, analysis and evaluation",
-    "requirement_text": "The organisation shall determine: a) what needs to be monitored and measured, including information security processes and controls; b) the methods for monitoring, measurement, analysis and evaluation, as applicable, to ensure valid results; c) when the monitoring and measuring shall be performed; d) who shall monitor and measure; e) when the results from monitoring and measurement shall be analysed and evaluated; f) who shall analyse and evaluate these results. The organisation shall evaluate the information security performance and the effectiveness of the information security management system. The organisation shall retain appropriate documented information as evidence of the monitoring and measurement results.",
+    "requirement_text": "Requires the organization to define a comprehensive monitoring and measurement programme specifying what will be measured across processes and controls, how valid results will be produced, when and by whom measurements will be taken, and who will analyse and interpret the outcomes. Documented evidence of measurement results must be retained, and the programme must ultimately support a conclusion about ISMS effectiveness.",
     "implementation_notes": "Define a measurement programme with KPIs and KRIs. Examples include: number of security incidents, patch compliance rate, training completion rate, vulnerability closure time, audit findings closed. Assign owners to each metric. Report metrics at management reviews. Retain measurement records.",
     "related_controls": [
       "5.36",
@@ -350,7 +350,7 @@
     "clause_id": "9.2",
     "parent_id": "9",
     "title": "Internal audit",
-    "requirement_text": "The organisation shall conduct internal audits at planned intervals to provide information on whether the information security management system: a) conforms to: 1) the organisation's own requirements for its information security management system; 2) the requirements of this document; b) is effectively implemented and maintained. The organisation shall: plan, establish, implement and maintain an audit programme(s) including the frequency, methods, responsibilities, planning requirements and reporting, which shall take into consideration the importance of the processes concerned and the results of previous audits; define the audit criteria and scope for each audit; select auditors and conduct audits to ensure objectivity and the impartiality of the audit process; ensure that the results of the audits are reported to relevant management; retain documented information as evidence of the audit programme(s) and the audit results.",
+    "requirement_text": "Establishes a mandatory internal audit function that periodically examines whether the ISMS conforms to the organization's own requirements and to the standard, and whether it is genuinely operating as designed. The program must be planned with attention to process importance and prior findings, auditors must be selected for impartiality, results must reach relevant management, and all records must be preserved.",
     "implementation_notes": "Develop an annual internal audit programme covering all ISMS elements over a defined cycle. Auditors should be independent of the areas they audit. Document audit plans, checklists, findings, and reports. Track corrective actions to closure. Retain audit records.",
     "related_controls": [
       "5.35"
@@ -360,7 +360,7 @@
     "clause_id": "9.2.1",
     "parent_id": "9.2",
     "title": "General (internal audit)",
-    "requirement_text": "The organisation shall conduct internal audits at planned intervals to provide information on whether the information security management system conforms to the organisation's own requirements and the requirements of this document, and is effectively implemented and maintained.",
+    "requirement_text": "Specifies the core purpose of internal audit: to deliver, at defined intervals, objective information about whether the ISMS conforms to organisational and standard requirements and is functioning as implemented. This general clause sets the intent; clause 9.2.2 covers the programme mechanics.",
     "implementation_notes": "Internal audits should be risk-based, focusing on areas of greatest concern. Use standardised audit methodologies. Maintain an audit schedule. Rotate auditors where possible to maintain independence.",
     "related_controls": [
       "5.35"
@@ -370,7 +370,7 @@
     "clause_id": "9.2.2",
     "parent_id": "9.2",
     "title": "Internal audit programme",
-    "requirement_text": "The organisation shall plan, establish, implement and maintain an audit programme including the frequency, methods, responsibilities, planning requirements and reporting, which shall take into consideration the importance of the processes concerned and the results of previous audits.",
+    "requirement_text": "Obliges the organization to design and maintain a formal audit programme that defines audit frequency, methods, roles, logistics, and reporting, and that weights audit attention toward higher-risk processes and incorporates lessons from previous audit cycles. The programme must be documented and followed in practice.",
     "implementation_notes": "Document the audit programme for the year. Consider risk-based audit prioritisation. Define audit methodologies (interviews, document review, technical testing). Assign audit roles and responsibilities. Schedule audits sufficiently in advance.",
     "related_controls": [
       "5.35"
@@ -380,7 +380,7 @@
     "clause_id": "9.3",
     "parent_id": "9",
     "title": "Management review",
-    "requirement_text": "Top management shall review the organisation's information security management system at planned intervals to ensure its continuing suitability, adequacy and effectiveness. The management review shall include consideration of: a) the status of actions from previous management reviews; b) changes in external and internal issues that are relevant to the information security management system; c) feedback on the information security performance, including trends in: 1) nonconformities and corrective actions; 2) monitoring and measurement results; 3) audit results; 4) fulfilment of information security objectives; d) feedback from interested parties; e) results of risk assessment and status of risk treatment plan; f) opportunities for continual improvement. The outputs of the management review shall include decisions related to continual improvement opportunities and any need for changes to the information security management system. The organisation shall retain documented information as evidence of the results of management reviews.",
+    "requirement_text": "Obliges top management to conduct planned formal reviews of the ISMS to assess its continuing suitability, adequacy, and effectiveness. The reviews must draw on a defined set of inputs including prior review actions, contextual changes, performance data, stakeholder feedback, risk status, and improvement opportunities, and must produce documented decisions about changes and improvements.",
     "implementation_notes": "Conduct management reviews at least annually, more frequently if significant changes occur. Prepare a management review pack covering all agenda items. Document decisions and action items with owners and due dates. Retain management review records as documented information.",
     "related_controls": [
       "5.1",
@@ -392,7 +392,7 @@
     "clause_id": "9.3.1",
     "parent_id": "9.3",
     "title": "General (management review)",
-    "requirement_text": "Top management shall review the organisation's information security management system at planned intervals to ensure its continuing suitability, adequacy and effectiveness.",
+    "requirement_text": "Obliges top management to conduct periodic formal reviews of the ISMS to confirm its continuing suitability, adequacy, and effectiveness in light of strategic direction and the current threat environment. The review must occur at planned intervals rather than on an ad hoc basis, and minutes must be retained as evidence.",
     "implementation_notes": "Management reviews should be attended by appropriate senior management. Use a standardised agenda. Retain minutes as evidence.",
     "related_controls": [
       "5.1",
@@ -403,7 +403,7 @@
     "clause_id": "9.3.2",
     "parent_id": "9.3",
     "title": "Management review inputs",
-    "requirement_text": "The management review shall include consideration of: status of actions from previous reviews; changes in external/internal issues; feedback on information security performance; feedback from interested parties; results of risk assessment and risk treatment plan status; opportunities for continual improvement.",
+    "requirement_text": "Specifies the mandatory inputs that every management review must consider: the disposition of actions from prior reviews; shifts in external and internal context; performance trend data covering nonconformities, monitoring metrics, audit outcomes, and objective attainment; feedback from stakeholders; current risk assessment results and treatment plan status; and any identified opportunities for improvement. Auditors verify that all these categories were genuinely addressed.",
     "implementation_notes": "Prepare management review inputs in advance. Include trend data where available. Present metrics and KPIs. Summarise key risks and treatment status. Include audit findings and corrective action status.",
     "related_controls": [
       "5.35",
@@ -414,7 +414,7 @@
     "clause_id": "9.3.3",
     "parent_id": "9.3",
     "title": "Management review results",
-    "requirement_text": "The outputs of the management review shall include decisions related to continual improvement opportunities and any need for changes to the information security management system.",
+    "requirement_text": "Defines the expected outputs from a management review: documented decisions addressing continual improvement opportunities and any required changes to the ISMS. These outputs must be recorded with sufficient clarity to enable follow-up tracking, and they form the primary link between senior leadership direction and subsequent ISMS activity.",
     "implementation_notes": "Document all decisions with clear action items, owners, and due dates. Communicate decisions to relevant stakeholders. Track action items to completion. Use management review outputs to drive ISMS improvement.",
     "related_controls": [
       "5.1"
@@ -424,7 +424,7 @@
     "clause_id": "10",
     "parent_id": null,
     "title": "Improvement",
-    "requirement_text": "The organisation shall continually improve the suitability, adequacy and effectiveness of the information security management system.",
+    "requirement_text": "Addresses the improvement imperative, establishing that the organization must continuously enhance its ISMS and must respond systematically when failures or shortfalls occur. The two sub-clauses distinguish between reactive correction of nonconformities and the broader ongoing obligation to lift performance proactively.",
     "implementation_notes": "Improvement activities include corrective actions, preventive actions, and continual improvement initiatives. Track and trend nonconformities. Use improvement inputs from audits, incidents, management reviews, and performance metrics.",
     "related_controls": [
       "5.27",
@@ -436,7 +436,7 @@
     "clause_id": "10.1",
     "parent_id": "10",
     "title": "Continual improvement",
-    "requirement_text": "The organisation shall continually improve the suitability, adequacy and effectiveness of the information security management system.",
+    "requirement_text": "Establishes an ongoing obligation to enhance the ISMS over time, ensuring it remains fit for purpose, appropriately scoped, and effective in achieving its intended security outcomes. In practice this means treating inputs from audits, incidents, metrics, and management reviews as structured triggers for documented improvement actions.",
     "implementation_notes": "Establish a formal process for identifying and implementing improvements. Use Lessons Learned from incidents, audit findings, and management reviews as inputs. Track improvement initiatives to completion. Measure the effectiveness of improvements.",
     "related_controls": [
       "5.27"
@@ -446,7 +446,7 @@
     "clause_id": "10.2",
     "parent_id": "10",
     "title": "Nonconformity and corrective action",
-    "requirement_text": "When a nonconformity occurs, the organisation shall: a) react to the nonconformity and, as applicable: 1) take action to control and correct it; 2) deal with the consequences; b) evaluate the need for action to eliminate the causes of the nonconformity, in order that it does not recur or occur elsewhere, by: 1) reviewing the nonconformity; 2) determining the causes of the nonconformity; 3) determining if similar nonconformities exist, or could potentially occur; c) implement any action needed; d) review the effectiveness of any corrective action taken; e) make changes to the information security management system, if necessary. Corrective actions shall be appropriate to the effects of the nonconformities encountered. The organisation shall retain documented information as evidence of: a) the nature of the nonconformities and any subsequent actions taken; b) the results of any corrective action.",
+    "requirement_text": "Addresses the organization's response when a nonconformity arises: it must contain the situation and deal with consequences, investigate root causes, determine whether similar failures exist or could emerge elsewhere, implement corrective actions proportionate to the severity of the failure, verify that those actions actually worked, and update the ISMS if warranted. Both the nature of the nonconformity and the outcome of any corrective action must be retained as documented information.",
     "implementation_notes": "Establish a formal nonconformity and corrective action procedure. Use root cause analysis techniques (5 Whys, fishbone diagram). Assign corrective actions to owners with due dates. Verify effectiveness before closing. Retain records of nonconformities and corrective actions.",
     "related_controls": [
       "5.27",

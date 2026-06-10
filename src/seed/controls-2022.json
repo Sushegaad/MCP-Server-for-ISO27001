@@ -4,8 +4,8 @@
     "version": "2022",
     "name": "Policies for information security",
     "theme": "Organizational",
-    "description": "Information security policy and topic-specific policies shall be defined, approved by management, published, communicated to and acknowledged by relevant personnel and relevant interested parties, and reviewed at planned intervals or if significant changes occur.",
-    "guidance": "Policies should address business requirements, relevant legislation and regulations, current and anticipated information security threats, and the specific policy areas defined in Annex A. Policies shall be reviewed at planned intervals or if significant changes occur.",
+    "description": "Requires the organization to establish a governing information security policy alongside any needed topic-specific policies, each carrying documented management approval, formally distributed to affected staff and relevant external parties, and reassessed on a scheduled cycle or when significant changes arise.",
+    "guidance": "Policy scope should reflect the organization's operating context, applicable legal and regulatory obligations, and current and foreseeable threats, with the Annex A control areas informing which topic-specific policies are needed. Auditors typically look for evidence that review cycles respond to material changes in context, not only fixed calendar schedules.",
     "control_type": [
       "Preventive"
     ],
@@ -43,8 +43,8 @@
     "version": "2022",
     "name": "Information security roles and responsibilities",
     "theme": "Organizational",
-    "description": "Information security roles and responsibilities shall be defined and allocated according to the organisation's needs.",
-    "guidance": "Roles and responsibilities should be defined for all personnel involved in information security. Responsibilities for protecting specific assets and carrying out specific information security processes shall be clearly assigned.",
+    "description": "Calls for information security roles and responsibilities to be formally defined and allocated in a manner that reflects the organization's operational needs.",
+    "guidance": "Each person involved in security activities should have clearly assigned duties, particularly for protecting specific assets or executing security-sensitive processes. Accountability gaps — where no owner is named — are a common audit finding and should be eliminated at the role-definition stage.",
     "control_type": [
       "Preventive"
     ],
@@ -82,8 +82,8 @@
     "version": "2022",
     "name": "Segregation of duties",
     "theme": "Organizational",
-    "description": "Conflicting duties and conflicting areas of responsibility shall be segregated.",
-    "guidance": "Care should be taken that no single person can access, modify or use assets without authorisation or detection. Activities requiring segregation include initiating a request and approving it. Smaller organisations may find segregation difficult, but compensating controls such as monitoring and management oversight should be applied.",
+    "description": "Establishes that incompatible duties and areas of authority must be kept separate so that no individual can unilaterally access, alter, or misuse assets without detection.",
+    "guidance": "Common examples requiring separation include the ability to request and to approve the same action. Where organizational size makes full segregation impractical, compensating measures such as supervisory oversight and activity monitoring should be documented and applied.",
     "control_type": [
       "Preventive"
     ],
@@ -114,8 +114,8 @@
     "version": "2022",
     "name": "Management responsibilities",
     "theme": "Organizational",
-    "description": "Management shall require all personnel to apply information security in accordance with the established information security policy, topic-specific policies and procedures of the organisation.",
-    "guidance": "Management shall demonstrate their support for information security policies by communicating expectations to employees, providing feedback on performance, and participating in information security reviews.",
+    "description": "Obliges management to actively direct all personnel to apply information security in line with the organization's established policies, topic-specific policies, and procedures.",
+    "guidance": "Management commitment should be visible: communicating security expectations, providing feedback on security performance, and taking part in security reviews all demonstrate active sponsorship rather than passive endorsement of policy documents.",
     "control_type": [
       "Preventive"
     ],
@@ -152,8 +152,8 @@
     "version": "2022",
     "name": "Contact with authorities",
     "theme": "Organizational",
-    "description": "The organisation shall establish and maintain contact with relevant authorities.",
-    "guidance": "Organisations should maintain contacts with relevant authorities such as law enforcement, regulatory bodies, and emergency services. Contacts should be maintained so that appropriate liaison is available to expedite actions in the event of an information security incident.",
+    "description": "Addresses the need to build and sustain working relationships with relevant external authorities, including regulators, law enforcement, and emergency services.",
+    "guidance": "Contacts should be established before an incident occurs so that escalation paths are known and response can be expedited when needed. The organization should document which authorities are relevant and who is responsible for maintaining each relationship.",
     "control_type": [
       "Preventive",
       "Corrective"
@@ -189,8 +189,8 @@
     "version": "2022",
     "name": "Contact with special interest groups",
     "theme": "Organizational",
-    "description": "The organisation shall establish and maintain contact with special interest groups or other specialist security forums and professional associations.",
-    "guidance": "Membership in special interest groups or forums should be considered as a means to improve knowledge about best practices and to stay up-to-date with relevant information security information.",
+    "description": "Mandates that the organization actively participates in, or maintains connections with, specialist security communities, forums, or professional bodies relevant to its threat landscape.",
+    "guidance": "Engagement with sector-specific groups and security associations helps the organization stay current on best practices and emerging threats. Auditors look for evidence of active participation, not merely a nominal membership or mailing-list subscription.",
     "control_type": [
       "Preventive"
     ],
@@ -222,8 +222,8 @@
     "version": "2022",
     "name": "Threat intelligence",
     "theme": "Organizational",
-    "description": "Information relating to information security threats shall be collected and analysed to produce threat intelligence.",
-    "guidance": "Threat intelligence should include technical, tactical, operational and strategic levels. Intelligence gathered should be used to update the risk assessment process and contribute to control selection. Sources of threat intelligence include ISAC feeds, vendor advisories, CERT notifications and internal incident data.",
+    "description": "Requires the systematic gathering and analysis of threat-related information to generate actionable intelligence that supports risk-informed decision-making.",
+    "guidance": "Intelligence should be considered across technical, tactical, operational, and strategic dimensions. Outputs should feed directly into the risk assessment process and inform control selection decisions. Credible sources include sector information-sharing groups, vendor advisories, national CERT feeds, and internal incident data.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -261,8 +261,8 @@
     "version": "2022",
     "name": "Information security in project management",
     "theme": "Organizational",
-    "description": "Information security shall be integrated into project management.",
-    "guidance": "Information security requirements should be addressed in all types of projects, regardless of the type of project. Project managers should ensure information security risks are identified and addressed as part of project risk management. Security reviews should be conducted at key project milestones.",
+    "description": "Establishes that information security considerations must be embedded within the organization's project management framework, covering all project types regardless of their nature or scale.",
+    "guidance": "Security risks should be surfaced and addressed as a routine part of project risk management rather than treated as an afterthought. Conducting security reviews at defined project milestones helps confirm that requirements have been met before moving to the next phase.",
     "control_type": [
       "Preventive"
     ],
@@ -298,8 +298,8 @@
     "version": "2022",
     "name": "Inventory of information and other associated assets",
     "theme": "Organizational",
-    "description": "An inventory of information and other associated assets, including owners, shall be developed and maintained.",
-    "guidance": "Asset inventories should include information assets, software, physical assets, services, people, and intangibles. Each asset should have an assigned owner responsible for its protection. The inventory should be kept accurate and up to date.",
+    "description": "Calls for a complete, current inventory of information and associated assets to be compiled and maintained, with each asset assigned a named owner accountable for its protection.",
+    "guidance": "The inventory should span information assets, software, hardware, services, people, and intangibles. Keeping it accurate is an ongoing discipline — stale inventories undermine every downstream control that depends on knowing what assets exist and who is responsible for them.",
     "control_type": [
       "Preventive"
     ],
@@ -333,8 +333,8 @@
     "version": "2022",
     "name": "Acceptable use of information and other associated assets",
     "theme": "Organizational",
-    "description": "Rules for the acceptable use and procedures for handling information and other associated assets shall be identified, documented and implemented.",
-    "guidance": "Acceptable use policies should cover all categories of assets. Users should be made aware of the information security requirements for handling assets. Policies should address personal use of organisational assets.",
+    "description": "Requires the organization to define, document, and operationalize rules governing the acceptable handling and use of information and associated assets across all asset categories.",
+    "guidance": "Policies should cover every category of asset and make users aware of their handling obligations, including any restrictions on personal use of organizational assets. Practical clarity — what is and is not permitted — reduces ambiguity and helps with consistent enforcement.",
     "control_type": [
       "Preventive"
     ],
@@ -368,8 +368,8 @@
     "version": "2022",
     "name": "Return of assets",
     "theme": "Organizational",
-    "description": "Personnel and other interested parties as appropriate shall return all the organisation's assets in their possession upon change or termination of their employment, contract or agreement.",
-    "guidance": "The return of assets process should be formalised and verified. Procedures should address return of equipment, media, documents, and credentials. Where assets are not returned, their loss should be recorded and appropriate action taken.",
+    "description": "Obliges personnel and other relevant parties to hand back all organizational assets in their possession when their employment, contract, or agreement ends or changes, as applicable.",
+    "guidance": "The return process should be formally structured and verifiable, covering equipment, media, documents, and credentials. Where assets are not returned, the loss must be recorded and appropriate follow-up action taken rather than allowed to go unresolved.",
     "control_type": [
       "Preventive"
     ],
@@ -404,8 +404,8 @@
     "version": "2022",
     "name": "Classification of information",
     "theme": "Organizational",
-    "description": "Information shall be classified according to the information security needs of the organisation based on confidentiality, integrity, availability and relevant interested party requirements.",
-    "guidance": "A classification scheme should be consistent with the organisation's business needs. Classification levels should be few enough to be manageable but sufficient to convey the relative sensitivity. Classification should include consideration of legal and regulatory requirements.",
+    "description": "Establishes that information must be classified according to its confidentiality, integrity, and availability needs, taking into account the requirements of relevant interested parties.",
+    "guidance": "Classification schemes should be practical — few enough levels to be manageable but sufficient to reflect meaningful differences in sensitivity. Legal and regulatory requirements should inform classification decisions, and the scheme should align with business operations rather than create unnecessary overhead.",
     "control_type": [
       "Preventive"
     ],
@@ -441,8 +441,8 @@
     "version": "2022",
     "name": "Labelling of information",
     "theme": "Organizational",
-    "description": "An appropriate set of procedures for information labelling shall be developed and implemented in accordance with the information classification scheme adopted by the organisation.",
-    "guidance": "Labelling procedures should cover all information assets including physical and electronic formats. Labels should be clearly visible and not impede normal use. Automated labelling tools should be used where practical.",
+    "description": "Requires a set of labelling procedures to be developed and put into practice in a manner that is consistent with the organization's information classification scheme.",
+    "guidance": "Labelling should cover information assets in all formats, whether physical or electronic, with labels that are clearly visible without impeding normal use. Where automated labelling tools are feasible, their use is encouraged to reduce manual error and improve consistency.",
     "control_type": [
       "Preventive"
     ],
@@ -474,8 +474,8 @@
     "version": "2022",
     "name": "Information transfer",
     "theme": "Organizational",
-    "description": "Information transfer rules, procedures, or agreements shall be in place for all types of transfer facilities within the organisation and between the organisation and other parties.",
-    "guidance": "Transfer policies should address electronic transfers, physical media transfers, and verbal transfers. Agreements with third parties should include security requirements for information transfers. Encryption should be used for sensitive information in transit.",
+    "description": "Addresses the need for formal rules, procedures, or agreements governing the transfer of information across all transfer channels — both within the organization and between the organization and external parties.",
+    "guidance": "Transfer arrangements should cover electronic messaging, physical media, and verbal communication. Third-party agreements should articulate the security obligations that apply during transfer, and sensitive information in transit should be protected through appropriate means such as encryption.",
     "control_type": [
       "Preventive"
     ],
@@ -509,8 +509,8 @@
     "version": "2022",
     "name": "Access control",
     "theme": "Organizational",
-    "description": "Rules to control physical and logical access to information and other associated assets shall be established and implemented based on business and information security requirements.",
-    "guidance": "Access control policies should be based on the principle of least privilege. Access rights should be regularly reviewed. Policies should address remote access, privileged access, and access by third parties.",
+    "description": "Calls for access control rules governing both physical and logical access to information and associated assets to be established and enforced, grounded in business and security requirements.",
+    "guidance": "Policy design should apply the principle of least privilege as a baseline. Regular access reviews, and specific attention to remote access, privileged access, and third-party access scenarios, are areas auditors routinely examine for completeness and currency.",
     "control_type": [
       "Preventive"
     ],
@@ -544,8 +544,8 @@
     "version": "2022",
     "name": "Identity management",
     "theme": "Organizational",
-    "description": "The full life cycle of identities shall be managed.",
-    "guidance": "Identity management should cover creation, maintenance and deletion of identities. Unique identifiers should be assigned to each person. Shared identities should be discouraged. Processes should ensure identities are promptly deactivated when no longer needed.",
+    "description": "Calls for end-to-end governance of digital identities, covering creation, maintenance, and removal across their entire active period.",
+    "guidance": "Each individual should be assigned a unique identifier; shared identities weaken accountability and should be avoided. Processes must ensure that identities are promptly deactivated when the associated person leaves or changes roles — delays in deactivation are a frequent audit finding.",
     "control_type": [
       "Preventive"
     ],
@@ -578,8 +578,8 @@
     "version": "2022",
     "name": "Authentication information",
     "theme": "Organizational",
-    "description": "Allocation and management of authentication information shall be controlled by a management process, including advising personnel on appropriate handling of authentication information.",
-    "guidance": "Authentication information policies should address password complexity, length, change frequency and history. Organisations should implement multi-factor authentication where appropriate. Users should be advised not to share authentication information.",
+    "description": "Requires a managed process to govern the allocation and ongoing administration of authentication information, including guidance to personnel on how to handle such information appropriately.",
+    "guidance": "Authentication policies should address credential strength, change cycles, and history requirements. Where appropriate, multi-factor authentication should be deployed. Personnel must understand that authentication credentials are personal and must not be shared, regardless of convenience.",
     "control_type": [
       "Preventive"
     ],
@@ -611,8 +611,8 @@
     "version": "2022",
     "name": "Access rights",
     "theme": "Organizational",
-    "description": "Access rights to information and other associated assets shall be provisioned, reviewed, modified and removed in accordance with the organisation's topic-specific policy on and rules for access control.",
-    "guidance": "Access provisioning should follow a formal request and approval process. Access rights should be reviewed regularly and when roles change. Privileged access rights require more frequent review. Access rights should be removed promptly on termination.",
+    "description": "Obligates the organization to provision, periodically review, adjust, and revoke access rights to information assets in a manner consistent with its defined access control policy and rules.",
+    "guidance": "Access provisioning should follow a formal request-and-approval workflow. Reviews should occur at regular intervals and whenever roles change, with more frequent scrutiny for privileged accounts. Dormant or excess rights are a key audit focus and should be removed without delay.",
     "control_type": [
       "Preventive"
     ],
@@ -646,8 +646,8 @@
     "version": "2022",
     "name": "Information security in supplier relationships",
     "theme": "Organizational",
-    "description": "Processes and procedures shall be defined and implemented to manage the information security risks associated with the use of supplier's products or services.",
-    "guidance": "Supplier security management should include a supplier security policy, risk assessment prior to engagement, contractual requirements, and ongoing monitoring. The organisation should maintain an inventory of suppliers and their access to information assets.",
+    "description": "Mandates that the organization define and operate processes and procedures to identify and manage the information security risks that arise from its use of supplier products and services.",
+    "guidance": "A coherent supplier security program should encompass a dedicated policy, pre-engagement risk assessment, contractual security clauses, and ongoing performance monitoring. Maintaining a current inventory of suppliers and their access levels is foundational to effective oversight.",
     "control_type": [
       "Preventive"
     ],
@@ -681,8 +681,8 @@
     "version": "2022",
     "name": "Addressing information security within supplier agreements",
     "theme": "Organizational",
-    "description": "Relevant information security requirements shall be established and agreed with each supplier based on the type of supplier relationship.",
-    "guidance": "Supplier agreements should include confidentiality requirements, data handling obligations, security standards to be maintained, right to audit, incident notification requirements, and liability provisions. Agreements should address subcontracting arrangements.",
+    "description": "Requires that relevant information security obligations be identified, negotiated, and formally agreed with each supplier, calibrated to the nature of the supplier relationship.",
+    "guidance": "Agreements should cover confidentiality, data handling duties, the security standards the supplier is expected to maintain, audit rights, incident notification timelines, and how subcontracting is governed. Omitting any of these areas is a common gap that auditors flag during supplier agreement reviews.",
     "control_type": [
       "Preventive"
     ],
@@ -716,8 +716,8 @@
     "version": "2022",
     "name": "Managing information security in the ICT supply chain",
     "theme": "Organizational",
-    "description": "Processes and procedures shall be defined and implemented to manage the information security risks associated with the ICT products and services supply chain.",
-    "guidance": "Supply chain security should address risks from hardware, software and services sourced from third parties. Organisations should assess supplier security practices, require transparency of supply chain components, and implement controls to detect tampered products.",
+    "description": "Calls for defined processes to govern information security risks within the broader ICT supply chain, covering hardware, software, and services sourced from third-party providers.",
+    "guidance": "Organizations should assess supplier security practices, seek transparency about the components used in delivered products or services, and put in place controls to detect signs of tampering or unauthorized modification. Supply chain risks are distinct from standard supplier risks and merit dedicated treatment.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -754,8 +754,8 @@
     "version": "2022",
     "name": "Monitoring, review and change management of supplier services",
     "theme": "Organizational",
-    "description": "The organisation shall regularly monitor, review, evaluate and manage change in supplier information security practices and service delivery.",
-    "guidance": "Supplier performance should be monitored against agreed service levels and security requirements. Reviews should cover changes to supplier services, security incidents, audit results, and compliance status. Changes to supplier arrangements should be managed through a formal change process.",
+    "description": "Establishes ongoing responsibility to monitor, evaluate, and manage changes in supplier information security practices and service delivery, maintaining oversight across the supplier relationship lifecycle.",
+    "guidance": "Monitoring should cover performance against agreed security levels, security incidents at the supplier, audit outcomes, and compliance status. Any significant changes to supplier arrangements — including changes to their own subcontractors — should flow through a structured change management process.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -790,8 +790,8 @@
     "version": "2022",
     "name": "Information security for use of cloud services",
     "theme": "Organizational",
-    "description": "Processes for acquisition, use, management and exit from cloud services shall be established in accordance with the organisation's information security requirements.",
-    "guidance": "Cloud security processes should address service model considerations (IaaS/PaaS/SaaS), data residency and sovereignty, shared responsibility models, encryption of data at rest and in transit, access management, and exit strategies to prevent vendor lock-in.",
+    "description": "Addresses the need to establish processes covering the acquisition, active use, management, and eventual exit from cloud services, aligned with the organization's information security requirements.",
+    "guidance": "Considerations specific to cloud contexts include shared responsibility boundaries, data sovereignty and residency constraints, exit and portability options to avoid lock-in, and securing data both at rest and in transit. Service model differences (IaaS, PaaS, SaaS) affect which security responsibilities sit with the organization versus the provider.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -830,8 +830,8 @@
     "version": "2022",
     "name": "Information security incident management planning and preparation",
     "theme": "Organizational",
-    "description": "The organisation shall plan and prepare for managing information security incidents by defining, establishing and communicating information security incident management processes, roles and responsibilities.",
-    "guidance": "Incident management planning should define what constitutes an incident, establish an incident response team, define escalation procedures, and ensure resources are available. Plans should be tested through exercises and updated based on lessons learned.",
+    "description": "Requires the organization to prepare for information security incidents by designing, establishing, and communicating the incident management processes, roles, and responsibilities that will govern its response.",
+    "guidance": "Preparation should define what qualifies as an incident, identify and train response personnel, establish escalation paths, and confirm that necessary resources will be available when needed. Plans should be validated through exercises and refined using lessons drawn from previous incidents or drills.",
     "control_type": [
       "Preventive",
       "Corrective"
@@ -868,8 +868,8 @@
     "version": "2022",
     "name": "Assessment and decision on information security events",
     "theme": "Organizational",
-    "description": "The organisation shall assess information security events and decide if they are to be categorised as information security incidents.",
-    "guidance": "Assessment criteria should be defined to distinguish events from incidents. Triage processes should be established to prioritise incidents based on severity. Decision records should be maintained for audit purposes.",
+    "description": "Obliges the organization to evaluate detected information security events and make a formal determination as to whether each one constitutes an incident warranting a managed response.",
+    "guidance": "Clear assessment criteria help distinguish routine events from genuine incidents and enable prioritization based on severity. Decision records should be maintained so that triage reasoning is available for post-incident review and audit scrutiny.",
     "control_type": [
       "Detective",
       "Corrective"
@@ -905,8 +905,8 @@
     "version": "2022",
     "name": "Response to information security incidents",
     "theme": "Organizational",
-    "description": "Information security incidents shall be responded to in accordance with the documented procedures.",
-    "guidance": "Incident response should include containment, eradication and recovery activities. Evidence should be collected and preserved. Communications should be managed including notification to affected parties and regulators where required. Post-incident analysis should be conducted.",
+    "description": "Mandates that confirmed information security incidents be handled in accordance with documented response procedures, covering all stages from initial detection through recovery.",
+    "guidance": "Response activities typically span containment, root-cause eradication, and recovery, with evidence preservation running in parallel throughout. Notification obligations to affected parties and regulators must be tracked, and a post-incident analysis should be conducted to inform future improvements.",
     "control_type": [
       "Corrective"
     ],
@@ -941,8 +941,8 @@
     "version": "2022",
     "name": "Learning from information security incidents",
     "theme": "Organizational",
-    "description": "Knowledge gained from information security incidents shall be used to strengthen and improve the information security controls.",
-    "guidance": "Post-incident reviews should identify root causes and contributing factors. Lessons learned should be documented and shared. Control improvements identified should be tracked through to implementation. Incident data should be used to update risk assessments.",
+    "description": "Requires that insight gained through information security incidents be systematically applied to strengthen existing controls and reduce the likelihood or impact of recurrence.",
+    "guidance": "Post-incident reviews should trace root causes and contributing factors rather than stopping at symptoms. Documented lessons should be shared with relevant teams, improvement actions tracked to completion, and incident data fed back into the risk assessment process to keep it current.",
     "control_type": [
       "Preventive",
       "Corrective"
@@ -979,8 +979,8 @@
     "version": "2022",
     "name": "Collection of evidence",
     "theme": "Organizational",
-    "description": "The organisation shall establish and implement procedures for the identification, collection, acquisition and preservation of evidence related to information security events.",
-    "guidance": "Evidence collection procedures should ensure evidence integrity and chain of custody. Digital forensic principles should be applied where evidence may be used in legal proceedings. Evidence should be stored securely and access controlled.",
+    "description": "Establishes that the organization must define and operate procedures covering the identification, collection, acquisition, and preservation of evidence associated with information security events.",
+    "guidance": "Evidence integrity and chain of custody must be maintained throughout collection and storage. Where evidence may support legal proceedings, digital forensic principles should govern how it is gathered. Secure, access-controlled storage is required, and the process should be tested before it is needed in anger.",
     "control_type": [
       "Detective",
       "Corrective"
@@ -1016,8 +1016,8 @@
     "version": "2022",
     "name": "Information security during disruption",
     "theme": "Organizational",
-    "description": "The organisation shall plan how to maintain information security at an appropriate level during disruption.",
-    "guidance": "Business continuity plans should include information security requirements. Recovery time and recovery point objectives should be defined for information systems. Security controls should be maintained or compensating controls applied during disruption.",
+    "description": "Requires the organization to plan how it will sustain information security at an adequate level when facing a disruption, ensuring continuity of protective measures throughout adverse conditions.",
+    "guidance": "Business continuity plans should incorporate information security requirements as a core element rather than an afterthought. Security controls should remain in place during disruption, or compensating controls should be explicitly identified and pre-authorized for activation when primary controls cannot operate.",
     "control_type": [
       "Preventive",
       "Corrective"
@@ -1052,8 +1052,8 @@
     "version": "2022",
     "name": "ICT readiness for business continuity",
     "theme": "Organizational",
-    "description": "ICT readiness shall be planned, implemented, maintained and tested based on business continuity objectives and ICT continuity requirements.",
-    "guidance": "ICT continuity planning should address backup and recovery of critical systems, alternative processing facilities, resilience of network connectivity, and testing of recovery procedures. Plans should be reviewed and tested at planned intervals.",
+    "description": "Calls for ICT continuity capabilities to be planned, put in place, actively maintained, and validated through testing, anchored to the organization's business continuity objectives and ICT continuity requirements.",
+    "guidance": "Planning should address backup and recovery of critical systems, alternative processing sites, network resilience, and recovery procedure testing. Both the plans and the underlying capabilities should be reviewed and retested at defined intervals to confirm they remain effective.",
     "control_type": [
       "Preventive",
       "Corrective"
@@ -1086,8 +1086,8 @@
     "version": "2022",
     "name": "Legal, statutory, regulatory and contractual requirements",
     "theme": "Organizational",
-    "description": "Legal, statutory, regulatory and contractual requirements relevant to information security and the organisation's approach to meet these requirements shall be identified, documented and kept up to date.",
-    "guidance": "A register of applicable legal and regulatory requirements should be maintained. Requirements should be mapped to information security controls. Changes to applicable legislation and regulations should be monitored and the register updated.",
+    "description": "Requires the organization to identify, document, and keep current all legal, statutory, regulatory, and contractual requirements that bear on its information security obligations.",
+    "guidance": "A structured register of applicable obligations should be maintained and mapped to the controls used to satisfy them. Changes to relevant legislation and regulations should be monitored proactively so the register — and any affected controls — can be updated before compliance gaps appear.",
     "control_type": [
       "Preventive"
     ],
@@ -1124,8 +1124,8 @@
     "version": "2022",
     "name": "Intellectual property rights",
     "theme": "Organizational",
-    "description": "The organisation shall implement appropriate procedures to protect intellectual property rights.",
-    "guidance": "Procedures should address software licensing compliance, copyright protection, and protection of proprietary information. A register of licensed software should be maintained. Staff should be trained on intellectual property obligations.",
+    "description": "Obligates the organization to put appropriate procedures in place to protect intellectual property rights, spanning software licensing, copyright, and proprietary information.",
+    "guidance": "A register of licensed software should be maintained to support compliance verification. Staff should be made aware of their intellectual property obligations so that inadvertent infringement is reduced. Auditors typically look for evidence of both a documented policy and active license management.",
     "control_type": [
       "Preventive"
     ],
@@ -1156,8 +1156,8 @@
     "version": "2022",
     "name": "Protection of records",
     "theme": "Organizational",
-    "description": "Records shall be protected from loss, destruction, falsification, unauthorised access and unauthorised release.",
-    "guidance": "A records retention schedule should be defined considering legal requirements, business needs and applicable standards. Records should be stored in appropriate formats and media. Procedures should address both physical and electronic records.",
+    "description": "Mandates protection of records against loss, destruction, falsification, unauthorized access, and unauthorized disclosure throughout their retention period.",
+    "guidance": "A retention schedule should be defined that accounts for legal requirements, business needs, and applicable standards. Procedures must address both physical and electronic records, including appropriate storage formats, media selection, and eventual secure disposal when the retention period expires.",
     "control_type": [
       "Preventive"
     ],
@@ -1192,8 +1192,8 @@
     "version": "2022",
     "name": "Privacy and protection of personally identifiable information",
     "theme": "Organizational",
-    "description": "The organisation shall identify and meet the requirements regarding the preservation of privacy and protection of PII according to applicable laws and regulations and contractual requirements.",
-    "guidance": "Privacy requirements should be addressed in policies and procedures. A privacy impact assessment process should be established. Staff handling PII should receive privacy awareness training. Data subject rights mechanisms should be implemented.",
+    "description": "Requires the organization to identify and satisfy the privacy and personally identifiable information protection obligations that arise from applicable laws, regulations, and contractual arrangements.",
+    "guidance": "Privacy requirements should be embedded in policies and operational procedures rather than treated as a separate compliance workstream. A privacy impact assessment mechanism should be available for use when new processing activities are introduced, and staff who handle personal data should receive targeted awareness training.",
     "control_type": [
       "Preventive"
     ],
@@ -1227,8 +1227,8 @@
     "version": "2022",
     "name": "Independent review of information security",
     "theme": "Organizational",
-    "description": "The organisation's approach to managing information security and its implementation including people, processes and technologies shall be reviewed independently at planned intervals, or when significant changes occur.",
-    "guidance": "Independent reviews may be conducted by internal audit, management, or third parties. Review scope should cover policies, risk management processes, controls implementation, and incident management effectiveness. Findings should be reported to management.",
+    "description": "Establishes that the organization's overall approach to managing information security — encompassing people, processes, and technologies — must be subject to independent review at scheduled intervals or when significant changes occur.",
+    "guidance": "Independent reviewers may be drawn from internal audit, external auditors, or other suitably qualified parties with appropriate independence from the areas under review. Review scope should encompass policy effectiveness, risk management processes, control implementation, and incident handling. Findings must be reported to management with sufficient clarity to drive action.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -1265,8 +1265,8 @@
     "version": "2022",
     "name": "Compliance with policies, rules and standards for information security",
     "theme": "Organizational",
-    "description": "Compliance with the organisation's information security policy, topic-specific policies, rules and standards shall be regularly reviewed.",
-    "guidance": "Managers should review compliance with information security policies within their areas of responsibility. Automated tools should be used where available to check technical compliance. Non-compliance findings should be escalated and remediated.",
+    "description": "Calls for regular assessment of whether the organization's information security policies, topic-specific policies, rules, and standards are being followed in practice.",
+    "guidance": "Line managers are typically responsible for compliance oversight within their areas, but automated technical compliance checking should supplement manual review wherever it is available. Non-compliance findings must be escalated through defined channels and tracked to remediation rather than left unresolved.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -1302,8 +1302,8 @@
     "version": "2022",
     "name": "Documented operating procedures",
     "theme": "Organizational",
-    "description": "Operating procedures for information processing facilities shall be documented and made available to personnel who need them.",
-    "guidance": "Procedures should be documented for all significant information processing activities. Procedures should include start-up and shut-down, backup, handling errors, and maintenance activities. Procedures should be kept up to date and version controlled.",
+    "description": "Requires that operating procedures for information processing facilities be documented and made available to the personnel who need them to perform their duties.",
+    "guidance": "Documentation should cover all significant processing activities, including start-up and shutdown sequences, backup procedures, error handling, and maintenance tasks. Procedures should be subject to version control and kept current so that personnel always work from accurate, authoritative guidance.",
     "control_type": [
       "Preventive"
     ],
@@ -1335,8 +1335,8 @@
     "version": "2022",
     "name": "Screening",
     "theme": "People",
-    "description": "Background verification checks on all candidates to become personnel shall be carried out prior to joining the organisation and on an ongoing basis taking into consideration applicable laws, regulations and ethics and be proportional to the business requirements, the classification of the information to be accessed and the perceived risks.",
-    "guidance": "Screening should be proportional to the sensitivity of the role and applicable legal requirements. Checks may include identity verification, employment history, academic qualifications, criminal record checks, and credit checks. Rescreening should occur for roles with significant changes.",
+    "description": "Calls for pre-employment background verification for all candidates, with the depth of checks calibrated to the sensitivity of the role, the classification of information the individual would handle, and applicable legal and ethical boundaries. The control extends to ongoing rescreening where circumstances change.",
+    "guidance": "Verification activities may encompass identity confirmation, employment history, academic credentials, criminal records, and credit history, with scope determined by role sensitivity and jurisdictional rules. Auditors typically look for documented criteria that govern which checks apply to which roles, evidence that checks were conducted before access was granted, and a process for periodic re-evaluation when personnel move into higher-sensitivity positions.",
     "control_type": [
       "Preventive"
     ],
@@ -1367,8 +1367,8 @@
     "version": "2022",
     "name": "Terms and conditions of employment",
     "theme": "People",
-    "description": "The employment contractual agreements shall state the personnel's and the organisation's responsibilities for information security.",
-    "guidance": "Employment contracts should include information security obligations, confidentiality requirements, acceptable use requirements, and consequences of non-compliance. Obligations should continue where appropriate after termination of employment.",
+    "description": "Requires that contractual agreements with personnel explicitly set out both the individual's and the organisation's obligations in relation to information security, covering conduct during employment and, where appropriate, duties that persist after the employment relationship ends.",
+    "guidance": "Contracts should address confidentiality expectations, acceptable use of assets, obligations upon departure, and the consequences of non-compliance. The organisation should confirm that post-termination clauses are enforceable under applicable employment law. Auditors commonly check that standard contract templates reflect current security policy and that any role-specific addenda are consistently applied.",
     "control_type": [
       "Preventive"
     ],
@@ -1402,8 +1402,8 @@
     "version": "2022",
     "name": "Information security awareness, education and training",
     "theme": "People",
-    "description": "Personnel of the organisation and relevant interested parties shall receive appropriate information security awareness, education and training and regular updates of the organisation's information security policy, topic-specific policies and procedures, as relevant for their job function.",
-    "guidance": "Awareness programmes should cover information security basics, policies, specific threats, and responsibilities. Training should be role-specific for those with security responsibilities. Effectiveness should be measured and training updated regularly.",
+    "description": "Obliges the organisation to ensure that all personnel and relevant external parties receive information security awareness, education, and training appropriate to their job function, together with timely updates when policies or procedures change.",
+    "guidance": "Awareness programmes should cover core security concepts, applicable policies, current threat types, and individual responsibilities. Those with dedicated security functions require deeper, role-specific training. The organisation should measure whether learning objectives are being met and refresh content at intervals or following significant incidents. Auditors look for records that training was completed, evidence of effectiveness measurement, and a process for keeping material current.",
     "control_type": [
       "Preventive"
     ],
@@ -1439,8 +1439,8 @@
     "version": "2022",
     "name": "Disciplinary process",
     "theme": "People",
-    "description": "A disciplinary process shall be formalised and communicated to take action against personnel and other relevant interested parties who have committed an information security policy violation.",
-    "guidance": "The disciplinary process should provide fair and proportionate responses to security policy violations. Procedures should be communicated to all staff. The process should be consistent with applicable employment law.",
+    "description": "Establishes that a formal disciplinary process must exist to address policy violations by personnel and other relevant parties, with the process communicated to all affected individuals before it is invoked.",
+    "guidance": "The process should be proportionate, consistent, and fair, accounting for the nature and severity of the violation, whether it was deliberate or accidental, and any mitigating factors. It must align with applicable employment legislation. Auditors look for documented procedures, evidence that staff have been informed of the process, and records showing it has been applied consistently when violations occur.",
     "control_type": [
       "Preventive",
       "Corrective"
@@ -1474,8 +1474,8 @@
     "version": "2022",
     "name": "Responsibilities after termination or change of employment",
     "theme": "People",
-    "description": "Information security responsibilities and duties that remain valid after termination or change of employment shall be defined, enforced and communicated to relevant personnel and other interested parties.",
-    "guidance": "Responsibilities that survive termination include confidentiality obligations and non-compete clauses. Exit processes should include revoking access rights, returning assets, and conducting exit interviews. Changes in roles should trigger review of access rights.",
+    "description": "Addresses the need to identify, communicate, and enforce information security obligations that survive the termination or internal transfer of personnel, ensuring that duties such as confidentiality requirements remain in effect after the working relationship changes.",
+    "guidance": "Exit and role-change procedures should incorporate revocation of access rights, recovery of organisational assets, and notification of continuing obligations. Where personnel move to roles with different access profiles, a reassessment of entitlements is warranted. Auditors typically verify that offboarding checklists exist, that access is removed promptly, and that post-termination obligations are captured in the original contractual documentation.",
     "control_type": [
       "Preventive"
     ],
@@ -1510,8 +1510,8 @@
     "version": "2022",
     "name": "Confidentiality or non-disclosure agreements",
     "theme": "People",
-    "description": "Confidentiality or non-disclosure agreements reflecting the organisation's needs for the protection of information shall be identified, documented, regularly reviewed and signed by personnel and other relevant interested parties.",
-    "guidance": "NDAs should clearly define what constitutes confidential information, the obligations of the parties, the duration of the obligations, and the consequences of breach. They should be signed before access to confidential information is granted.",
+    "description": "Mandates that non-disclosure and confidentiality agreements aligned with the organisation's information protection requirements be identified, documented, kept under periodic review, and executed by personnel and relevant external parties before sensitive information is shared.",
+    "guidance": "Agreements should clearly delineate what constitutes confidential information, the obligations of each party, the duration of those obligations, and the consequences of a breach. The organisation should maintain a register of active agreements and review them when the business relationship or the sensitivity of information exchanged changes. Auditors commonly verify that agreements are signed prior to access being granted and that review cycles are documented.",
     "control_type": [
       "Preventive"
     ],
@@ -1543,8 +1543,8 @@
     "version": "2022",
     "name": "Remote working",
     "theme": "People",
-    "description": "Security measures shall be implemented when personnel are working remotely to protect information accessed, processed or stored outside the organisation's premises.",
-    "guidance": "Remote working policies should address use of personal devices, home network security, physical security in remote locations, secure communication channels, and access control. VPN or equivalent secure connectivity should be required for accessing organisational systems.",
+    "description": "Requires the organisation to put protective measures in place for personnel working outside its premises, safeguarding information that is accessed, processed, or stored in remote locations.",
+    "guidance": "Considerations include the security of home or public network environments, the use of personal versus corporate devices, physical confidentiality in non-office settings, and the use of secure connectivity solutions for access to organisational systems. BYOD arrangements require explicit policy coverage. Auditors look for a remote-working policy, evidence that it is communicated to affected staff, and technical controls such as endpoint management and secure channel requirements.",
     "control_type": [
       "Preventive"
     ],
@@ -1580,8 +1580,8 @@
     "version": "2022",
     "name": "Information security event reporting",
     "theme": "People",
-    "description": "The organisation shall provide a mechanism for personnel to report observed or suspected information security events through appropriate channels in a timely manner.",
-    "guidance": "Reporting mechanisms should be easy to use and accessible. Personnel should be trained on what to report and how to report it. There should be no negative consequences for good-faith reporting. Reports should be acknowledged and followed up.",
+    "description": "Calls for the organisation to provide personnel with accessible, well-understood channels for reporting suspected or observed information security events promptly, and to foster a culture in which good-faith reporting is actively encouraged.",
+    "guidance": "Reporting mechanisms should be simple to use and available without undue barriers. Personnel should be clear on what categories of event to report, how to escalate, and that there will be no adverse consequences for reporting in good faith. Reports should be acknowledged and acted upon. Auditors assess whether reporting channels are documented, whether training covers reporting obligations, and whether there is evidence that submitted reports were followed up appropriately.",
     "control_type": [
       "Detective"
     ],
@@ -1615,8 +1615,8 @@
     "version": "2022",
     "name": "Physical security perimeters",
     "theme": "Physical",
-    "description": "Security perimeters shall be defined and used to protect areas that contain information and other associated assets.",
-    "guidance": "Perimeters should be clearly defined. Walls and doors should be physically sound. Entry points should be controlled. The extent of the security perimeter should be based on the sensitivity of the assets it contains.",
+    "description": "Requires the organisation to establish and maintain clearly delineated physical security perimeters around areas housing information and associated assets, with the robustness of those boundaries proportionate to the sensitivity of what they protect.",
+    "guidance": "Perimeter boundaries should be unambiguous, with structurally sound barriers and controlled access points. The number and location of access points should reflect operational necessity while minimising exposure. Auditors look for documented perimeter definitions, evidence that physical barriers are adequate, and that the level of protection applied is consistent with a risk-based assessment of the assets inside.",
     "control_type": [
       "Preventive"
     ],
@@ -1649,8 +1649,8 @@
     "version": "2022",
     "name": "Physical entry",
     "theme": "Physical",
-    "description": "Secure areas shall be protected by appropriate entry controls and access points.",
-    "guidance": "Entry controls should ensure only authorised personnel can access secure areas. Controls may include key cards, biometrics, PINs, or security staff. Visitor access should be controlled and monitored. Access logs should be maintained.",
+    "description": "Addresses the need to restrict and control physical entry to secure areas so that only authorised individuals can gain access, with appropriate mechanisms in place to verify identity and record entry.",
+    "guidance": "Entry controls may combine card readers, PIN codes, biometric verification, or manned checkpoints depending on the sensitivity of the area. Visitor access requires supervision, a log of entry and exit, and a process for escorting individuals who lack standing authorisation. Access records should be retained for a period consistent with investigative and compliance needs. Auditors inspect physical controls, visitor registers, and evidence that access lists are kept current.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -1686,8 +1686,8 @@
     "version": "2022",
     "name": "Securing offices, rooms and facilities",
     "theme": "Physical",
-    "description": "Physical security for offices, rooms and facilities shall be designed and implemented.",
-    "guidance": "Physical security should be proportionate to the value of assets and assessed risks. Sensitive areas should not be identifiable from outside. Internal directories should not be freely accessible. Procedures for vacant areas should be defined.",
+    "description": "Establishes that physical security measures for offices, rooms, and facilities must be deliberately designed and implemented, with protective strength calibrated to the value and sensitivity of the information and assets they contain.",
+    "guidance": "Design considerations include limiting external indicators that identify the location or function of sensitive areas, controlling who knows about the existence of secure rooms, and defining procedures for periods when areas are unoccupied. Internal directories or signage should not expose sensitive locations unnecessarily. Auditors look for documented physical security design decisions and evidence that security measures have been implemented and verified against the design intent.",
     "control_type": [
       "Preventive"
     ],
@@ -1720,8 +1720,8 @@
     "version": "2022",
     "name": "Physical security monitoring",
     "theme": "Physical",
-    "description": "Premises shall be continuously monitored for unauthorised physical access.",
-    "guidance": "Monitoring systems may include CCTV, intrusion detection, security guards, and access logs. Monitoring should cover all entry points and sensitive areas. Alerts should trigger timely investigation. Monitoring data should be retained for an appropriate period.",
+    "description": "Mandates continuous monitoring of premises to detect and respond to unauthorised physical access, using surveillance and detection technologies appropriate to the assessed risk.",
+    "guidance": "Monitoring mechanisms may include video surveillance, intrusion detection systems, security personnel, or a combination of these. Coverage should extend to all entry points and high-sensitivity zones. Alerts must trigger timely investigation rather than being passively collected. Retention periods for surveillance records should reflect legal requirements and the time needed to support investigations. Auditors verify that monitoring gaps do not exist, that alerts are acted upon, and that records are adequately protected.",
     "control_type": [
       "Detective",
       "Preventive"
@@ -1759,8 +1759,8 @@
     "version": "2022",
     "name": "Protecting against physical and environmental threats",
     "theme": "Physical",
-    "description": "Protection against physical and environmental threats, such as natural disasters, malicious attacks or accidents shall be designed and implemented.",
-    "guidance": "Threats to assess include fire, flood, earthquake, power disruption, and temperature extremes. Controls may include fire suppression, UPS, climate control, and off-site backups. Risk assessments should inform the selection of protective measures.",
+    "description": "Requires the organisation to design and implement physical controls that guard against natural disasters, malicious physical attacks, and environmental accidents, based on a structured assessment of the relevant threats.",
+    "guidance": "Threat categories to evaluate include fire, flooding, seismic events, extreme temperature, and deliberate physical damage. Protective measures are selected from the risk assessment and may include fire detection and suppression, surge protection, uninterruptible power, climate management systems, and geographically dispersed backups. Auditors look for a documented threat assessment that drives control selection and evidence that protective equipment is tested and maintained.",
     "control_type": [
       "Preventive"
     ],
@@ -1795,8 +1795,8 @@
     "version": "2022",
     "name": "Working in secure areas",
     "theme": "Physical",
-    "description": "Security measures for working in secure areas shall be designed and applied.",
-    "guidance": "Procedures for secure areas should address supervision of visitors, restriction of unsupervised access, photography and recording restrictions, and clean desk requirements. Personnel should be aware of the existence of secure areas only on a need-to-know basis.",
+    "description": "Calls for defined and enforced security measures governing how work is conducted within physically secure areas, so that the controls protecting those areas are not undermined by behaviour inside them.",
+    "guidance": "Procedural controls should cover supervision of visitors within secure zones, restrictions on unescorted access, prohibitions on photography or recording, and clean-desk expectations. Awareness of the existence and location of secure areas should be limited to those with a legitimate need to know. Auditors assess whether procedures are documented, communicated to affected personnel, and consistently observed.",
     "control_type": [
       "Preventive"
     ],
@@ -1827,8 +1827,8 @@
     "version": "2022",
     "name": "Clear desk and clear screen",
     "theme": "Physical",
-    "description": "Clear desk rules for papers and removable storage media and clear screen rules for information processing facilities shall be defined and appropriately enforced.",
-    "guidance": "Sensitive information should not be left on desks when unattended. Computer screens should be locked when not in use. Printers, fax machines and copiers should be cleared of sensitive materials. Physical documents should be secured in locked cabinets.",
+    "description": "Establishes that personnel must follow clear-desk practices for paper documents and removable media, and clear-screen practices for information processing equipment, to prevent unauthorised viewing or removal of information when workstations and work areas are unattended.",
+    "guidance": "Physical documents containing sensitive information should be stored in locked containers when not in active use. Workstation screens should lock automatically after a defined idle period, and users should lock screens manually when leaving their desk. Output devices such as printers and copiers should be cleared promptly. Auditors look for a documented policy, technical enforcement of screen locking, and spot-check evidence that the practices are followed in practice.",
     "control_type": [
       "Preventive"
     ],
@@ -1859,8 +1859,8 @@
     "version": "2022",
     "name": "Equipment siting and protection",
     "theme": "Physical",
-    "description": "Equipment shall be sited securely and protected.",
-    "guidance": "Equipment should be positioned to minimise unnecessary access and to reduce risks from environmental hazards. Special measures may be needed for equipment requiring special protection. Food and drink should not be permitted near equipment.",
+    "description": "Requires that equipment be positioned and physically protected in a manner that reduces exposure to both environmental risks and opportunities for unauthorised access or interference.",
+    "guidance": "Placement decisions should account for visibility from public or shared spaces, proximity to environmental hazards such as water pipes or external walls, and the need for special protection for particularly sensitive hardware. Access to equipment should be limited to those with a legitimate operational need. Auditors look for documented siting decisions, evidence that environmental risk assessments informed placement, and that physical access to equipment is appropriately restricted.",
     "control_type": [
       "Preventive"
     ],
@@ -1894,8 +1894,8 @@
     "version": "2022",
     "name": "Security of assets off-premises",
     "theme": "Physical",
-    "description": "Off-site assets shall be protected.",
-    "guidance": "Equipment taken off-site should be subject to appropriate security measures. Personnel taking equipment off-site should be authorised and logged. Equipment should not be left unattended in public places. Data on portable equipment should be encrypted.",
+    "description": "Addresses the protection of organisational assets used or stored outside the organisation's physical premises, recognising that off-site use exposes equipment and the information it holds to different and often higher risks.",
+    "guidance": "Authorisation and logging processes should govern which assets may be taken off-site and by whom. Personnel carrying equipment externally should apply physical security practices such as not leaving devices unattended in vehicles or public spaces. Data on portable devices should be encrypted. Auditors look for an off-site use policy, an asset register showing which items have been authorised for external use, and evidence that encryption requirements are enforced.",
     "control_type": [
       "Preventive"
     ],
@@ -1929,8 +1929,8 @@
     "version": "2022",
     "name": "Storage media",
     "theme": "Physical",
-    "description": "Storage media shall be managed through their life cycle of acquisition, use, transportation and disposal in accordance with the organisation's classification scheme and handling requirements.",
-    "guidance": "Media management should address authorisation for use, storage, transportation, and disposal. Media containing sensitive information should be securely wiped or destroyed before disposal or reuse. A media register should be maintained for sensitive media.",
+    "description": "Obliges the organisation to manage storage media across the complete lifecycle — from acquisition and deployment through transportation to final disposal — in a manner consistent with its information classification scheme and handling rules.",
+    "guidance": "Procedures should specify authorisation requirements for use of removable media, secure storage practices, approved transport methods for sensitive media, and verified destruction or sanitisation before disposal or reuse. A register of sensitive media assets aids accountability. Auditors verify that media handling procedures exist and are followed, that disposal records are maintained, and that the method of sanitisation is appropriate to the sensitivity of the data held.",
     "control_type": [
       "Preventive"
     ],
@@ -1964,8 +1964,8 @@
     "version": "2022",
     "name": "Supporting utilities",
     "theme": "Physical",
-    "description": "Information processing facilities shall be protected from power failures and other disruptions caused by failures in supporting utilities.",
-    "guidance": "Supporting utilities include power, water, heating, ventilation and air conditioning. UPS systems should be used for critical systems. Utility capacity should be regularly reviewed. Alternate power sources should be available for critical facilities.",
+    "description": "Requires that information processing facilities be protected against disruptions caused by failures in supporting infrastructure, including power supply, water, heating, ventilation, and air conditioning.",
+    "guidance": "Critical systems should have uninterruptible power supplies, with generator backup for prolonged outages where the business impact warrants it. Capacity of utilities should be assessed against current and anticipated load and reviewed periodically. Redundancy in utility provision reduces single points of failure. Auditors look for documented utility assessments, maintenance records for protective equipment such as UPS units, and evidence that capacity reviews take place.",
     "control_type": [
       "Preventive"
     ],
@@ -1998,8 +1998,8 @@
     "version": "2022",
     "name": "Cabling security",
     "theme": "Physical",
-    "description": "Cables carrying power or data or supporting information services shall be protected from interception, interference or damage.",
-    "guidance": "Power and communications cabling should be protected from physical damage and interception. Sensitive cable routes should be documented and controlled. Cable termination points and wiring closets should be physically secured.",
+    "description": "Establishes that cabling infrastructure — whether carrying power or data, or supporting communications services — must be physically protected against interception, electromagnetic interference, and physical damage.",
+    "guidance": "Cable routing for sensitive communications should be documented, and pathways through public or unsecured areas should be minimised or physically hardened. Distribution frames, patch panels, and telecommunications rooms should be physically secured. Auditors look for cabling documentation, evidence that sensitive routes are protected, and that access to termination points is restricted to authorised personnel.",
     "control_type": [
       "Preventive"
     ],
@@ -2032,8 +2032,8 @@
     "version": "2022",
     "name": "Equipment maintenance",
     "theme": "Physical",
-    "description": "Equipment shall be maintained correctly to ensure availability, integrity and confidentiality of information.",
-    "guidance": "Maintenance should follow manufacturer specifications and schedules. Only authorised personnel or contractors should perform maintenance. Records of all maintenance should be kept. Equipment suspected of being compromised should be checked before returning to service.",
+    "description": "Requires that equipment be maintained according to appropriate schedules and standards to preserve the availability, integrity, and confidentiality of the information it processes or stores.",
+    "guidance": "Maintenance should be carried out by authorised personnel in accordance with manufacturer guidance or applicable service contracts. All maintenance activities should be recorded, noting who performed the work, what was done, and when. Equipment that has undergone external maintenance or repair should be inspected for tampering or unauthorised modification before being returned to operational use. Auditors review maintenance logs and check that only authorised individuals perform maintenance tasks.",
     "control_type": [
       "Preventive"
     ],
@@ -2065,8 +2065,8 @@
     "version": "2022",
     "name": "Secure disposal or re-use of equipment",
     "theme": "Physical",
-    "description": "Items of equipment containing storage media shall be verified to ensure that any sensitive data and licensed software has been removed or securely overwritten prior to disposal or re-use.",
-    "guidance": "All storage media should be securely wiped or destroyed before equipment disposal or reuse. Data destruction should be certified for sensitive equipment. Physical destruction should be used where secure wiping is not possible.",
+    "description": "Mandates that before any equipment containing storage media is disposed of or repurposed, the organisation verify that all sensitive data and licensed software has been reliably removed or rendered unrecoverable.",
+    "guidance": "Secure erasure techniques should be appropriate to the sensitivity of the data held; physical destruction is warranted where software-based sanitisation cannot be verified. Disposal should be documented, and for highly sensitive equipment, a certificate of destruction from the disposal provider provides additional assurance. Auditors look for a documented disposal procedure, evidence that sanitisation has been applied and verified, and records covering all disposed items.",
     "control_type": [
       "Preventive"
     ],
@@ -2099,8 +2099,8 @@
     "version": "2022",
     "name": "User endpoint devices",
     "theme": "Technological",
-    "description": "Information stored on, processed by or accessible via user endpoint devices shall be protected.",
-    "guidance": "Endpoint protection should include device encryption, antivirus, screen lock, patch management, and remote wipe capability. BYOD policies should address security requirements for personal devices. Mobile device management solutions should be considered.",
+    "description": "Requires that information held on, processed by, or reachable through user endpoint devices — including laptops, mobile phones, and tablets — be protected through appropriate technical and procedural controls.",
+    "guidance": "Protection measures typically encompass full-disk encryption, anti-malware tooling, enforced screen locking, patch management, and remote-wipe capability. Policies for personally owned devices must explicitly address how organisational data on those devices is protected and what happens upon departure. Mobile device management platforms are commonly used to enforce configuration baselines. Auditors look for device management policies, evidence that controls are deployed and monitored, and a defined process for handling lost or compromised endpoints.",
     "control_type": [
       "Preventive"
     ],
@@ -2136,8 +2136,8 @@
     "version": "2022",
     "name": "Privileged access rights",
     "theme": "Technological",
-    "description": "The allocation and use of privileged access rights shall be restricted and managed.",
-    "guidance": "Privileged accounts should be allocated on a need-to-use basis. Privileged activities should use separate privileged accounts from normal work accounts. Privileged access should be time-limited where possible. Privileged actions should be logged.",
+    "description": "Addresses the need to strictly limit and actively manage the assignment and exercise of privileged access rights, recognising that such rights pose elevated risk if misused or compromised.",
+    "guidance": "Privileged accounts should be granted only on a demonstrated need-to-use basis, and where feasible should be time-bounded rather than permanent. Day-to-day work should be conducted using standard accounts, with separate privileged accounts invoked only for tasks that require elevated permissions. All privileged actions should be logged. Auditors check that a privileged access policy exists, that the population of privileged accounts is reviewed regularly, and that logs of privileged activity are captured and reviewed.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -2173,8 +2173,8 @@
     "version": "2022",
     "name": "Information access restriction",
     "theme": "Technological",
-    "description": "Access to information and other associated assets shall be restricted in accordance with the established topic-specific policy on access control.",
-    "guidance": "Access restrictions should implement the principle of least privilege. Access should be granted based on business need. System and application access should be restricted to authorised functions. Default deny should be applied where feasible.",
+    "description": "Calls for access to information and associated assets to be restricted in accordance with the organisation's access control policy, applying the principle of least privilege so that individuals and systems obtain only the access their role genuinely requires.",
+    "guidance": "Restrictions should be applied at system, application, and data levels. Default-deny configurations are preferable wherever operationally feasible. Access should be granted on the basis of business need and reviewed when roles change. Auditors look for evidence that access control rules are formally defined, that permissions are periodically recertified, and that mechanisms exist to enforce restrictions consistently across the environment.",
     "control_type": [
       "Preventive"
     ],
@@ -2208,8 +2208,8 @@
     "version": "2022",
     "name": "Access to source code",
     "theme": "Technological",
-    "description": "Read and write access to source code, development tools and software libraries shall be appropriately managed.",
-    "guidance": "Access to source code repositories should be restricted and logged. Code review processes should include security checks. Library use should be governed by policy. Tools that can modify code should require additional authorisation.",
+    "description": "Establishes that both read and write access to source code repositories, development tooling, and software libraries must be appropriately controlled to protect intellectual property and prevent unauthorised modification.",
+    "guidance": "Repository access should follow the same least-privilege principle applied to other assets, with permissions tied to defined development roles. Code changes should pass through review processes that include security checks. Third-party libraries and frameworks should be governed by a defined policy covering permitted sources and approval requirements. Auditors look for access control configurations on version control systems, evidence that code review is practised, and records showing that library approvals are tracked.",
     "control_type": [
       "Preventive"
     ],
@@ -2242,8 +2242,8 @@
     "version": "2022",
     "name": "Secure authentication",
     "theme": "Technological",
-    "description": "Secure authentication technologies and procedures shall be implemented based on information access restrictions and the topic-specific policy on access control.",
-    "guidance": "Authentication methods should be proportionate to the sensitivity of the system. Multi-factor authentication should be used for privileged access and remote access. Authentication systems should protect against brute force attacks and credential theft.",
+    "description": "Requires that authentication technologies and procedures be implemented in a manner proportionate to the sensitivity of the systems and information being protected, consistent with the organisation's access control policy.",
+    "guidance": "Higher-risk access scenarios — including remote access and privileged account use — should require multi-factor authentication. Authentication systems should incorporate protections against credential guessing, replay, and theft. Session management should enforce timeouts appropriate to the risk context. Auditors check that authentication requirements are documented by system sensitivity, that multi-factor mechanisms are enforced where mandated, and that controls against brute-force attacks are active.",
     "control_type": [
       "Preventive"
     ],
@@ -2275,8 +2275,8 @@
     "version": "2022",
     "name": "Capacity management",
     "theme": "Technological",
-    "description": "The use of resources shall be monitored and adjusted in line with current and expected capacity requirements.",
-    "guidance": "Capacity monitoring should cover storage, processing, memory and network bandwidth. Capacity planning should consider future business growth and seasonal variations. Alerts should be configured to notify when thresholds are approached.",
+    "description": "Requires the organisation to monitor resource consumption across its information processing environment and adjust capacity proactively to ensure that current and anticipated demand can be met without compromising availability.",
+    "guidance": "Monitoring should cover compute, memory, storage, and network bandwidth. Capacity planning should account for foreseeable business growth and cyclical demand patterns. Alert thresholds should be set to provide sufficient lead time for remedial action before saturation occurs. Auditors look for capacity baselines, evidence that monitoring is active and configured to alert, and records of capacity reviews tied to business planning cycles.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -2309,8 +2309,8 @@
     "version": "2022",
     "name": "Protection against malware",
     "theme": "Technological",
-    "description": "Protection against malware shall be implemented and supported by appropriate user awareness.",
-    "guidance": "Anti-malware controls should include endpoint protection, email scanning, web filtering, and network-based detection. Signatures and detection rules should be kept current. Users should be trained to recognise and report suspicious activity.",
+    "description": "Requires technical controls to detect and block malicious software, combined with user awareness measures that help personnel recognise and respond to threats. Auditors typically verify both the tooling layer and evidence of ongoing awareness activity.",
+    "guidance": "Technical defences may span endpoint protection, email and web content filtering, and network-based detection. Detection signatures and rules must be kept current. User-facing awareness should explain how to identify suspicious content and how to report it. The organisation should have a process for responding when malware is detected, including containment, investigation, and recovery steps.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -2347,8 +2347,8 @@
     "version": "2022",
     "name": "Management of technical vulnerabilities",
     "theme": "Technological",
-    "description": "Information about technical vulnerabilities of information systems in use shall be obtained in a timely fashion, the organisation's exposure to such vulnerabilities shall be evaluated and appropriate measures taken.",
-    "guidance": "A vulnerability management programme should include asset inventory, regular scanning, severity assessment, and patching timelines. Critical vulnerabilities should be remediated urgently. Vulnerability data should feed into the risk assessment process.",
+    "description": "Obliges the organisation to gather timely intelligence on technical vulnerabilities affecting its information systems, assess the actual level of exposure, and act on findings in a manner commensurate with the risk they present.",
+    "guidance": "A functioning vulnerability management programme requires an accurate asset inventory, regular scanning, a process for prioritising findings by severity and exploitability, and defined timelines for remediation. Vulnerability data should feed back into the broader risk assessment. Auditors typically look for scan frequency, evidence of prioritisation logic, remediation tracking, and confirmation that critical findings are addressed within agreed timeframes.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -2384,8 +2384,8 @@
     "version": "2022",
     "name": "Configuration management",
     "theme": "Technological",
-    "description": "Configurations, including security configurations, of hardware, software, services and networks shall be established, documented, implemented, monitored and reviewed.",
-    "guidance": "Configuration management should establish secure baseline configurations for all system components. Changes from baselines should be tracked and authorised. Configuration drift detection tools should be used. Configurations should be reviewed periodically.",
+    "description": "Establishes that security configurations for hardware, software, services, and networks must be formally defined, documented, consistently applied, and kept under ongoing review to prevent drift from approved baselines.",
+    "guidance": "Configuration management should begin with the development of secure baseline standards for each component class. Deviations from baselines should be detected, reviewed, and either remediated or formally accepted. Automated tooling aids in detecting configuration drift at scale. Auditors look for documented baselines, change records showing authorised deviations, and evidence of periodic configuration reviews.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -2422,8 +2422,8 @@
     "version": "2022",
     "name": "Information deletion",
     "theme": "Technological",
-    "description": "Information stored in information systems, devices or in any other storage media shall be deleted when no longer required.",
-    "guidance": "Deletion procedures should implement secure erasure standards. Retention periods should be defined and enforced. Deletion should be verifiable. Special consideration is needed for cloud environments where data residency may be uncertain.",
+    "description": "Addresses the need to ensure that information held in systems, devices, or storage media is reliably deleted when the organisation no longer has a legitimate purpose for retaining it, reducing the risk of unnecessary exposure.",
+    "guidance": "Deletion procedures should implement recognised secure-erasure standards appropriate to the storage medium. Retention schedules should be defined and enforced, with automated deletion workflows where feasible. The organisation should be able to verify that deletion has occurred, which is particularly challenging in cloud environments where physical media is not directly controlled. Auditors look for retention schedules, evidence of deletion procedures, and, for cloud environments, contractual or technical confirmation that deletion is effective.",
     "control_type": [
       "Preventive"
     ],
@@ -2455,8 +2455,8 @@
     "version": "2022",
     "name": "Data masking",
     "theme": "Technological",
-    "description": "Data masking shall be used in accordance with the organisation's topic-specific policy on access control and other related topic-specific policies, and business requirements, taking applicable legislation into consideration.",
-    "guidance": "Data masking techniques include anonymisation, pseudonymisation, tokenisation, and encryption. Masking should be applied to sensitive data in non-production environments. Masking techniques should be validated to prevent re-identification.",
+    "description": "Requires data masking to be applied in accordance with access control policy and applicable legislation when the full fidelity of sensitive data is not needed for the intended use, limiting exposure of that data to unauthorised parties.",
+    "guidance": "Masking techniques include anonymisation, pseudonymisation, tokenisation, and format-preserving encryption, each with different re-identification risks. Masking is particularly important in non-production environments where developers and testers may need realistic data without access to live personal or sensitive information. The effectiveness of masking should be validated to ensure re-identification is not trivially possible. Auditors examine where masked data is used, whether the technique chosen is appropriate to the sensitivity level, and whether validation of masking effectiveness is documented.",
     "control_type": [
       "Preventive"
     ],
@@ -2487,8 +2487,8 @@
     "version": "2022",
     "name": "Data leakage prevention",
     "theme": "Technological",
-    "description": "Data leakage prevention measures shall be applied to systems, networks and any other devices that process, store or transmit sensitive information.",
-    "guidance": "DLP controls should cover endpoint activity, email, web traffic, and cloud services. Policies should define sensitive data types and permitted destinations. Incidents detected by DLP tools should be investigated. DLP rules should be regularly tuned.",
+    "description": "Calls for data leakage prevention measures to be applied across the systems, networks, and devices that process, store, or transmit sensitive information, limiting the risk of unauthorised disclosure whether accidental or deliberate.",
+    "guidance": "DLP capabilities should cover outbound email, web uploads, endpoint removable media, and cloud storage interactions. Policies must define what constitutes sensitive data, which destinations or channels are permitted, and how incidents are handled. Detection rules require regular tuning to remain effective without generating excessive false positives. Auditors look for documented DLP policy scope, evidence that controls are deployed and active, and records showing that DLP alerts are reviewed and investigated.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -2523,8 +2523,8 @@
     "version": "2022",
     "name": "Information backup",
     "theme": "Technological",
-    "description": "Backup copies of information, software and systems shall be maintained and regularly tested in accordance with the agreed topic-specific policy on backup.",
-    "guidance": "Backup policies should define what is backed up, frequency, retention, and recovery time objectives. Backups should be tested by restoration at planned intervals. Off-site backups should be maintained. Backup media should be protected.",
+    "description": "Requires the organisation to maintain backup copies of information, software, and systems in accordance with a defined backup policy, and to confirm through regular testing that those copies can be successfully restored.",
+    "guidance": "The backup policy should specify what is covered, backup frequency, the number of generations retained, recovery objectives, and storage location. Off-site or off-environment copies guard against site-level loss. Restoration tests — not merely the existence of backups — provide the assurance that recovery is achievable. Backup media should be protected against unauthorised access and environmental damage. Auditors look for documented backup schedules, restoration test records, and evidence that backup coverage aligns with business-critical assets.",
     "control_type": [
       "Preventive",
       "Corrective"
@@ -2559,8 +2559,8 @@
     "version": "2022",
     "name": "Redundancy of information processing facilities",
     "theme": "Technological",
-    "description": "Information processing facilities shall be implemented with sufficient redundancy to meet availability requirements.",
-    "guidance": "Redundancy requirements should be based on availability objectives. Redundant components should not share single points of failure. Failover mechanisms should be tested regularly. Redundancy architecture should address geographic diversity for critical systems.",
+    "description": "Establishes that information processing facilities must be architected with sufficient redundancy to meet the organisation's availability commitments, ensuring that single points of failure do not undermine continuity of operations.",
+    "guidance": "Redundancy design should be derived from documented availability objectives. Redundant components should be independent, avoiding shared infrastructure that could fail together. Failover mechanisms should be tested periodically to confirm that automatic or manual switchover functions correctly. For critical systems, geographic diversity provides additional resilience. Auditors look for documented availability requirements, architectural diagrams showing redundancy, and test records confirming failover works as intended.",
     "control_type": [
       "Preventive"
     ],
@@ -2593,8 +2593,8 @@
     "version": "2022",
     "name": "Logging",
     "theme": "Technological",
-    "description": "Logs that record activities, exceptions, faults and other relevant events shall be produced, stored, protected and analysed.",
-    "guidance": "Logging should capture user activities, system events, errors, and security events. Log integrity should be protected. Sufficient capacity should be allocated for log storage. Logs should be retained for a period appropriate to legal and business requirements.",
+    "description": "Requires that logs capturing user activity, system events, exceptions, and other security-relevant occurrences be produced, stored securely, protected from tampering, and subjected to analysis.",
+    "guidance": "Log coverage should span authentication events, privilege use, configuration changes, access to sensitive data, and system faults. Integrity of logs must be protected to preserve their value as evidence. Storage capacity should be sufficient to retain logs for periods dictated by legal, regulatory, and investigation needs. Auditors examine the scope of log coverage, whether log integrity controls are in place, retention periods, and whether logs are regularly reviewed or fed into monitoring systems.",
     "control_type": [
       "Detective"
     ],
@@ -2629,8 +2629,8 @@
     "version": "2022",
     "name": "Monitoring activities",
     "theme": "Technological",
-    "description": "Networks, systems and applications shall be monitored for anomalous behaviour and appropriate actions taken to evaluate potential information security incidents.",
-    "guidance": "Monitoring should cover network traffic, system behaviour, user activities, and application performance. Anomaly detection rules should be defined. Alerts should be triaged and investigated in a timely manner. SIEM solutions can centralise monitoring.",
+    "description": "Addresses the need to continuously monitor networks, systems, and applications for behaviour that deviates from established norms, and to evaluate detected anomalies to determine whether they represent information security incidents requiring a response.",
+    "guidance": "Monitoring should span network traffic patterns, system resource usage, user behaviour, and application activity. Detection rules and anomaly thresholds should be defined and periodically tuned. Alerts must flow into a triage process with defined response timelines. Centralised log and event management platforms can improve correlation across sources. Auditors look for documented monitoring scope, evidence that alerts are actioned, and that the monitoring programme is reviewed for adequacy.",
     "control_type": [
       "Detective"
     ],
@@ -2664,8 +2664,8 @@
     "version": "2022",
     "name": "Clock synchronisation",
     "theme": "Technological",
-    "description": "The clocks of information processing systems used by the organisation shall be synchronised to approved time sources.",
-    "guidance": "All systems should synchronise to a reliable time source such as GPS or NTP servers. Time synchronisation is critical for correlating logs across systems and for validity of digital certificates. Multiple time sources should be used for redundancy.",
+    "description": "Requires that the clocks of all information processing systems within the organisation be synchronised to approved, reliable time sources, ensuring consistent and accurate timestamps across the environment.",
+    "guidance": "Accurate time synchronisation is foundational for correlating events across systems during incident investigations and for the validity of time-sensitive cryptographic operations. Reliable sources such as GPS-backed or network time protocol servers should be used, with redundancy to prevent a single time source failure from desynchronising systems. Auditors check that synchronisation is configured on all in-scope systems, that the time source is authoritative, and that deviations are detected and corrected.",
     "control_type": [
       "Preventive"
     ],
@@ -2697,8 +2697,8 @@
     "version": "2022",
     "name": "Use of privileged utility programs",
     "theme": "Technological",
-    "description": "The use of utility programs that might be capable of overriding system and application controls shall be restricted and tightly controlled.",
-    "guidance": "Privileged utilities should be identified and their use restricted. Access should require authorisation and be logged. Unnecessary privileged utilities should be removed or disabled. The principle of least privilege should apply to utility program access.",
+    "description": "Requires that utility programs capable of circumventing or overriding normal system and application controls be identified, their use tightly restricted, and their invocation subject to authorisation and logging.",
+    "guidance": "An inventory of privileged utilities should be maintained. Access should be granted only to personnel with a demonstrated operational need, and use should be logged to support accountability. Utilities that are not operationally required should be removed or disabled. The principle of least privilege applies equally here as it does to user accounts. Auditors look for an inventory, access restriction evidence, usage logs, and records showing that unnecessary utilities have been disabled.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -2732,8 +2732,8 @@
     "version": "2022",
     "name": "Installation of software on operational systems",
     "theme": "Technological",
-    "description": "Procedures and measures shall be implemented to securely manage software installation on operational systems.",
-    "guidance": "Only authorised software should be permitted on operational systems. An approved software list should be maintained. Procedures should require testing in non-production environments before deployment. Users should not be permitted to install unapproved software.",
+    "description": "Establishes that the installation of software on operational systems must be governed by formal procedures and controls that prevent unauthorised or untested software from being introduced into the production environment.",
+    "guidance": "An approved software list should define what may be installed on operational systems. Installation requests should follow an authorisation workflow, and software should be tested in a non-production environment before deployment. End-user self-installation of unapproved software should be technically restricted where feasible. Auditors look for a documented software approval process, evidence that the approved list is enforced, and records showing that deployments were authorised.",
     "control_type": [
       "Preventive"
     ],
@@ -2767,8 +2767,8 @@
     "version": "2022",
     "name": "Networks security",
     "theme": "Technological",
-    "description": "Networks and network devices shall be secured, managed and controlled to protect information in systems and applications.",
-    "guidance": "Network security controls include firewalls, intrusion prevention, network segmentation, and secure network management. Network architecture should separate trusted and untrusted zones. Network activity should be monitored for security events.",
+    "description": "Requires that networks and network devices be secured, actively managed, and appropriately controlled to protect the information carried by and processed within those networks.",
+    "guidance": "Network security architecture should segregate zones of differing trust and sensitivity, with firewalls and access controls governing traffic between zones. Management access to network infrastructure must itself be secured. Network activity should be captured and monitored for security events. Auditors look for documented network architecture, evidence that access controls are in place and reviewed, and that network security events are monitored.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -2803,8 +2803,8 @@
     "version": "2022",
     "name": "Security of network services",
     "theme": "Technological",
-    "description": "Security mechanisms, service levels and service requirements of all network services shall be identified, implemented and monitored.",
-    "guidance": "Network service agreements should specify security requirements. Services should be reviewed to ensure they meet security requirements. Management access to network devices should be protected. Unused network ports and services should be disabled.",
+    "description": "Calls for the security mechanisms, service level expectations, and operational requirements of all network services — whether provided internally or by third parties — to be identified, implemented, and kept under review.",
+    "guidance": "Service agreements or internal service definitions should specify the security features of each network service. Services should be regularly reviewed to confirm they continue to meet defined security requirements. Administrative interfaces to network devices should be protected with strong authentication and limited access. Unused ports and services should be disabled as a baseline hardening measure. Auditors look for documented service security requirements, review records, and evidence of hardening activities.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -2840,8 +2840,8 @@
     "version": "2022",
     "name": "Segregation of networks",
     "theme": "Technological",
-    "description": "Groups of information services, users and information systems shall be segregated in the organisation's networks.",
-    "guidance": "Network segmentation should separate systems with different security requirements. DMZ architecture should be used for internet-facing services. User segments should be segregated from server segments. Wireless networks should be isolated from wired networks.",
+    "description": "Requires that information services, user communities, and information systems be logically segregated within the organisation's networks to contain the impact of a security incident and limit exposure between systems with different risk profiles.",
+    "guidance": "Segmentation architecture should separate systems based on their sensitivity, function, and risk level. Internet-facing components should be isolated in perimeter zones. Wireless infrastructure should be segregated from wired corporate networks. Auditors look for network topology documentation showing segmentation, evidence that traffic between segments is controlled by defined rules, and that the design is reviewed periodically for adequacy.",
     "control_type": [
       "Preventive"
     ],
@@ -2873,8 +2873,8 @@
     "version": "2022",
     "name": "Web filtering",
     "theme": "Technological",
-    "description": "Access to external websites shall be managed to reduce exposure to malicious content.",
-    "guidance": "Web filtering should block access to malicious, inappropriate or non-business-related websites. URL categorisation and reputation-based filtering should be employed. HTTPS inspection should be considered for encrypted traffic. Filtering policies should be kept current.",
+    "description": "Requires the organisation to manage and restrict access to external websites in order to reduce the risk of personnel encountering and interacting with malicious or harmful web content.",
+    "guidance": "Web filtering should be applied to all internet-bound traffic from organisational devices and networks. Filtering decisions may be based on URL categorisation, site reputation, or content inspection. Encrypted web traffic should also be subject to filtering where technically feasible and legally permissible. Filtering policies require periodic review to remain effective. Auditors assess the coverage and currency of filtering rules, whether encrypted traffic is addressed, and how the organisation handles exceptions.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -2910,8 +2910,8 @@
     "version": "2022",
     "name": "Use of cryptography",
     "theme": "Technological",
-    "description": "Rules for the effective use of cryptography, including cryptographic key management, shall be defined and implemented.",
-    "guidance": "A cryptography policy should define approved algorithms, key lengths, and key management requirements. Cryptographic keys should be protected and managed through their lifecycle. Expired or compromised keys should be revoked promptly.",
+    "description": "Calls for the organisation to establish and operationalize rules governing how cryptography is applied and how cryptographic keys are managed throughout their lifecycle.",
+    "guidance": "A cryptography policy should specify approved algorithms, minimum key lengths, permitted use cases, and key management requirements. Keys must be protected against disclosure and loss, and the entire key lifecycle — generation, distribution, storage, rotation, and revocation — should be governed by documented procedures. Expired or compromised keys should be revoked promptly. Auditors look for a cryptography policy, evidence of key management controls, and records demonstrating that keys are rotated and retired according to defined schedules.",
     "control_type": [
       "Preventive"
     ],
@@ -2944,8 +2944,8 @@
     "version": "2022",
     "name": "Secure development life cycle",
     "theme": "Technological",
-    "description": "Rules for the secure development of software and systems shall be established and applied.",
-    "guidance": "Secure SDLC should integrate security at all phases. Security requirements should be defined at the start of projects. Security testing should be conducted before deployment. Secure coding standards should be established and followed.",
+    "description": "Establishes that rules for developing software and systems securely must be formally set out and consistently applied throughout the development lifecycle, from requirements definition through to deployment.",
+    "guidance": "Secure development practices should address each lifecycle phase: security requirements at inception, threat modelling during design, secure coding standards during build, security testing prior to release, and post-deployment vulnerability management. Auditors look for documented secure development rules, evidence that those rules are applied in practice, and records of security activities at each relevant stage of development projects.",
     "control_type": [
       "Preventive"
     ],
@@ -2981,8 +2981,8 @@
     "version": "2022",
     "name": "Application security requirements",
     "theme": "Technological",
-    "description": "Information security requirements shall be identified, specified and approved when developing or acquiring applications.",
-    "guidance": "Security requirements should address authentication, authorisation, input validation, output encoding, encryption, logging, and error handling. Requirements should be derived from risk assessments and applicable standards such as OWASP.",
+    "description": "Requires that information security requirements be formally identified, specified, and approved as part of developing or acquiring any application, ensuring security considerations are incorporated before technical decisions are made.",
+    "guidance": "Security requirements should cover authentication and authorisation models, input and output handling, data protection in transit and at rest, audit logging, and error handling. Requirements should be derived from a risk assessment and any applicable regulatory or contractual obligations. Auditors look for security requirements documented in project artefacts, evidence of formal approval, and traceability between requirements and implemented controls.",
     "control_type": [
       "Preventive"
     ],
@@ -3016,8 +3016,8 @@
     "version": "2022",
     "name": "Secure system architecture and engineering principles",
     "theme": "Technological",
-    "description": "Principles for engineering secure systems shall be established, documented, maintained and applied to any information system development or integration activities.",
-    "guidance": "Security architecture principles should include security by design, defence in depth, zero trust, least privilege, and fail secure. Principles should be applied at both technical and process levels. Architecture reviews should verify application of principles.",
+    "description": "Obliges the organisation to establish, document, maintain, and consistently apply a set of engineering principles that promote security in the design and integration of information systems.",
+    "guidance": "Guiding principles such as security by design, defence in depth, least privilege, and secure failure modes should be articulated and applied from the earliest stages of a development or integration project. Architecture review processes should assess whether designs conform to established principles before implementation begins. Auditors look for documented principles, evidence they are consulted during design, and records of architecture reviews.",
     "control_type": [
       "Preventive"
     ],
@@ -3051,8 +3051,8 @@
     "version": "2022",
     "name": "Secure coding",
     "theme": "Technological",
-    "description": "Secure coding principles shall be applied to software development.",
-    "guidance": "Secure coding practices should address OWASP Top 10 and other common vulnerability classes. Code review processes should include security review. Static analysis tools should be used to identify security vulnerabilities. Developers should receive secure coding training.",
+    "description": "Requires that secure coding principles be embedded in the software development process, with the goal of preventing the introduction of exploitable vulnerabilities through weaknesses in code logic or implementation.",
+    "guidance": "Secure coding standards should address prevalent vulnerability categories and be applied consistently by all developers. Peer code review should include a security dimension. Static analysis tooling can automate detection of common weakness patterns. Developer training on secure coding techniques supports consistent application. Auditors look for documented coding standards, evidence that security-focused code review is practised, and records of static analysis results and their remediation.",
     "control_type": [
       "Preventive"
     ],
@@ -3086,8 +3086,8 @@
     "version": "2022",
     "name": "Security testing in development and acceptance",
     "theme": "Technological",
-    "description": "Security testing practices shall be defined and implemented in the development life cycle.",
-    "guidance": "Security testing should include static analysis, dynamic analysis, penetration testing, and vulnerability scanning. Tests should be conducted in environments that mirror production. Test results should be tracked and remediated before deployment.",
+    "description": "Requires that defined security testing practices be embedded within the development lifecycle and applied before software is accepted into production, ensuring that security weaknesses are identified and remediated in controlled conditions.",
+    "guidance": "Testing methods should be selected based on risk and may include static analysis, dynamic application testing, penetration testing, and automated vulnerability scanning. Test environments should be representative of production conditions. Findings must be tracked, prioritised, and resolved — or formally accepted with documented rationale — before deployment. Auditors look for a defined security testing approach, test records, finding logs, and evidence that deployment decisions are linked to test outcomes.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -3125,8 +3125,8 @@
     "version": "2022",
     "name": "Outsourced development",
     "theme": "Technological",
-    "description": "The organisation shall direct, monitor and review the activities related to outsourced system development.",
-    "guidance": "Outsourcing agreements should include security requirements, code ownership, rights to audit, and secure coding standards. Security testing of outsourced code should be conducted. Source code should be reviewed before deployment.",
+    "description": "Establishes that when software development is contracted to external parties, the organisation must actively direct, monitor, and review those activities to ensure that security requirements are met and that outsourced code meets the same standards as internally developed software.",
+    "guidance": "Contracts with development suppliers should explicitly address security requirements, coding standards, intellectual property ownership, rights to audit, and secure handover procedures. The organisation should conduct or commission security testing of externally developed code before deployment. Source code review prior to integration provides an additional assurance layer. Auditors look for supplier contract terms covering security, evidence of security testing of outsourced components, and records of oversight activities.",
     "control_type": [
       "Preventive"
     ],
@@ -3161,8 +3161,8 @@
     "version": "2022",
     "name": "Separation of development, test and production environments",
     "theme": "Technological",
-    "description": "Development, testing and production environments shall be separated and secured.",
-    "guidance": "Separation should prevent development activities from impacting production systems. Access controls should differ between environments. Production data should not be used in development or test environments without data masking. Changes should pass through test before production.",
+    "description": "Requires that development, testing, and production environments be kept distinct and that appropriate security controls be applied to each, preventing development and test activities from compromising the integrity or availability of live systems.",
+    "guidance": "Access controls should differ between environments, with production access being most tightly restricted. Production data must not be used in development or test environments unless it has been appropriately masked or anonymised. Promotion of changes through the pipeline — from development to test to production — should follow defined procedures. Auditors look for documented separation policies, access control configurations for each environment, and records demonstrating that production data handling controls are applied.",
     "control_type": [
       "Preventive"
     ],
@@ -3196,8 +3196,8 @@
     "version": "2022",
     "name": "Change management",
     "theme": "Technological",
-    "description": "Changes to information processing facilities and information systems shall be subject to change management procedures.",
-    "guidance": "Change management should include change request, impact assessment, testing, authorisation, implementation, and review. Emergency change procedures should be defined. Changes should be documented and reviewed post-implementation. Rollback procedures should be prepared.",
+    "description": "Requires that modifications to information processing facilities and systems be managed through a structured change management process that assesses, authorises, tests, and records every change before and after implementation.",
+    "guidance": "The change management process should encompass request documentation, impact and risk assessment, pre-implementation testing, formal authorisation, post-implementation review, and rollback planning. Emergency change procedures should exist for urgent situations but must still require post-hoc review. Auditors look for change records demonstrating each stage was completed, evidence that unauthorised changes are detected, and records of post-implementation reviews.",
     "control_type": [
       "Preventive",
       "Detective"
@@ -3232,8 +3232,8 @@
     "version": "2022",
     "name": "Test information",
     "theme": "Technological",
-    "description": "Test information shall be appropriately selected, protected and managed.",
-    "guidance": "Production data should not be used in test environments unless appropriately masked. Test data should be protected with appropriate access controls. Sensitive test data should be removed or anonymised after testing. Test data creation and use should be documented.",
+    "description": "Addresses the need to select, protect, and manage test data appropriately, ensuring that sensitive information — in particular production data — is not exposed unnecessarily in test and development environments.",
+    "guidance": "Production data should not be used directly in testing unless it has been masked or anonymised to remove sensitive content. Test data itself should be subject to access controls proportionate to its sensitivity. After testing activities conclude, sensitive test data should be removed or anonymised. The creation, use, and disposal of test data should be documented. Auditors look for test data policies, evidence of masking where production data is involved, and records confirming that sensitive data is cleaned up post-test.",
     "control_type": [
       "Preventive"
     ],
@@ -3265,8 +3265,8 @@
     "version": "2022",
     "name": "Protection of information systems during audit testing",
     "theme": "Technological",
-    "description": "Audit tests and other assurance activities involving assessment of operational systems shall be planned and agreed between the tester and appropriate management.",
-    "guidance": "Audit testing should be planned to minimise impact on production systems. Access for audit should be controlled and monitored. Audit tools should be isolated from production systems after use. Results should be protected and access restricted to authorised personnel.",
+    "description": "Requires that audit tests and other assurance activities that involve direct assessment of operational systems be planned in advance and agreed with appropriate management, to avoid disruption to live services and protect the integrity of both systems and results.",
+    "guidance": "Audit access should be scoped and time-limited, and systems should be monitored during the testing period. Audit tools and scripts should be isolated from production environments after use to prevent them from becoming a residual risk. Results must be handled as sensitive information, with access limited to authorised recipients. Auditors look for evidence of planning documentation and management sign-off prior to testing, monitoring records during tests, and controls over audit tool and result handling.",
     "control_type": [
       "Preventive",
       "Detective"

@@ -66,6 +66,9 @@ jobs:
 
       - name: Build (typecheck + bundle + copy templates)
         run: npm run build
+        env:
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          BUILD_TIMESTAMP: ${{ github.event.head_commit.timestamp }}
 
       - name: Publish to npm with provenance
         run: npm publish --provenance --access public
