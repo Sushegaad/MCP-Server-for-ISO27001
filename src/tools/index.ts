@@ -187,7 +187,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   create_gap_assessment:
     "Create a new gap assessment against ISO 27001:2022 or 2013 controls for a defined ISMS scope.",
   update_control_status:
-    "Set the implementation status of a control within a gap assessment (implemented, partial, not_implemented, na, not_started).",
+    "Set the implementation status of a control within a gap assessment (implemented, partial, not_implemented, na, not_started). Omit confirmed or pass confirmed=false to preview changes without writing; pass confirmed=true to commit.",
   get_gap_summary:
     "Return aggregate compliance statistics for a gap assessment, optionally broken down by theme, control_type, or cybersecurity_concept.",
   list_gap_assessments:
@@ -205,7 +205,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   get_risk:
     "Retrieve a risk record by ID, optionally including its treatment plans.",
   update_risk:
-    "Update mutable fields of an existing risk (asset, threat, vulnerability, likelihood, impact, owner, status, related_controls).",
+    "Update mutable fields of an existing risk (asset, threat, vulnerability, likelihood, impact, owner, status, related_controls). Omit confirmed or pass confirmed=false to preview a field-level diff without writing; pass confirmed=true to commit.",
   list_risks:
     "List risks with optional filters: risk_level, status, owner, and pagination.",
   get_risk_summary:
@@ -213,7 +213,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   create_treatment_plan:
     "Create a risk treatment plan (mitigate, accept, avoid, or transfer) with owner, due date, and optionally residual risk scores.",
   update_treatment_status:
-    "Update the status and evidence reference for an existing risk treatment plan.",
+    "Update the status and evidence reference for an existing risk treatment plan. Omit confirmed or pass confirmed=false to preview changes without writing; pass confirmed=true to commit.",
   generate_risk_register:
     "Export the full risk register in markdown, CSV, or JSON format with optional level/status filters.",
 
@@ -223,7 +223,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   get_policy:
     "Retrieve a policy record by ID, optionally including version history.",
   update_policy:
-    "Create a new version of an existing policy with scope/owner changes, reviewed_by, and change_summary. Requires admin role.",
+    "Create a new version of an existing policy with scope/owner changes, reviewed_by, and change_summary. Requires admin role. Omit confirmed or pass confirmed=false to preview the version bump and metadata diff without writing; pass confirmed=true to commit.",
   list_policies:
     "List policies with optional filters: status, type, owner, overdue_only, and pagination.",
 
@@ -231,7 +231,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   generate_soa:
     "Generate a Statement of Applicability from a gap assessment, pre-populating inclusion/exclusion for all controls.",
   update_soa_entry:
-    "Update an SoA entry's inclusion status, justification, implementation status, and responsible party.",
+    "Update an SoA entry's inclusion status, justification, implementation status, and responsible party. Omit confirmed or pass confirmed=false to preview changes without writing; pass confirmed=true to commit.",
   export_soa:
     "Export the Statement of Applicability in markdown or CSV format.",
 
@@ -283,7 +283,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   get_procedure:
     "Retrieve a procedure record by ID, optionally including version history.",
   update_procedure:
-    "Archive the current procedure version and re-render with updated fields, incrementing the version number. Requires admin role.",
+    "Archive the current procedure version and re-render with updated fields, incrementing the version number. Requires admin role. Omit confirmed or pass confirmed=false to preview the version bump and metadata diff without writing; pass confirmed=true to commit.",
   list_procedures:
     "List procedures with optional filters: procedure_type, status, policy_id, overdue_only, and pagination.",
   export_procedure:
@@ -297,7 +297,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   record_review_output:
     "Record a Clause 9.3.3 output decision (improvement_decision or isms_change_decision) for a management review.",
   complete_management_review:
-    "Mark a management review as completed. Enforces ISO 27001:2022 §9.3.2: all 7 input categories must be recorded, and at least one output must be present.",
+    "Mark a management review as completed. Enforces ISO 27001:2022 §9.3.2: all 7 input categories must be recorded, and at least one output must be present. Omit confirmed or pass confirmed=false to preview review readiness (inputs recorded vs. missing, output count) without writing; pass confirmed=true to finalise.",
   get_management_review:
     "Retrieve a management review record with all inputs, outputs, and a completion-progress summary.",
   list_management_reviews:
@@ -490,7 +490,7 @@ export function registerAllTools(server: McpServer): void {
       // Audit scaffolding — filled in as pipeline progresses
       let keyHash      = "";
       let role         = "unknown";
-      let outcome: "success" | "denied" | "error" = "error";
+      let outcome: "success" | "denied" | "error" | "proposed" = "error";
       let errorMessage: string | null = null;
       let result: ToolResult;
 
@@ -523,13 +523,20 @@ export function registerAllTools(server: McpServer): void {
         // ── Step 6: call domain handler ───────────────────────
         result = await handler(args as Record<string, unknown>);
 
-        outcome = result.isError ? "error" : "success";
         if (result.isError) {
+          outcome = "error";
           try {
             const parsed = JSON.parse(result.content[0].text) as { message?: string };
             errorMessage = parsed.message ?? "handler returned isError=true";
           } catch {
             errorMessage = "handler returned isError=true";
+          }
+        } else {
+          try {
+            const parsed = JSON.parse(result.content[0].text) as { hitl_proposed?: boolean };
+            outcome = parsed.hitl_proposed === true ? "proposed" : "success";
+          } catch {
+            outcome = "success";
           }
         }
 

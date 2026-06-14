@@ -12,6 +12,7 @@
 import { getDb }                from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
+import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -213,9 +214,10 @@ export function handleRecordReviewOutput(args: Record<string, unknown>): ToolRes
 }
 
 export function handleCompleteManagementReview(args: Record<string, unknown>): ToolResult {
-  const { review_id, completed_by } = args as {
+  const { review_id, completed_by, confirmed = false } = args as {
     review_id:    string;
     completed_by: string;
+    confirmed?:   boolean;
   };
 
   const review = requireReview(review_id);
@@ -226,7 +228,7 @@ export function handleCompleteManagementReview(args: Record<string, unknown>): T
 
   const db = getDb();
 
-  // Enforce ISO 27001:2022 §9.3.2 — all 7 input categories must be recorded
+  // Query inputs — needed for both preview and commit
   const recorded = db.prepare(
     "SELECT input_category FROM review_inputs WHERE review_id = ?",
   ).all(review_id) as { input_category: string }[];
@@ -234,6 +236,34 @@ export function handleCompleteManagementReview(args: Record<string, unknown>): T
   const recordedCategories = new Set(recorded.map((r) => r.input_category));
   const missing = REQUIRED_INPUT_CATEGORIES.filter((c) => !recordedCategories.has(c));
 
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    // Query outputCount here (for readiness display in preview)
+    const outputCount = (db.prepare(
+      "SELECT COUNT(*) AS c FROM review_outputs WHERE review_id = ?",
+    ).get(review_id) as { c: number }).c;
+
+    const readinessRows: DiffRow[] = [
+      { field: "inputs_recorded",  old: `${recorded.length}/7`, new: missing.length === 0 ? "✓ complete" : `⚠ missing: ${missing.join(", ")}` },
+      { field: "outputs_recorded", old: outputCount,             new: outputCount >= 1 ? "✓ sufficient" : "⚠ at least 1 required" },
+      { field: "status",           old: review.status,           new: "completed" },
+      { field: "completed_by",     old: "(not set)",             new: completed_by },
+    ];
+    const readyToComplete = missing.length === 0 && outputCount >= 1;
+    return ok({
+      hitl_proposed:    true,
+      status:           "preview",
+      review_id,
+      title:            review.title,
+      ready_to_complete: readyToComplete,
+      message:          readyToComplete
+        ? "⏸ No data written. Review is ready to complete. Pass \"confirmed\": true to finalise."
+        : "⏸ No data written. Review is NOT ready to complete — resolve the issues above first.",
+      diff:             buildDiffTable(readinessRows),
+    });
+  }
+
+  // Enforce ISO 27001:2022 §9.3.2 — all 7 input categories must be recorded
   if (missing.length > 0) {
     throw businessRule(
       "input_category",
@@ -242,7 +272,7 @@ export function handleCompleteManagementReview(args: Record<string, unknown>): T
     );
   }
 
-  // Enforce at least one output recorded (§9.3.3)
+  // Query outputCount lazily — only after the input check passes (§9.3.3)
   const outputCount = (db.prepare(
     "SELECT COUNT(*) AS c FROM review_outputs WHERE review_id = ?",
   ).get(review_id) as { c: number }).c;

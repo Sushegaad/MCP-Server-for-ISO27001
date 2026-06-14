@@ -190,6 +190,7 @@ describe("handleUpdateSoaEntry", () => {
       justification: "In scope per ISMS boundary.",
       status: "implemented",
       responsible_party: "CISO",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
@@ -401,6 +402,7 @@ describe("handleUpdateSoaEntry — included=false, no optionals", () => {
       included: false,       // exercises `included ? 1 : 0` false branch
       justification: "Control not applicable to scope",
       // status and responsible_party deliberately omitted → exercises `?? null`
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
@@ -408,6 +410,31 @@ describe("handleUpdateSoaEntry — included=false, no optionals", () => {
     expect(data.included).toBe(false);
     expect(data.status).toBeNull();
     expect(data.responsible_party).toBeNull();
+  });
+
+  it("preview (confirmed omitted): returns hitl_proposed with diff when entry has undefined fields", () => {
+    const soaStmt   = { get: vi.fn(() => SOA_ROW),      all: vi.fn(() => []), run: vi.fn() };
+    const entryStmt = { get: vi.fn(() => SOA_ENTRY_ROW), all: vi.fn(() => []), run: vi.fn() };
+
+    mockDb.prepare
+      .mockReturnValueOnce(soaStmt)
+      .mockReturnValueOnce(entryStmt);
+
+    // No confirmed → preview only (SOA_ENTRY_ROW has undefined fields → formatVal(undefined) → "—")
+    const result = handleUpdateSoaEntry({
+      soa_id:            "soa-1",
+      control_id:        "5.1",
+      included:          true,
+      justification:     "In scope per ISMS boundary.",
+      status:            "implemented",
+      responsible_party: "CISO",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(typeof data.diff).toBe("string");
   });
 });
 

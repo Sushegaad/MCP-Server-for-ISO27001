@@ -400,6 +400,7 @@ describe("handleUpdateProcedure", () => {
       owner:          "CTO",
       reviewed_by:    "auditor@example.com",
       change_summary: "Scope revised",
+      confirmed:      true,
     });
 
     expect(result.isError).toBe(false);
@@ -454,11 +455,52 @@ describe("handleUpdateProcedure", () => {
       procedure_id:   "proc-1",
       reviewed_by:    "auditor@example.com",
       change_summary: "Minor cleanup",
+      confirmed:      true,
     });
 
     expect(result.isError).toBe(false);
     const data = parseResult(result);
     expect(data.version).toBe(2);
+  });
+
+  it("preview (confirmed omitted): returns hitl_proposed with diff including array-formatted related_controls", () => {
+    const getStmt = { get: vi.fn(() => BASE_PROCEDURE_ROW), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(getStmt);
+
+    // Pass related_controls (non-empty array) → diff row old is parsed array → covers Array.isArray in formatVal
+    const result = handleUpdateProcedure({
+      procedure_id:    "proc-1",
+      related_controls: ["5.15"],
+      reviewed_by:     "auditor@example.com",
+      change_summary:  "Preview test",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.procedure_id).toBe("proc-1");
+    expect(typeof data.diff).toBe("string");
+    // The diff should render related_controls as a backtick-array
+    expect(data.diff).toContain("related_controls");
+  });
+
+  it("preview (confirmed omitted): empty related_controls renders as `[]`", () => {
+    const getStmt = { get: vi.fn(() => BASE_PROCEDURE_ROW), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(getStmt);
+
+    // Pass empty array → formatVal([]) → items.length === 0 → "`[]`"
+    const result = handleUpdateProcedure({
+      procedure_id:    "proc-1",
+      related_controls: [],
+      reviewed_by:     "auditor@example.com",
+      change_summary:  "Empty controls preview",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.diff).toContain("`[]`");
   });
 });
 

@@ -191,6 +191,7 @@ describe("handleUpdatePolicy", () => {
       owner: "CTO",
       reviewed_by: "auditor@example.com",
       change_summary: "Scope revised",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
@@ -418,11 +419,34 @@ describe("handleUpdatePolicy — no scope/owner provided", () => {
       policy_id: "pol-1",
       reviewed_by: "auditor@example.com",
       change_summary: "Minor text cleanup",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
     const data = parseResult(result);
     expect(data.id).toBe("pol-1");
     expect(data.version).toBe(2);
+  });
+
+  it("preview (confirmed omitted): returns hitl_proposed with diff table showing version bump", () => {
+    const getStmt = { get: vi.fn(() => BASE_POLICY_ROW), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(getStmt);
+
+    // No confirmed → preview only
+    const result = handleUpdatePolicy({
+      policy_id:      "pol-1",
+      scope:          "Updated scope",
+      owner:          "CTO",
+      reviewed_by:    "auditor@example.com",
+      change_summary: "Preview test",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.policy_id).toBe("pol-1");
+    expect(typeof data.diff).toBe("string");
+    expect(data.diff).toContain("version");
   });
 });

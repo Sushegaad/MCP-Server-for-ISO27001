@@ -14,6 +14,7 @@ import { newId, now, addMonths, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { loadTemplate, loadPartials, stripFrontmatter, markdownToHtml, renderHtmlDocument } from "./template-utils.js";
 import { loadOrgProfileDefaults } from "./org-profile.js";
+import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -290,6 +291,7 @@ export function handleUpdateProcedure(args: Record<string, unknown>): ToolResult
     related_controls,
     reviewed_by,
     change_summary,
+    confirmed = false,
   } = args as {
     procedure_id:      string;
     scope?:            string;
@@ -298,6 +300,7 @@ export function handleUpdateProcedure(args: Record<string, unknown>): ToolResult
     related_controls?: string[];
     reviewed_by:       string;
     change_summary:    string;
+    confirmed?:        boolean;
   };
 
   const db      = getDb();
@@ -308,6 +311,30 @@ export function handleUpdateProcedure(args: Record<string, unknown>): ToolResult
   if (!current) throw notFound("procedure", procedure_id);
   if (current.status === "archived") {
     throw businessRule("procedure", "Cannot update an archived procedure.");
+  }
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [];
+    rows.push({ field: "version", old: current.version, new: current.version + 1 });
+    if (scope !== undefined && scope !== current.scope)
+      rows.push({ field: "scope", old: current.scope, new: scope });
+    if (owner !== undefined && owner !== current.owner)
+      rows.push({ field: "owner", old: current.owner, new: owner });
+    if (approver !== undefined && approver !== current.approver)
+      rows.push({ field: "approver", old: current.approver, new: approver });
+    if (related_controls !== undefined)
+      rows.push({ field: "related_controls", old: fromJsonArray<string>(current.related_controls), new: related_controls });
+    rows.push({ field: "reviewed_by", old: current.reviewed_by, new: reviewed_by });
+    rows.push({ field: "change_summary", old: "(none)", new: change_summary });
+    return ok({
+      hitl_proposed: true,
+      status:        "preview",
+      procedure_id,
+      procedure_type: current.procedure_type,
+      message:       "⏸ No data written. The current version will be archived and a new version created. Pass \"confirmed\": true to apply this change.",
+      diff:          buildDiffTable(rows),
+    });
   }
 
   const ts         = now();

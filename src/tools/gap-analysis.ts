@@ -9,6 +9,7 @@
 import { getDb } from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray, withTransaction } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
+import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -127,10 +128,12 @@ export function handleUpdateControlStatus(args: Record<string, unknown>): ToolRe
   const {
     assessment_id, control_id, status,
     evidence_refs, notes, na_justification, assessed_by,
+    confirmed = false,
   } = args as {
     assessment_id: string; control_id: string; status: string;
     evidence_refs?: string[]; notes?: string;
     na_justification?: string; assessed_by?: string;
+    confirmed?: boolean;
   };
 
   const assessment = requireAssessment(assessment_id);
@@ -149,15 +152,50 @@ export function handleUpdateControlStatus(args: Record<string, unknown>): ToolRe
   let effectiveStatus = status;
   let downgradeWarning: string | null = null;
   if (status === "implemented" && (!evidence_refs || evidence_refs.length === 0)) {
-    effectiveStatus   = "partial";
-    downgradeWarning  = "Status downgraded from 'implemented' to 'partial': no evidence_refs provided. Add evidence references to mark as implemented.";
+    effectiveStatus  = "partial";
+    downgradeWarning = "Status downgraded from 'implemented' to 'partial': no evidence_refs provided. Add evidence references to mark as implemented.";
   }
 
-  const db  = getDb();
-  const ts  = now();
+  const db       = getDb();
   const existing = db.prepare(
-    "SELECT id FROM control_statuses WHERE assessment_id = ? AND control_id = ?"
-  ).get(assessment_id, control_id) as { id: string } | undefined;
+    "SELECT * FROM control_statuses WHERE assessment_id = ? AND control_id = ?"
+  ).get(assessment_id, control_id) as {
+    id: string; status: string; notes: string | null;
+    assessed_by: string | null; na_justification: string | null;
+    evidence_refs: string | null;
+  } | undefined;
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [];
+    if (existing) {
+      if (effectiveStatus !== existing.status)
+        rows.push({ field: "status", old: existing.status, new: effectiveStatus });
+      if (notes !== undefined && notes !== existing.notes)
+        rows.push({ field: "notes", old: existing.notes, new: notes });
+      if (assessed_by !== undefined && assessed_by !== existing.assessed_by)
+        rows.push({ field: "assessed_by", old: existing.assessed_by, new: assessed_by });
+      if (na_justification !== undefined && na_justification !== existing.na_justification)
+        rows.push({ field: "na_justification", old: existing.na_justification, new: na_justification });
+      if (evidence_refs !== undefined)
+        rows.push({ field: "evidence_refs", old: fromJsonArray<string>(existing.evidence_refs), new: evidence_refs });
+    } else {
+      rows.push({ field: "status", old: "(new entry)", new: effectiveStatus });
+      if (assessed_by) rows.push({ field: "assessed_by", old: null, new: assessed_by });
+      if (notes)       rows.push({ field: "notes",       old: null, new: notes });
+    }
+    return ok({
+      hitl_proposed: true,
+      status:        "preview",
+      assessment_id,
+      control_id,
+      ...(downgradeWarning ? { warning: downgradeWarning } : {}),
+      message:       "⏸ No data written. Pass \"confirmed\": true to apply this change.",
+      diff:          buildDiffTable(rows),
+    });
+  }
+
+  const ts = now();
 
   if (existing) {
     db.prepare(`

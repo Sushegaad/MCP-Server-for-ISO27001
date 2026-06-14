@@ -8,6 +8,7 @@
 import { getDb } from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
+import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -126,14 +127,44 @@ export function handleGetRisk(args: Record<string, unknown>): ToolResult {
 export function handleUpdateRisk(args: Record<string, unknown>): ToolResult {
   const {
     risk_id, asset, threat, vulnerability, likelihood, impact,
-    owner, status, related_controls,
+    owner, status, related_controls, confirmed = false,
   } = args as {
     risk_id: string; asset?: string; threat?: string;
     vulnerability?: string; likelihood?: number; impact?: number;
     owner?: string; status?: string; related_controls?: string[];
+    confirmed?: boolean;
   };
 
   const existing = requireRisk(risk_id);
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [];
+    if (asset !== undefined && asset !== existing.asset)
+      rows.push({ field: "asset", old: existing.asset, new: asset });
+    if (threat !== undefined && threat !== existing.threat)
+      rows.push({ field: "threat", old: existing.threat, new: threat });
+    if (vulnerability !== undefined && vulnerability !== existing.vulnerability)
+      rows.push({ field: "vulnerability", old: existing.vulnerability, new: vulnerability });
+    if (likelihood !== undefined && likelihood !== existing.likelihood)
+      rows.push({ field: "likelihood", old: existing.likelihood, new: likelihood });
+    if (impact !== undefined && impact !== existing.impact)
+      rows.push({ field: "impact", old: existing.impact, new: impact });
+    if (owner !== undefined && owner !== existing.owner)
+      rows.push({ field: "owner", old: existing.owner, new: owner });
+    if (status !== undefined && status !== existing.status)
+      rows.push({ field: "status", old: existing.status, new: status });
+    if (related_controls !== undefined)
+      rows.push({ field: "related_controls", old: fromJsonArray<string>(existing.related_controls), new: related_controls });
+    return ok({
+      hitl_proposed: true,
+      status:        "preview",
+      risk_id,
+      message:       "⏸ No data written. Pass \"confirmed\": true to apply this change.",
+      diff:          buildDiffTable(rows),
+    });
+  }
+
   const ts = now();
 
   getDb().prepare(`
@@ -155,7 +186,6 @@ export function handleUpdateRisk(args: Record<string, unknown>): ToolResult {
     ts, risk_id,
   );
 
-  void existing;
   const updated = getDb().prepare("SELECT * FROM risks WHERE id = ?").get(risk_id) as RiskRow;
   return ok(shapeRisk(updated));
 }
@@ -289,15 +319,38 @@ export function handleCreateTreatmentPlan(args: Record<string, unknown>): ToolRe
 export function handleUpdateTreatmentStatus(args: Record<string, unknown>): ToolResult {
   const {
     treatment_id, status, evidence_ref, residual_likelihood, residual_impact,
+    confirmed = false,
   } = args as {
     treatment_id: string; status: string;
     evidence_ref?: string; residual_likelihood?: number; residual_impact?: number;
+    confirmed?: boolean;
   };
 
-  const db  = getDb();
-  const row = db.prepare("SELECT id FROM risk_treatments WHERE id = ?").get(treatment_id) as
-    { id: string } | undefined;
-  if (!row) throw notFound("risk_treatment", treatment_id);
+  const db      = getDb();
+  const current = db.prepare("SELECT * FROM risk_treatments WHERE id = ?").get(treatment_id) as
+    TreatmentRow | undefined;
+  if (!current) throw notFound("risk_treatment", treatment_id);
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [];
+    if (status !== current.status)
+      rows.push({ field: "status", old: current.status, new: status });
+    if (evidence_ref !== undefined && evidence_ref !== current.evidence_ref)
+      rows.push({ field: "evidence_ref", old: current.evidence_ref, new: evidence_ref });
+    if (residual_likelihood !== undefined && residual_likelihood !== current.residual_likelihood)
+      rows.push({ field: "residual_likelihood", old: current.residual_likelihood, new: residual_likelihood });
+    if (residual_impact !== undefined && residual_impact !== current.residual_impact)
+      rows.push({ field: "residual_impact", old: current.residual_impact, new: residual_impact });
+    return ok({
+      hitl_proposed: true,
+      status:        "preview",
+      treatment_id,
+      risk_id:       current.risk_id,
+      message:       "⏸ No data written. Pass \"confirmed\": true to apply this change.",
+      diff:          buildDiffTable(rows),
+    });
+  }
 
   const ts = now();
   db.prepare(`

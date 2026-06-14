@@ -209,6 +209,7 @@ describe("handleCompleteManagementReview", () => {
     const result = handleCompleteManagementReview({
       review_id:    "review-1",
       completed_by: "CISO",
+      confirmed:    true,
     });
 
     expect(result.isError).toBe(false);
@@ -235,7 +236,7 @@ describe("handleCompleteManagementReview", () => {
     ]);
 
     expect(() =>
-      handleCompleteManagementReview({ review_id: "review-1", completed_by: "CISO" }),
+      handleCompleteManagementReview({ review_id: "review-1", completed_by: "CISO", confirmed: true }),
     ).toThrow(McpError);
   });
 
@@ -248,7 +249,7 @@ describe("handleCompleteManagementReview", () => {
     mockStmt.all.mockReturnValue(ALL_SEVEN_INPUTS);
 
     expect(() =>
-      handleCompleteManagementReview({ review_id: "review-1", completed_by: "CISO" }),
+      handleCompleteManagementReview({ review_id: "review-1", completed_by: "CISO", confirmed: true }),
     ).toThrow(McpError);
   });
 
@@ -258,6 +259,48 @@ describe("handleCompleteManagementReview", () => {
     expect(() =>
       handleCompleteManagementReview({ review_id: "ghost", completed_by: "Admin" }),
     ).toThrow(McpError);
+  });
+
+  it("preview (confirmed omitted): returns hitl_proposed=true with ready_to_complete=true when all inputs and ≥1 output present", () => {
+    mockStmt.get
+      .mockReturnValueOnce(REVIEW_ROW_IN_PROGRESS)  // requireReview
+      .mockReturnValueOnce({ c: 1 });               // outputCount
+    mockStmt.all.mockReturnValue(ALL_SEVEN_INPUTS);
+
+    // No confirmed → preview
+    const result = handleCompleteManagementReview({
+      review_id:    "review-1",
+      completed_by: "CISO",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parse(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.ready_to_complete).toBe(true);
+    expect(typeof data.diff).toBe("string");
+  });
+
+  it("preview (confirmed omitted): returns ready_to_complete=false when inputs or outputs are missing", () => {
+    mockStmt.get
+      .mockReturnValueOnce(REVIEW_ROW_IN_PROGRESS)  // requireReview
+      .mockReturnValueOnce({ c: 0 });               // outputCount = 0
+    mockStmt.all.mockReturnValue([
+      { input_category: "previous_action_status" },
+      { input_category: "isms_performance" },
+      { input_category: "risk_assessment_results" },
+    ]);
+
+    const result = handleCompleteManagementReview({
+      review_id:    "review-1",
+      completed_by: "CISO",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parse(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.ready_to_complete).toBe(false);
+    expect(data.diff).toContain("missing");
   });
 });
 

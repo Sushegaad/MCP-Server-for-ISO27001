@@ -64,6 +64,7 @@ describe("Business rule: silent status downgrade", () => {
       control_id:    "5.1",
       status:        "implemented",
       // No evidence_refs — triggers silent downgrade
+      confirmed:     true,
     });
 
     expect(result.isError).toBe(false);
@@ -85,6 +86,7 @@ describe("Business rule: silent status downgrade", () => {
       control_id:    "5.1",
       status:        "implemented",
       evidence_refs: ["550e8400-e29b-41d4-a716-446655440001"],
+      confirmed:     true,
     });
 
     expect(result.isError).toBe(false);

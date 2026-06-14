@@ -68,7 +68,7 @@ export interface AuditEventInput {
   key_hash:      string;   // HMAC hash of the API key — never the raw key
   role:          string;
   params_json:   string;   // Sanitised params, secrets stripped
-  outcome:       "success" | "denied" | "error";
+  outcome:       "success" | "denied" | "error" | "proposed";
   error_message: string | null;
   duration_ms:   number;
 }

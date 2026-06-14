@@ -143,6 +143,7 @@ describe("handleUpdateControlStatus", () => {
       control_id: "5.1",
       status: "partial",
       notes: "In progress",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
@@ -166,6 +167,7 @@ describe("handleUpdateControlStatus", () => {
       control_id: "5.1",
       status: "implemented",
       // intentionally no evidence_refs
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
@@ -247,12 +249,35 @@ describe("handleUpdateControlStatus", () => {
       assessment_id: "assess-1",
       control_id: "5.99",
       status: "not_implemented",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
     const data = JSON.parse(result.content[0].text);
     expect(data.status).toBe("not_implemented");
     expect(typeof data.created_at).toBe("string");
+  });
+
+  it("preview (confirmed omitted): returns hitl_proposed with diff table", () => {
+    const assessStmt   = { get: vi.fn(() => activeAssessment), all: vi.fn(() => []), run: vi.fn() };
+    const existingStmt = { get: vi.fn(() => ({ id: "status-uuid-1", status: "partial" })), all: vi.fn(() => []), run: vi.fn() };
+
+    mockDb.prepare
+      .mockReturnValueOnce(assessStmt)
+      .mockReturnValueOnce(existingStmt);
+
+    // No confirmed → preview only
+    const result = handleUpdateControlStatus({
+      assessment_id: "assess-1",
+      control_id:    "5.1",
+      status:        "implemented",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(typeof data.diff).toBe("string");
   });
 });
 

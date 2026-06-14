@@ -57,7 +57,7 @@ const formatMarkdownCsvJson = z.enum(["markdown", "csv", "json"]);
 const riskLevelEnum    = z.enum(["Low", "Medium", "High", "Critical"]);
 const likelihood1to5   = z.coerce.number().int().min(1).max(5);
 const roleEnum         = z.enum(["viewer", "analyst", "admin"]);
-const outcomeEnum      = z.enum(["success", "denied", "error"]);
+const outcomeEnum      = z.enum(["success", "denied", "error", "proposed"]);
 
 const controlStatusEnum = z.enum([
   "implemented", "partial", "not_implemented", "na", "not_started",
@@ -175,6 +175,7 @@ export const UpdateControlStatusSchema = z.object({
   notes:           freeText(2000).optional(),
   na_justification:freeText(1000).optional(),
   assessed_by:     shortText(200).optional(),
+  confirmed:       coerceBool.optional().default(false),
 });
 
 export const GetGapSummarySchema = z.object({
@@ -229,6 +230,7 @@ export const UpdateRiskSchema = z.object({
   owner:            shortText(200).optional(),
   status:           riskStatusEnum.optional(),
   related_controls: z.array(z.string().max(20)).optional(),
+  confirmed:        coerceBool.optional().default(false),
 });
 
 export const ListRisksSchema = z.object({
@@ -259,6 +261,7 @@ export const UpdateTreatmentStatusSchema = z.object({
   evidence_ref:        shortText(200).optional(),
   residual_likelihood: likelihood1to5.optional(),
   residual_impact:     likelihood1to5.optional(),
+  confirmed:           coerceBool.optional().default(false),
 });
 
 export const GenerateRiskRegisterSchema = z.object({
@@ -291,6 +294,7 @@ export const UpdatePolicySchema = z.object({
   approver:       shortText(200).optional(),
   reviewed_by:    shortText(200),
   change_summary: freeText(500),
+  confirmed:      coerceBool.optional().default(false),
 });
 
 export const ListPoliciesSchema = z.object({
@@ -316,6 +320,7 @@ export const UpdateSoaEntrySchema = z.object({
   justification:     freeText(1000),
   status:            controlStatusEnum.optional(),
   responsible_party: shortText(200).optional(),
+  confirmed:         coerceBool.optional().default(false),
 });
 
 export const ExportSoaSchema = z.object({
@@ -500,6 +505,7 @@ export const UpdateProcedureSchema = z.object({
   related_controls: z.array(z.string().max(20)).optional(),
   reviewed_by:      shortText(200),
   change_summary:   freeText(500),
+  confirmed:        coerceBool.optional().default(false),
 });
 
 export const ListProceduresSchema = z.object({
@@ -565,6 +571,7 @@ export const RecordReviewOutputSchema = z.object({
 export const CompleteManagementReviewSchema = z.object({
   review_id:    uuid,
   completed_by: shortText(200),
+  confirmed:    coerceBool.optional().default(false),
 });
 
 export const GetManagementReviewSchema = z.object({

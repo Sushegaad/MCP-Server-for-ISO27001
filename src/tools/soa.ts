@@ -8,6 +8,7 @@ import { getDb } from "../db/connection.js";
 import { newId, now, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { renderHtmlDocument } from "./template-utils.js";
+import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -141,10 +142,11 @@ export function handleGenerateSoa(args: Record<string, unknown>): ToolResult {
 export function handleUpdateSoaEntry(args: Record<string, unknown>): ToolResult {
   const {
     soa_id, control_id, included, justification,
-    status, responsible_party,
+    status, responsible_party, confirmed = false,
   } = args as {
     soa_id: string; control_id: string; included: boolean;
     justification: string; status?: string; responsible_party?: string;
+    confirmed?: boolean;
   };
 
   const db = getDb();
@@ -153,11 +155,33 @@ export function handleUpdateSoaEntry(args: Record<string, unknown>): ToolResult 
   const soa = db.prepare("SELECT id FROM soa WHERE id = ?").get(soa_id) as { id: string } | undefined;
   if (!soa) throw notFound("soa", soa_id);
 
-  // Find the entry
+  // Find the entry (full row for diff)
   const entry = db.prepare(
-    "SELECT id FROM soa_entries WHERE soa_id = ? AND control_id = ?"
-  ).get(soa_id, control_id) as { id: string } | undefined;
+    "SELECT * FROM soa_entries WHERE soa_id = ? AND control_id = ?"
+  ).get(soa_id, control_id) as SoaEntryRow | undefined;
   if (!entry) throw notFound("soa_entry", `${soa_id}/${control_id}`);
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [];
+    const newIncluded = included ? 1 : 0;
+    if (newIncluded !== entry.included)
+      rows.push({ field: "included", old: entry.included === 1 ? "Yes" : "No", new: included ? "Yes" : "No" });
+    if (justification !== entry.justification)
+      rows.push({ field: "justification", old: entry.justification, new: justification });
+    if (status !== undefined && status !== entry.status)
+      rows.push({ field: "status", old: entry.status, new: status });
+    if (responsible_party !== undefined && responsible_party !== entry.responsible_party)
+      rows.push({ field: "responsible_party", old: entry.responsible_party, new: responsible_party });
+    return ok({
+      hitl_proposed: true,
+      status:        "preview",
+      soa_id,
+      control_id,
+      message:       "⏸ No data written. Pass \"confirmed\": true to apply this change.",
+      diff:          buildDiffTable(rows),
+    });
+  }
 
   const ts = now();
   db.prepare(`

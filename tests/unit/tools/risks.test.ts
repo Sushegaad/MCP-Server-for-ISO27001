@@ -198,11 +198,39 @@ describe("handleUpdateRisk", () => {
       .mockReturnValueOnce(updateStmt)   // UPDATE
       .mockReturnValueOnce(selectStmt);  // SELECT read-back
 
-    const result = handleUpdateRisk({ risk_id: "risk-uuid-1", status: "accepted" });
+    const result = handleUpdateRisk({ risk_id: "risk-uuid-1", status: "accepted", confirmed: true });
 
     expect(result.isError).toBe(false);
     const data = JSON.parse(result.content[0].text);
     expect(data.status).toBe("accepted");
+  });
+
+  it("preview (confirmed omitted): returns hitl_proposed with diff showing changed fields", () => {
+    const existingStmt = { get: vi.fn(() => baseRiskRow), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(existingStmt);
+
+    // No confirmed → should return preview, not write anything
+    const result = handleUpdateRisk({ risk_id: "risk-uuid-1", status: "accepted" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(typeof data.diff).toBe("string");
+    expect(data.diff).toContain("status");
+  });
+
+  it("preview (confirmed omitted): returns '_No fields would change._' when nothing differs", () => {
+    const existingStmt = { get: vi.fn(() => baseRiskRow), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(existingStmt);
+
+    // Pass same status as existing row → empty diff
+    const result = handleUpdateRisk({ risk_id: "risk-uuid-1", status: "open" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.diff).toBe("_No fields would change._");
   });
 
   it("throws NOT_FOUND when risk_id does not exist", () => {
@@ -410,11 +438,25 @@ describe("handleUpdateTreatmentStatus", () => {
     const result = handleUpdateTreatmentStatus({
       treatment_id: "treat-uuid-1",
       status: "in_progress",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
     const data = JSON.parse(result.content[0].text);
     expect(data.status).toBe("in_progress");
+  });
+
+  it("preview (confirmed omitted): returns hitl_proposed with diff table", () => {
+    const existingStmt = { get: vi.fn(() => ({ id: "treat-uuid-1", status: "planned" })), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(existingStmt);
+
+    const result = handleUpdateTreatmentStatus({ treatment_id: "treat-uuid-1", status: "completed" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.diff).toContain("status");
   });
 
   it("throws NOT_FOUND when treatment_id does not exist", () => {
