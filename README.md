@@ -2,7 +2,7 @@
 
 **Turn Claude into an ISO 27001 compliance assistant** — controls, risk register, policies, evidence tracking, SoA generation, and full audit workflows in one local encrypted MCP server.
 
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.3)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.3)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.6)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.6)
 [![npm version](https://img.shields.io/npm/v/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![npm downloads](https://img.shields.io/npm/dt/iso27001-mcp.svg)](https://npmjs.com/package/iso27001-mcp)
 [![CI](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml/badge.svg)](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml)
@@ -97,7 +97,7 @@ iso27001-mcp — health check
 ✅  MCP_API_KEY            set (starts with iso27001_)
 ✅  Database file          /Users/you/.iso27001/isms.db
 ✅  Database accessible    opened and queried successfully
-✅  Migrations             7/7 applied
+✅  Migrations             9/9 applied
 ✅  Controls seeded        93 ISO 27001:2022 controls
 ✅  Active API key         1 active key found
 ✅  Claude Desktop config  /Users/you/.../claude_desktop_config.json
@@ -219,8 +219,9 @@ For the full security profile — threat model, hardening guide, supply chain at
 
 - **Database** — AES-256 encrypted SQLite via `better-sqlite3-multiple-ciphers`
 - **API keys** — HMAC-SHA256 hashed; raw key printed once and never stored
-- **Audit log** — HMAC-SHA256 hash chain; every row linked to its predecessor — insertion, deletion, or reordering is detectable
+- **Audit log** — HMAC-SHA256 hash chain; every row linked to its predecessor — insertion, deletion, or reordering is detectable; `actor_type` (`ai` | `human` | `system`) and `model_id` are included in the hash so provenance claims are tamper-evident
 - **Prompt injection** — free-text fields sanitised before passing to any handler
+- **HITL confirmation gates** — 7 critical write tools (`update_control_status`, `update_risk`, `update_treatment_status`, `update_soa_entry`, `update_policy`, `update_procedure`, `complete_management_review`) require `confirmed: true` to commit; omitting it returns a preview diff and records `outcome: "proposed"` in the audit log
 
 ---
 
@@ -323,9 +324,11 @@ Register evidence artefacts for each control, spot gaps, and link them directly 
 
 ### 7 — Query the Audit Log
 
-Every tool call is logged in a tamper-evident audit trail. Admins can query it at any time.
+Every tool call is logged in a tamper-evident audit trail. Admins can query it at any time. Each entry records who triggered the action (`actor_type`: `ai` | `human` | `system`) and which model was running (`model_id`), both included in the HMAC hash chain so provenance claims are tamper-evident.
 
 > *"Show me all tool calls made in the last 7 days that resulted in an error."*
+
+> *"Query the audit log filtered to actor_type=human to see which calls were made by human operators."*
 
 > *"List all API keys and when they were last used."*
 
