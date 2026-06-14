@@ -14,6 +14,7 @@ import Mustache              from "mustache";
 import { getDb }             from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
 import { notFound }          from "../types/errors.js";
+import { ok, type ToolResult } from "../types/result.js";
 import { loadTemplate, loadPartials, stripFrontmatter } from "./template-utils.js";
 import { loadOrgProfileDefaults }         from "./org-profile.js";
 
@@ -33,11 +34,6 @@ interface GeneratedEvidenceRow {
   created_at:        string;
 }
 
-type ToolResult = { content: Array<{ type: "text"; text: string }>; isError: boolean };
-
-function ok(data: unknown): ToolResult {
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
-}
 
 // ── Evidence type mapping ─────────────────────────────────────
 // Maps each template type to the closest existing evidence.type value.

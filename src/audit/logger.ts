@@ -5,7 +5,7 @@
  *
  * The row_hash is HMAC-SHA256 (keyed with HMAC_SECRET) over ALL fields:
  *   id | timestamp | tool | key_hash | role | params_json |
- *   outcome | error_message | duration_ms | prev_hash
+ *   outcome | error_message | duration_ms | prev_hash | actor_type | model_id
  *
  * prev_hash chains each row to its predecessor — any gap or reorder
  * in the chain is detectable via verifyRowHash + verifyChain.
@@ -71,6 +71,8 @@ export interface AuditEventInput {
   outcome:       "success" | "denied" | "error" | "proposed";
   error_message: string | null;
   duration_ms:   number;
+  actor_type?:   "ai" | "human" | "system";  // defaults to "ai"
+  model_id?:     string | null;              // e.g. "claude-sonnet-4-6"; null if unknown
 }
 
 export interface AuditEvent extends AuditEventInput {
@@ -87,13 +89,21 @@ export interface AuditEvent extends AuditEventInput {
  *   1. The `audit_log` SQLite table
  *   2. The flat JSON-L file at AUDIT_LOG_PATH (for SIEM ingestion)
  *
- * row_hash = HMAC-SHA256(HMAC_SECRET, all 9 fields + prev_hash)
+ * row_hash = HMAC-SHA256(HMAC_SECRET, all fields + chain link):
+ *   id | timestamp | tool | key_hash | role | params_json |
+ *   outcome | error_message | duration_ms | prev_hash | actor_type | model_id
+ *
  * prev_hash chains each row to its predecessor for tamper-chain detection.
+ * actor_type and model_id (added in migration 0008) are included so
+ * provenance claims are tamper-evident.
  */
 export function writeAuditEvent(event: AuditEventInput): AuditEvent {
   const db        = getDb();
   const id        = randomUUID();
   const timestamp = new Date().toISOString().replace("T", " ").split(".")[0] + "Z";
+
+  const actor_type = event.actor_type ?? "ai";
+  const model_id   = event.model_id   ?? null;
 
   // ── Hash chain: load the most recent row_hash ─────────────
   const prevRow = db.prepare(
@@ -114,6 +124,8 @@ export function writeAuditEvent(event: AuditEventInput): AuditEvent {
     event.error_message ?? "",
     String(event.duration_ms),
     prev_hash ?? "GENESIS",
+    actor_type,
+    model_id ?? "",
   ].join("|");
 
   const row_hash = createHmac("sha256", hmacSecret)
@@ -123,8 +135,9 @@ export function writeAuditEvent(event: AuditEventInput): AuditEvent {
   db.prepare(`
     INSERT INTO audit_log
       (id, timestamp, tool, key_hash, role, params_json,
-       outcome, error_message, duration_ms, prev_hash, row_hash)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       outcome, error_message, duration_ms, prev_hash, row_hash,
+       actor_type, model_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     timestamp,
@@ -137,9 +150,11 @@ export function writeAuditEvent(event: AuditEventInput): AuditEvent {
     event.duration_ms,
     prev_hash,
     row_hash,
+    actor_type,
+    model_id,
   );
 
-  const full: AuditEvent = { id, timestamp, prev_hash, row_hash, ...event };
+  const full: AuditEvent = { id, timestamp, prev_hash, row_hash, actor_type, model_id, ...event };
 
   // Append to flat JSON-L file — non-fatal if the write fails
   try {
@@ -173,6 +188,8 @@ export function verifyRowHash(entry: AuditEvent): boolean {
     entry.error_message ?? "",
     String(entry.duration_ms),
     entry.prev_hash ?? "GENESIS",
+    entry.actor_type ?? "ai",
+    entry.model_id   ?? "",
   ].join("|");
 
   const expected = createHmac("sha256", hmacSecret)

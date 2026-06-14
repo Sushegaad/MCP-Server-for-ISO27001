@@ -420,14 +420,15 @@ export const GetServerInfoSchema = z.object({});
 // ── Group 9: Admin & Key Management ─────────────────────────
 
 export const QueryAuditLogSchema = z.object({
-  start_date: date.optional(),
-  end_date:   date.optional(),
-  tool:       z.string().max(100).optional(),
-  outcome:    outcomeEnum.optional(),
-  role:       roleEnum.optional(),
-  key_hash:   z.string().max(64).optional(),
-  limit:      paginationLimit,
-  offset:     paginationOffset,
+  start_date:  date.optional(),
+  end_date:    date.optional(),
+  tool:        z.string().max(100).optional(),
+  outcome:     outcomeEnum.optional(),
+  role:        roleEnum.optional(),
+  key_hash:    z.string().max(64).optional(),
+  actor_type:  z.enum(["ai", "human", "system"]).optional(),
+  limit:       paginationLimit,
+  offset:      paginationOffset,
 });
 
 export const ListApiKeysSchema = z.object({});

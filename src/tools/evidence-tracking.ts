@@ -8,6 +8,7 @@
 import { getDb } from "../db/connection.js";
 import { newId, now, computeEvidenceStatus } from "../db/dal.js";
 import { notFound, integrationError } from "../types/errors.js";
+import { ok, type ToolResult } from "../types/result.js";
 import { getEnv } from "../security/secrets.js";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -40,11 +41,6 @@ interface ControlDetailRow {
   theme: string;
 }
 
-type ToolResult = { content: Array<{ type: "text"; text: string }>; isError: boolean };
-
-function ok(data: unknown): ToolResult {
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
-}
 
 function requireEvidence(id: string): EvidenceRow {
   const db = getDb();

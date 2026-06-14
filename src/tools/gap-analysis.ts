@@ -9,6 +9,7 @@
 import { getDb } from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray, withTransaction } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
+import { ok, type ToolResult } from "../types/result.js";
 import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -38,11 +39,6 @@ interface ControlRow {
   description: string;
 }
 
-type ToolResult = { content: Array<{ type: "text"; text: string }>; isError: boolean };
-
-function ok(data: unknown): ToolResult {
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
-}
 
 function requireAssessment(id: string): AssessmentRow {
   const db  = getDb();

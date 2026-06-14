@@ -10,6 +10,7 @@
 import { getDb } from "../db/connection.js";
 import { fromJson, fromJsonArray } from "../db/dal.js";
 import { notFound } from "../types/errors.js";
+import { ok, type ToolResult } from "../types/result.js";
 
 // ── Shared types ──────────────────────────────────────────────
 
@@ -49,11 +50,6 @@ interface MappingRow {
   migration_notes: string | null;
 }
 
-type ToolResult = { content: Array<{ type: "text"; text: string }>; isError: boolean };
-
-function ok(data: unknown): ToolResult {
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
-}
 
 function shapeControl(row: ControlRow, includeGuidance = true): Record<string, unknown> {
   return {

@@ -301,7 +301,7 @@ describe("handleUpdateCorrectiveAction", () => {
       const mcpErr = err as McpError;
       expect(mcpErr.error_code).toBe("BUSINESS_RULE");
       expect(mcpErr.message).toContain("effectiveness_verified");
-      expect(mcpErr.hint).toContain("10.1");
+      expect(mcpErr.message).toContain("10.1");
     }
   });
 

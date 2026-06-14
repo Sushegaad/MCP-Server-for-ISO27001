@@ -43,7 +43,7 @@ import {
 const TEST_SECRET = "test-secret";
 const ts = new Date().toISOString().replace("T", " ").split(".")[0] + "Z";
 
-/** Build the expected HMAC-SHA256 row_hash over all fields. */
+/** Build the expected HMAC-SHA256 row_hash over all fields (including provenance). */
 function computeHash(fields: {
   id: string;
   timestamp: string;
@@ -55,6 +55,8 @@ function computeHash(fields: {
   error_message: string | null;
   duration_ms: number;
   prev_hash: string | null;
+  actor_type?: "ai" | "human" | "system";
+  model_id?: string | null;
 }): string {
   const input = [
     fields.id,
@@ -67,6 +69,8 @@ function computeHash(fields: {
     fields.error_message ?? "",
     String(fields.duration_ms),
     fields.prev_hash ?? "GENESIS",
+    fields.actor_type ?? "ai",
+    fields.model_id   ?? "",
   ].join("|");
   return createHmac("sha256", TEST_SECRET).update(input).digest("hex");
 }
@@ -83,6 +87,8 @@ function makeEvent(overrides: Partial<AuditEvent> = {}): AuditEvent {
     error_message: null,
     duration_ms:   5,
     prev_hash:     null,
+    actor_type:    "ai",
+    model_id:      null,
   };
   const merged = { ...base, ...overrides };
   return {
@@ -233,5 +239,79 @@ describe("writeAuditEvent", () => {
     });
 
     expect(verifyRowHash(result)).toBe(true);
+  });
+
+  it("defaults actor_type to 'ai' and model_id to null when not supplied", () => {
+    const result = writeAuditEvent({
+      tool:          "list_controls",
+      key_hash:      "abc123",
+      role:          "viewer",
+      params_json:   "{}",
+      outcome:       "success",
+      error_message: null,
+      duration_ms:   3,
+    });
+
+    expect(result.actor_type).toBe("ai");
+    expect(result.model_id).toBeNull();
+    expect(verifyRowHash(result)).toBe(true);
+  });
+
+  it("records explicit actor_type and model_id and includes them in the hash chain", () => {
+    const result = writeAuditEvent({
+      tool:          "update_risk",
+      key_hash:      "abc123",
+      role:          "analyst",
+      params_json:   "{}",
+      outcome:       "success",
+      error_message: null,
+      duration_ms:   7,
+      actor_type:    "ai",
+      model_id:      "claude-sonnet-4-6",
+    });
+
+    expect(result.actor_type).toBe("ai");
+    expect(result.model_id).toBe("claude-sonnet-4-6");
+    // row_hash must reflect both provenance fields
+    expect(verifyRowHash(result)).toBe(true);
+  });
+
+  it("records actor_type='human' when a human performs an action", () => {
+    const result = writeAuditEvent({
+      tool:          "complete_management_review",
+      key_hash:      "abc123",
+      role:          "admin",
+      params_json:   "{}",
+      outcome:       "success",
+      error_message: null,
+      duration_ms:   12,
+      actor_type:    "human",
+      model_id:      null,
+    });
+
+    expect(result.actor_type).toBe("human");
+    expect(verifyRowHash(result)).toBe(true);
+  });
+});
+
+// ── verifyRowHash provenance ─────────────────────────────────────────────
+
+describe("verifyRowHash — provenance fields included in hash", () => {
+  it("fails when actor_type is tampered after write", () => {
+    // Hash was computed for actor_type="ai"; we present actor_type="human"
+    const event = makeEvent({ actor_type: "ai", model_id: null });
+    const tampered = { ...event, actor_type: "human" as const };
+    expect(verifyRowHash(tampered)).toBe(false);
+  });
+
+  it("fails when model_id is tampered after write", () => {
+    const event = makeEvent({ actor_type: "ai", model_id: "claude-sonnet-4-6" });
+    const tampered = { ...event, model_id: "claude-opus-4-6" };
+    expect(verifyRowHash(tampered)).toBe(false);
+  });
+
+  it("passes for a human actor with no model_id", () => {
+    const event = makeEvent({ actor_type: "human", model_id: null });
+    expect(verifyRowHash(event)).toBe(true);
   });
 });

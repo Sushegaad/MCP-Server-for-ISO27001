@@ -149,11 +149,11 @@ export function notFound(entity: string, id: string): McpError {
   });
 }
 
-export function businessRule(message: string, hint?: string, docsRef?: string): McpError {
+export function businessRule(field: string, message: string, docsRef?: string): McpError {
   return new McpError({
     error_code: "BUSINESS_RULE",
     message,
-    hint,
+    field,
     docs_ref: docsRef,
   });
 }

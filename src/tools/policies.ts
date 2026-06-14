@@ -12,6 +12,7 @@ import Mustache from "mustache";
 import { getDb } from "../db/connection.js";
 import { newId, now, addMonths, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
+import { ok, type ToolResult } from "../types/result.js";
 import { loadTemplate, loadPartials, stripFrontmatter } from "./template-utils.js";
 import { loadOrgProfileDefaults } from "./org-profile.js";
 import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
@@ -50,11 +51,6 @@ interface PolicyVersionRow {
   archived_at: string;
 }
 
-type ToolResult = { content: Array<{ type: "text"; text: string }>; isError: boolean };
-
-function ok(data: unknown): ToolResult {
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
-}
 
 // ── create_policy ─────────────────────────────────────────────
 

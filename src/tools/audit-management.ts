@@ -8,6 +8,7 @@
 import { getDb } from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
+import { ok, type ToolResult } from "../types/result.js";
 import { markdownToHtml, renderHtmlDocument } from "./template-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -52,11 +53,6 @@ interface CarRow {
   updated_at: string;
 }
 
-type ToolResult = { content: Array<{ type: "text"; text: string }>; isError: boolean };
-
-function ok(data: unknown): ToolResult {
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
-}
 
 function shapeAudit(r: AuditRow): Omit<AuditRow, "controls_in_scope" | "clauses_in_scope"> & { controls_in_scope: string[]; clauses_in_scope: string[] } {
   return {

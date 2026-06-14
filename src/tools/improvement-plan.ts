@@ -14,6 +14,7 @@
 import { getDb }             from "../db/connection.js";
 import { newId, now }        from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
+import { ok, type ToolResult } from "../types/result.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -31,11 +32,6 @@ interface OpportunityRow {
   updated_at:  string;
 }
 
-type ToolResult = { content: Array<{ type: "text"; text: string }>; isError: boolean };
-
-function ok(data: unknown): ToolResult {
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
-}
 
 // ── Forward-only status transition guard ──────────────────────
 // open(0) → in_progress(1) → implemented(2) → closed(3)

@@ -25,6 +25,7 @@ import { checkRateLimit } from "../security/rate-limiter.js";
 import { sanitiseParams } from "../security/sanitise.js";
 import { writeAuditEvent, buildParamsJson } from "../audit/logger.js";
 import { McpError } from "../types/errors.js";
+import { ok, type ToolResult } from "../types/result.js";
 import { TOOL_SCHEMAS } from "../security/validate.js";
 import { handleGetServerInfo } from "./server-info.js";
 import { getDb } from "../db/connection.js";
@@ -103,11 +104,6 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────
 
-type ToolResult = {
-  content: Array<{ type: "text"; text: string }>;
-  isError: boolean;
-};
-
 type ToolHandler = (args: Record<string, unknown>) => ToolResult | Promise<ToolResult>;
 
 // ── extractShape ─────────────────────────────────────────────
@@ -152,15 +148,6 @@ function extractShape(schema: z.ZodTypeAny): z.ZodRawShape {
     cleanShape[key] = unwrapFieldSchema(val as unknown as z.ZodTypeAny);
   }
   return cleanShape;
-}
-
-// ── ok / err helpers ──────────────────────────────────────────
-
-function ok(data: unknown): ToolResult {
-  return {
-    content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
-    isError: false,
-  };
 }
 
 // ── TOOL_DESCRIPTIONS ─────────────────────────────────────────
@@ -265,7 +252,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
 
   // Group 9 — Admin & Key Management (admin only)
   query_audit_log:
-    "Query the tamper-evident audit log with optional filters: date range, tool, outcome, role, key_hash.",
+    "Query the tamper-evident audit log with optional filters: date range, tool, outcome, role, key_hash, actor_type (ai | human | system).",
   list_api_keys:
     "List all API keys with their metadata (label, role, status, expiry). Never returns key hashes.",
   revoke_api_key:
@@ -388,26 +375,29 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   query_audit_log: (args) => {
     const db = getDb();
     const {
-      start_date, end_date, tool, outcome, role, key_hash,
+      start_date, end_date, tool, outcome, role, key_hash, actor_type,
       limit = 50, offset = 0,
     } = args as {
       start_date?: string; end_date?: string; tool?: string;
       outcome?: string; role?: string; key_hash?: string;
+      actor_type?: "ai" | "human" | "system";
       limit?: number; offset?: number;
     };
 
     const conditions: string[] = [];
     const params: unknown[] = [];
 
-    if (start_date) { conditions.push("timestamp >= ?"); params.push(start_date); }
-    if (end_date)   { conditions.push("timestamp <= ?"); params.push(end_date + "T23:59:59Z"); }
-    if (tool)       { conditions.push("tool = ?");       params.push(tool); }
-    if (outcome)    { conditions.push("outcome = ?");    params.push(outcome); }
-    if (role)       { conditions.push("role = ?");       params.push(role); }
-    if (key_hash)   { conditions.push("key_hash = ?");   params.push(key_hash); }
+    if (start_date)  { conditions.push("timestamp >= ?");  params.push(start_date); }
+    if (end_date)    { conditions.push("timestamp <= ?");  params.push(end_date + "T23:59:59Z"); }
+    if (tool)        { conditions.push("tool = ?");        params.push(tool); }
+    if (outcome)     { conditions.push("outcome = ?");     params.push(outcome); }
+    if (role)        { conditions.push("role = ?");        params.push(role); }
+    if (key_hash)    { conditions.push("key_hash = ?");    params.push(key_hash); }
+    if (actor_type)  { conditions.push("actor_type = ?"); params.push(actor_type); }
 
     const where = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
-    const sql   = `SELECT id, timestamp, tool, role, outcome, error_message, duration_ms, prev_hash, row_hash
+    const sql   = `SELECT id, timestamp, tool, role, outcome, error_message,
+                          duration_ms, prev_hash, row_hash, actor_type, model_id
                    FROM audit_log ${where}
                    ORDER BY timestamp DESC
                    LIMIT ? OFFSET ?`;
@@ -481,11 +471,18 @@ export function registerAllTools(server: McpServer): void {
     server.tool(toolName, description, shape, async (args, extra) => {
       const startMs = Date.now();
 
-      // ── Step 1: extract credential from request meta or env ──
+      // ── Step 1: extract credential + provenance from request meta ──
+      const metaExtra = extra as unknown as {
+        _meta?: {
+          apiKey?:     string;
+          actor_type?: "ai" | "human" | "system";
+          model_id?:   string;
+        };
+      };
       const credential: string =
-        ((extra as unknown as { _meta?: { apiKey?: string } })._meta?.apiKey) ??
-        process.env["MCP_API_KEY"] ??
-        "";
+        metaExtra._meta?.apiKey ?? process.env["MCP_API_KEY"] ?? "";
+      const actor_type = metaExtra._meta?.actor_type ?? "ai";
+      const model_id   = metaExtra._meta?.model_id   ?? null;
 
       // Audit scaffolding — filled in as pipeline progresses
       let keyHash      = "";
@@ -549,6 +546,8 @@ export function registerAllTools(server: McpServer): void {
           outcome,
           error_message: errorMessage,
           duration_ms:   Date.now() - startMs,
+          actor_type,
+          model_id,
         });
 
         return result;
@@ -581,6 +580,8 @@ export function registerAllTools(server: McpServer): void {
             outcome,
             error_message: errorMessage,
             duration_ms:   Date.now() - startMs,
+            actor_type,
+            model_id,
           });
         } catch (auditErr) {
           console.error("[tools] Failed to write audit event:", auditErr);

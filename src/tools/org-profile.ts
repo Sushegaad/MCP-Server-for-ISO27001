@@ -11,6 +11,7 @@
 import type { Database } from "better-sqlite3";
 import { getDb } from "../db/connection.js";
 import { now } from "../db/dal.js";
+import { ok, type ToolResult } from "../types/result.js";
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -41,11 +42,6 @@ interface OrgProfileRow {
   certification_body: string | null;
 }
 
-type ToolResult = { content: Array<{ type: "text"; text: string }>; isError: boolean };
-
-function ok(data: unknown): ToolResult {
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }], isError: false };
-}
 
 // ── Shared helper ─────────────────────────────────────────────
 

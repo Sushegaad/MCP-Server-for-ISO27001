@@ -608,6 +608,91 @@ ALTER TABLE organization_profile ADD COLUMN document_footer TEXT;
 ALTER TABLE organization_profile ADD COLUMN certification_body TEXT;
 `;
 
+const MIGRATION_0008 = `-- ============================================================
+-- iso27001-mcp  Migration 0008 — Audit Log Provenance
+-- Adds actor_type and model_id columns so each audit row records
+-- who (or what) triggered the action and which model was running.
+--
+-- actor_type  IN ('ai','human','system')  DEFAULT 'ai'
+-- model_id    TEXT   nullable — e.g. "claude-sonnet-4-6"
+--
+-- Both fields are included in the HMAC-SHA256 hash chain so
+-- provenance claims are tamper-evident.
+--
+-- !! Rows written before this migration retain actor_type='ai'
+-- !! and model_id=NULL (SQLite virtual default) but their
+-- !! row_hash was computed over the pre-0008 field set and will
+-- !! not pass verifyRowHash() with the post-0008 algorithm.
+-- !! This is expected — the same limitation exists for rows
+-- !! written before migration 0006 (prev_hash).
+-- !! Never edit this file after it has been applied !!
+-- ============================================================
+
+ALTER TABLE audit_log ADD COLUMN actor_type TEXT NOT NULL DEFAULT 'ai'
+  CHECK (actor_type IN ('ai','human','system'));
+
+ALTER TABLE audit_log ADD COLUMN model_id TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_actor_type
+  ON audit_log(actor_type, timestamp);
+`;
+
+const MIGRATION_0009 = `-- ============================================================
+-- iso27001-mcp  Migration 0009 — Widen audit_log outcome CHECK
+--
+-- Adds 'proposed' to the outcome CHECK constraint so HITL
+-- preview tool calls can be recorded without violating SQLite.
+--
+-- Background: migration 0001 created audit_log with
+--   CHECK (outcome IN ('success','denied','error'))
+-- The HITL feature (hitl_proposed: true) introduced a fourth
+-- outcome value 'proposed'. SQLite cannot ALTER COLUMN
+-- constraints, so this migration recreates the table in full,
+-- preserving all columns from 0001 + 0006 (prev_hash) +
+-- 0008 (actor_type, model_id), then copies all existing rows.
+--
+-- !! Never edit this file after it has been applied !!
+-- ============================================================
+
+-- Step 1: Create replacement table with widened CHECK
+CREATE TABLE audit_log_new (
+  id            TEXT    PRIMARY KEY NOT NULL,
+  timestamp     TEXT    NOT NULL DEFAULT (datetime('now')),
+  tool          TEXT    NOT NULL,
+  key_hash      TEXT    NOT NULL,
+  role          TEXT    NOT NULL,
+  params_json   TEXT    NOT NULL,
+  outcome       TEXT    NOT NULL CHECK (outcome IN ('success','denied','error','proposed')),
+  error_message TEXT,
+  duration_ms   INTEGER NOT NULL,
+  row_hash      TEXT    NOT NULL,
+  prev_hash     TEXT,
+  actor_type    TEXT    NOT NULL DEFAULT 'ai' CHECK (actor_type IN ('ai','human','system')),
+  model_id      TEXT
+);
+
+-- Step 2: Copy all existing rows verbatim
+INSERT INTO audit_log_new
+  SELECT id, timestamp, tool, key_hash, role, params_json,
+         outcome, error_message, duration_ms, row_hash,
+         prev_hash, actor_type, model_id
+  FROM audit_log;
+
+-- Step 3: Swap tables
+DROP TABLE audit_log;
+ALTER TABLE audit_log_new RENAME TO audit_log;
+
+-- Step 4: Recreate indexes (dropped with the old table)
+CREATE INDEX IF NOT EXISTS idx_audit_log_tool
+  ON audit_log(tool, timestamp);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_outcome
+  ON audit_log(outcome, timestamp);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_actor_type
+  ON audit_log(actor_type, timestamp);
+`;
+
 /**
  * All migrations in application order.
  * The runner applies them sequentially, skipping already-applied ones.
@@ -621,4 +706,6 @@ export const MIGRATIONS: Migration[] = [
   { filename: "0005_evidence_documents.sql",               sql: MIGRATION_0005 },
   { filename: "0006_audit_log_hmac.sql",                   sql: MIGRATION_0006 },
   { filename: "0007_org_profile_branding.sql",             sql: MIGRATION_0007 },
+  { filename: "0008_audit_provenance.sql",                 sql: MIGRATION_0008 },
+  { filename: "0009_audit_log_outcome_proposed.sql",       sql: MIGRATION_0009 },
 ];
