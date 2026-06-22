@@ -14,8 +14,8 @@ import {
 import { McpError } from "../../../src/types/errors.js";
 
 describe("checkPermission", () => {
-  it("viewer can call get_control (viewer-level tool)", () => {
-    expect(checkPermission("viewer", "get_control")).toBe(true);
+  it("viewer can call list_controls (viewer-level tool)", () => {
+    expect(checkPermission("viewer", "list_controls")).toBe(true);
   });
 
   it("viewer cannot call update_policy (admin-level tool)", () => {
@@ -64,22 +64,22 @@ describe("assertPermission", () => {
 });
 
 describe("TOTAL_TOOLS", () => {
-  it("equals 63", () => {
-    expect(TOTAL_TOOLS).toBe(63);
+  it("equals 50", () => {
+    expect(TOTAL_TOOLS).toBe(50);
   });
 });
 
 describe("toolsForRole", () => {
-  it("viewer has access to 31 tools", () => {
-    expect(toolsForRole("viewer").length).toBe(31);
+  it("viewer has access to 18 tools", () => {
+    expect(toolsForRole("viewer").length).toBe(18);
   });
 
-  it("analyst has access to 49 tools", () => {
-    expect(toolsForRole("analyst").length).toBe(49);
+  it("analyst has access to 36 tools", () => {
+    expect(toolsForRole("analyst").length).toBe(36);
   });
 
-  it("admin has access to 63 tools", () => {
-    expect(toolsForRole("admin").length).toBe(63);
+  it("admin has access to 50 tools", () => {
+    expect(toolsForRole("admin").length).toBe(50);
   });
 
   it("viewer tools are a subset of analyst tools", () => {

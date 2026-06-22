@@ -87,7 +87,24 @@ describe("handleCreateAudit", () => {
     mockDb.prepare.mockReturnValue(mockStmt);
   });
 
-  it("creates an audit and returns the shaped row", () => {
+  it("returns HITL preview when confirmed is omitted", () => {
+    const result = handleCreateAudit({
+      name: "Annual Internal Audit",
+      scope: "All ISMS controls",
+      auditor: "John Auditor",
+      planned_date: "2025-06-01",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.diff).toContain("Annual Internal Audit");
+    // No DB writes should have occurred
+    expect(mockDb.prepare).not.toHaveBeenCalled();
+  });
+
+  it("creates an audit and returns the shaped row when confirmed=true", () => {
     const insertStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
     const selectStmt = { run: vi.fn(), get: vi.fn(() => AUDIT_ROW), all: vi.fn(() => []) };
     mockDb.prepare.mockReturnValueOnce(insertStmt).mockReturnValueOnce(selectStmt);
@@ -97,6 +114,7 @@ describe("handleCreateAudit", () => {
       scope: "All ISMS controls",
       auditor: "John Auditor",
       planned_date: "2025-06-01",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
@@ -108,7 +126,7 @@ describe("handleCreateAudit", () => {
     expect(Array.isArray(data.clauses_in_scope)).toBe(true);
   });
 
-  it("serialises controls_in_scope and clauses_in_scope", () => {
+  it("serialises controls_in_scope and clauses_in_scope when confirmed=true", () => {
     const insertStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
     const selectStmt = {
       run: vi.fn(),
@@ -128,6 +146,7 @@ describe("handleCreateAudit", () => {
       planned_date: "2025-07-01",
       controls_in_scope: ["5.1", "5.2"],
       clauses_in_scope: ["6", "8"],
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
@@ -144,7 +163,27 @@ describe("handleRecordFinding", () => {
     mockDb.prepare.mockReturnValue(mockStmt);
   });
 
-  it("records an NC finding with severity", () => {
+  it("returns HITL preview when confirmed is omitted", () => {
+    const auditStmt = { get: vi.fn(() => AUDIT_ROW), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(auditStmt);
+
+    const result = handleRecordFinding({
+      audit_id: "audit-1",
+      type: "nc",
+      clause_or_control: "8.1",
+      description: "Asset inventory not maintained",
+      objective_evidence: "No inventory found",
+      severity: "major",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.diff).toContain("8.1");
+  });
+
+  it("records an NC finding with severity when confirmed=true", () => {
     const auditStmt  = { get: vi.fn(() => AUDIT_ROW), all: vi.fn(() => []), run: vi.fn() };
     const insertStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
     const selectStmt = { run: vi.fn(), get: vi.fn(() => FINDING_ROW), all: vi.fn(() => []) };
@@ -160,6 +199,7 @@ describe("handleRecordFinding", () => {
       description: "Asset inventory not maintained",
       objective_evidence: "No inventory found",
       severity: "major",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
@@ -213,7 +253,7 @@ describe("handleRecordFinding", () => {
     ).toThrow(McpError);
   });
 
-  it("records an OBS finding without severity", () => {
+  it("records an OBS finding without severity when confirmed=true", () => {
     const obsRow = { ...FINDING_ROW, id: "finding-2", type: "obs", severity: null };
     const auditStmt  = { get: vi.fn(() => AUDIT_ROW), all: vi.fn(() => []), run: vi.fn() };
     const insertStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
@@ -229,6 +269,7 @@ describe("handleRecordFinding", () => {
       clause_or_control: "6.1",
       description: "Minor observation",
       objective_evidence: "Verbal confirmation",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
@@ -246,7 +287,27 @@ describe("handleCreateCorrectiveAction", () => {
     mockDb.prepare.mockReturnValue(mockStmt);
   });
 
-  it("creates a corrective action and returns it with boolean effectiveness_verified", () => {
+  it("returns HITL preview when confirmed is omitted", () => {
+    const findingStmt = { get: vi.fn(() => FINDING_ROW), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(findingStmt);
+
+    const result = handleCreateCorrectiveAction({
+      finding_id: "finding-1",
+      description: "Create asset inventory",
+      owner: "IT Manager",
+      due_date: "2025-09-01",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.diff).toContain("finding_id");
+    // No DB insert should have been called (only the requireFinding lookup)
+    expect(findingStmt.run).not.toHaveBeenCalled();
+  });
+
+  it("creates a corrective action and returns it with boolean effectiveness_verified when confirmed=true", () => {
     const findingStmt = { get: vi.fn(() => FINDING_ROW), all: vi.fn(() => []), run: vi.fn() };
     const insertStmt  = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
     const selectStmt  = { run: vi.fn(), get: vi.fn(() => CAR_ROW), all: vi.fn(() => []) };
@@ -261,6 +322,7 @@ describe("handleCreateCorrectiveAction", () => {
       owner: "IT Manager",
       due_date: "2025-09-01",
       root_cause: "No defined process",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);

@@ -1,8 +1,11 @@
 /**
  * iso27001-mcp — Tool registry & execution pipeline
  *
- * registerAllTools(server) wires all 63 tools into the MCP server with the
+ * registerAllTools(server) wires all 50 tools into the MCP server with the
  * full security pipeline per §6 of the spec:
+ *
+ * Read-only lookups previously exposed as tools are now MCP Resources
+ * (iso27001:// URIs via registerAllResources) and have been retired here.
  *
  *   1. Extract credential from _meta.apiKey or MCP_API_KEY env var
  *   2a. If it is an SSE session token → lookupSessionToken() → { keyHash, role }
@@ -27,33 +30,32 @@ import { writeAuditEvent, buildParamsJson } from "../audit/logger.js";
 import { McpError } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { TOOL_SCHEMAS } from "../security/validate.js";
-import { handleGetServerInfo } from "./server-info.js";
 import { getDb } from "../db/connection.js";
 
 // ── Group 1: Control Registry ─────────────────────────────────
 import {
-  handleGetControl, handleListControls, handleSearchControls,
+  handleListControls, handleSearchControls,
   handleGetControlAttributes, handleCompareVersions,
-  handleGetClauseRequirement, handleListClauseRequirements,
+  handleListClauseRequirements,
 } from "./controls.js";
 
 // ── Group 2: Gap Analysis ─────────────────────────────────────
 import {
-  handleCreateGapAssessment, handleUpdateControlStatus, handleGetGapSummary,
+  handleCreateGapAssessment, handleUpdateControlStatus,
   handleListGapAssessments, handleExportGapReport,
   handleGenerateRemediationRoadmap, handleArchiveGapAssessment,
 } from "./gap-analysis.js";
 
 // ── Group 3: Risk Management ──────────────────────────────────
 import {
-  handleCreateRisk, handleGetRisk, handleUpdateRisk, handleListRisks,
-  handleGetRiskSummary, handleCreateTreatmentPlan,
+  handleCreateRisk, handleUpdateRisk, handleListRisks,
+  handleCreateTreatmentPlan,
   handleUpdateTreatmentStatus, handleGenerateRiskRegister,
 } from "./risks.js";
 
 // ── Group 4: Policy Management ────────────────────────────────
 import {
-  handleCreatePolicy, handleGetPolicy, handleUpdatePolicy, handleListPolicies,
+  handleCreatePolicy, handleUpdatePolicy, handleListPolicies,
 } from "./policies.js";
 
 // ── Group 5: Statement of Applicability ──────────────────────
@@ -69,36 +71,36 @@ import {
 
 // ── Group 7: Evidence Tracking ────────────────────────────────
 import {
-  handleRegisterEvidence, handleListEvidence, handleGetEvidenceGaps,
+  handleRegisterEvidence, handleListEvidence,
   handleLinkJiraTicket, handleLinkGithubIssue,
 } from "./evidence-tracking.js";
 
 // ── Group 10: Organization Profile ───────────────────────────
 import {
-  handleSetOrganizationProfile, handleGetOrganizationProfile,
+  handleSetOrganizationProfile,
 } from "./org-profile.js";
 
 // ── Group 11: Procedure Management ───────────────────────────
 import {
-  handleCreateProcedure, handleGetProcedure, handleUpdateProcedure,
+  handleCreateProcedure, handleUpdateProcedure,
   handleListProcedures, handleExportProcedure,
 } from "./procedures.js";
 
 // ── Group 12: Management Review (Clause 9.3) ─────────────────
 import {
   handleCreateManagementReview, handleRecordReviewInput, handleRecordReviewOutput,
-  handleCompleteManagementReview, handleGetManagementReview, handleListManagementReviews,
+  handleCompleteManagementReview, handleListManagementReviews,
 } from "./management-review.js";
 
 // ── Group 13: Improvement Plan (Clause 10.1) ─────────────────
 import {
   handleCreateImprovementOpportunity, handleUpdateImprovementOpportunity,
-  handleGetImprovementOpportunity, handleListImprovementOpportunities,
+  handleListImprovementOpportunities,
 } from "./improvement-plan.js";
 
 // ── Group 14: Evidence Templates ──────────────────────────────
 import {
-  handleGenerateEvidenceDocument, handleGetEvidenceDocument,
+  handleGenerateEvidenceDocument,
   handleListEvidenceDocuments,
 } from "./evidence-templates.js";
 
@@ -155,8 +157,8 @@ function extractShape(schema: z.ZodTypeAny): z.ZodRawShape {
 
 const TOOL_DESCRIPTIONS: Record<string, string> = {
   // Group 1 — Control Registry (read-only, viewer+)
-  get_control:
-    "Retrieve a single ISO 27001 control by control_id and optional version (2022 or 2013).",
+  // get_control → retired to resource iso27001://control/{control_id}
+  // get_clause_requirement → retired to resource iso27001://clause/{clause_id}
   list_controls:
     "List ISO 27001 controls with optional filters: version, theme, control_type, new_in_2022, cybersecurity_concept, and pagination.",
   search_controls:
@@ -165,18 +167,15 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
     "Retrieve the 2022 attribute tags for a control: information_security_properties, cybersecurity_concepts, operational_capabilities, security_domains.",
   compare_versions:
     "Show the mapping relationship between a 2013 control and its 2022 equivalent(s), or vice versa.",
-  get_clause_requirement:
-    "Fetch a single ISO 27001:2022 clause requirement by clause_id, optionally including sub-clauses.",
   list_clause_requirements:
     "List ISO 27001:2022 clause requirements (clauses 4–10), optionally filtered by parent clause.",
 
   // Group 2 — Gap Analysis (reads: viewer+, writes: analyst+)
+  // get_gap_summary → retired to resource iso27001://assessment/{assessment_id}/summary
   create_gap_assessment:
     "Create a new gap assessment against ISO 27001:2022 or 2013 controls for a defined ISMS scope.",
   update_control_status:
     "Set the implementation status of a control within a gap assessment (implemented, partial, not_implemented, na, not_started). Omit confirmed or pass confirmed=false to preview changes without writing; pass confirmed=true to commit.",
-  get_gap_summary:
-    "Return aggregate compliance statistics for a gap assessment, optionally broken down by theme, control_type, or cybersecurity_concept.",
   list_gap_assessments:
     "List gap assessments filtered by status (active, archived, all).",
   export_gap_report:
@@ -187,16 +186,14 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
     "Archive a completed or superseded gap assessment with an optional reason.",
 
   // Group 3 — Risk Management (reads: viewer+, writes: analyst+)
+  // get_risk → retired to resource iso27001://risk/{risk_id}
+  // get_risk_summary → retired to resource iso27001://risks/summary
   create_risk:
     "Register a new information security risk with asset, threat, vulnerability, likelihood (1–5), and impact (1–5).",
-  get_risk:
-    "Retrieve a risk record by ID, optionally including its treatment plans.",
   update_risk:
     "Update mutable fields of an existing risk (asset, threat, vulnerability, likelihood, impact, owner, status, related_controls). Omit confirmed or pass confirmed=false to preview a field-level diff without writing; pass confirmed=true to commit.",
   list_risks:
     "List risks with optional filters: risk_level, status, owner, and pagination.",
-  get_risk_summary:
-    "Return aggregate risk statistics: count by level, status, and treatment type.",
   create_treatment_plan:
     "Create a risk treatment plan (mitigate, accept, avoid, or transfer) with owner, due date, and optionally residual risk scores.",
   update_treatment_status:
@@ -205,10 +202,9 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
     "Export the full risk register in markdown, CSV, or JSON format with optional level/status filters.",
 
   // Group 4 — Policy Management (reads: viewer+, create: analyst+, update: admin)
+  // get_policy → retired to resource iso27001://policy/{policy_id}
   create_policy:
-    "Generate a new ISMS policy document from a Mustache template using organisation_name, scope, owner, and effective_date.",
-  get_policy:
-    "Retrieve a policy record by ID, optionally including version history.",
+    "Generate a new ISMS policy document from a Mustache template using organisation_name, scope, owner, and effective_date. Omit confirmed or pass confirmed=false to preview what will be created without writing; pass confirmed=true to generate and save the policy.",
   update_policy:
     "Create a new version of an existing policy with scope/owner changes, reviewed_by, and change_summary. Requires admin role. Omit confirmed or pass confirmed=false to preview the version bump and metadata diff without writing; pass confirmed=true to commit.",
   list_policies:
@@ -224,31 +220,28 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
 
   // Group 6 — Audit Management (reads: viewer+, writes: admin)
   create_audit:
-    "Create an internal ISMS audit record with auditor, planned date, and controls/clauses in scope.",
+    "Create an internal ISMS audit record with auditor, planned date, and controls/clauses in scope. Omit confirmed or pass confirmed=false to preview the audit record without writing; pass confirmed=true to commit.",
   record_finding:
-    "Record an audit finding (NC, observation, or OFI) against a clause or control.",
+    "Record an audit finding (NC, observation, or OFI) against a clause or control. Omit confirmed or pass confirmed=false to preview the finding without writing; pass confirmed=true to commit.",
   create_corrective_action:
-    "Create a corrective action request (CAR) linked to an audit finding with owner and due date.",
+    "Create a corrective action request (CAR) linked to an audit finding with owner and due date. Omit confirmed or pass confirmed=false to preview the CAR without writing; pass confirmed=true to commit.",
   update_corrective_action:
     "Update a corrective action's status, root cause, evidence reference, or effectiveness verification.",
   generate_audit_report:
     "Export an audit report including findings and CAR status in markdown or JSON format.",
 
   // Group 7 — Evidence Tracking (reads: viewer+, writes: analyst+)
+  // get_evidence_gaps → retired to resource iso27001://assessment/{assessment_id}/evidence-gaps
   register_evidence:
-    "Register an evidence artefact linked to a control with type, source URL, collector, and optional expiry date.",
+    "Register an evidence artefact linked to a control with type, source URL, collector, and optional expiry date. Omit confirmed or pass confirmed=false to preview the evidence record without writing; pass confirmed=true to commit.",
   list_evidence:
     "List evidence records for a control, optionally filtered by status (current, stale, expired).",
-  get_evidence_gaps:
-    "Return a list of controls in a gap assessment that have no current evidence records.",
   link_jira_ticket:
     "Link an evidence record to an existing Jira ticket by key, or create a new ticket from a summary.",
   link_github_issue:
     "Link an evidence record to an existing GitHub issue by number, or create a new issue from a title and body.",
 
-  // Group 8 — Server Info (viewer+)
-  get_server_info:
-    "Return server version, build provenance, control data checksums, and live database statistics.",
+  // Group 8 — Server Info retired to resource iso27001://server/info
 
   // Group 9 — Admin & Key Management (admin only)
   query_audit_log:
@@ -259,16 +252,14 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
     "Revoke an API key by label, preventing all future use.",
 
   // Group 10 — Organization Profile
+  // get_organization_profile → retired to resource iso27001://org/profile
   set_organization_profile:
     "Upsert the singleton organization profile (legal name, jurisdiction, ISMS scope, RACI roles). Used by create_policy and create_procedure to auto-inject org defaults.",
-  get_organization_profile:
-    "Retrieve the organization profile. Returns { profile: null } if no profile has been set yet.",
 
   // Group 11 — Procedure Management (reads: viewer+, create: analyst+, update: admin)
+  // get_procedure → retired to resource iso27001://procedure/{procedure_id}
   create_procedure:
     "Generate a new ISMS procedure document from a Mustache template. Optionally links to a parent policy. Falls back to org profile for organisation_name and scope if not supplied.",
-  get_procedure:
-    "Retrieve a procedure record by ID, optionally including version history.",
   update_procedure:
     "Archive the current procedure version and re-render with updated fields, incrementing the version number. Requires admin role. Omit confirmed or pass confirmed=false to preview the version bump and metadata diff without writing; pass confirmed=true to commit.",
   list_procedures:
@@ -277,6 +268,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
     "Export a procedure as a markdown document (with related controls appended) or as structured JSON.",
 
   // Group 12 — Management Review, Clause 9.3 (reads: viewer+, writes: admin)
+  // get_management_review → retired to resource iso27001://management-review/{review_id}
   create_management_review:
     "Schedule a new management review (ISO 27001:2022 Clause 9.3) with title, date, and reviewers list.",
   record_review_input:
@@ -285,26 +277,22 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
     "Record a Clause 9.3.3 output decision (improvement_decision or isms_change_decision) for a management review.",
   complete_management_review:
     "Mark a management review as completed. Enforces ISO 27001:2022 §9.3.2: all 7 input categories must be recorded, and at least one output must be present. Omit confirmed or pass confirmed=false to preview review readiness (inputs recorded vs. missing, output count) without writing; pass confirmed=true to finalise.",
-  get_management_review:
-    "Retrieve a management review record with all inputs, outputs, and a completion-progress summary.",
   list_management_reviews:
     "List management reviews with optional status filter and pagination.",
 
   // Group 13 — Improvement Plan, Clause 10.1 (reads: viewer+, writes: analyst+)
+  // get_improvement_opportunity → retired to resource iso27001://improvement-plan/{opportunity_id}
   create_improvement_opportunity:
     "Register a proactive improvement opportunity (ISO 27001:2022 Clause 10.1) with source, priority, owner, and optional target date. Not linked to a nonconformity.",
   update_improvement_opportunity:
     "Advance an improvement opportunity's status (forward-only: open → in_progress → implemented → closed) or update owner, target date, priority, or description.",
-  get_improvement_opportunity:
-    "Retrieve a single improvement opportunity by ID.",
   list_improvement_opportunities:
     "List improvement opportunities with optional filters (status, source, priority, review_id) and a backlog health rating (excellent/good/fair/needs_attention/at_risk).",
 
   // Group 14 — Evidence Templates (reads: viewer+, generate: analyst+)
+  // get_evidence_document → retired to resource iso27001://evidence-document/{document_id}
   generate_evidence_document:
     "Render one of 6 Mustache evidence templates (access_review_attestation, training_acknowledgement, supplier_security_questionnaire, incident_post_mortem, bcp_test_report, risk_treatment_sign_off) with org-profile auto-injection. Returns rendered Markdown and simultaneously registers an evidence record.",
-  get_evidence_document:
-    "Retrieve a previously generated evidence document by ID, including its rendered Markdown content and template variables used.",
   list_evidence_documents:
     "List generated evidence documents with optional filters: template_type, generated_by, control_id, and pagination.",
 };
@@ -316,18 +304,15 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
 const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
   // ── Group 1: Control Registry ────────────────────────────
-  get_control:              handleGetControl,
   list_controls:            handleListControls,
   search_controls:          handleSearchControls,
   get_control_attributes:   handleGetControlAttributes,
   compare_versions:         handleCompareVersions,
-  get_clause_requirement:   handleGetClauseRequirement,
   list_clause_requirements: handleListClauseRequirements,
 
   // ── Group 2: Gap Analysis ─────────────────────────────────
   create_gap_assessment:        handleCreateGapAssessment,
   update_control_status:        handleUpdateControlStatus,
-  get_gap_summary:              handleGetGapSummary,
   list_gap_assessments:         handleListGapAssessments,
   export_gap_report:            handleExportGapReport,
   generate_remediation_roadmap: handleGenerateRemediationRoadmap,
@@ -335,17 +320,14 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
   // ── Group 3: Risk Management ──────────────────────────────
   create_risk:             handleCreateRisk,
-  get_risk:                handleGetRisk,
   update_risk:             handleUpdateRisk,
   list_risks:              handleListRisks,
-  get_risk_summary:        handleGetRiskSummary,
   create_treatment_plan:   handleCreateTreatmentPlan,
   update_treatment_status: handleUpdateTreatmentStatus,
   generate_risk_register:  handleGenerateRiskRegister,
 
   // ── Group 4: Policy Management ────────────────────────────
   create_policy: handleCreatePolicy,
-  get_policy:    handleGetPolicy,
   update_policy: handleUpdatePolicy,
   list_policies: handleListPolicies,
 
@@ -364,12 +346,8 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   // ── Group 7: Evidence Tracking ────────────────────────────
   register_evidence: handleRegisterEvidence,
   list_evidence:     handleListEvidence,
-  get_evidence_gaps: handleGetEvidenceGaps,
   link_jira_ticket:  handleLinkJiraTicket,
   link_github_issue: handleLinkGithubIssue,
-
-  // ── Group 8: Server Info ──────────────────────────────────
-  get_server_info: (_args) => handleGetServerInfo(),
 
   // ── Group 9: Admin & Key Management ──────────────────────
   query_audit_log: (args) => {
@@ -420,11 +398,9 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
   // ── Group 10: Organization Profile ───────────────────────────
   set_organization_profile: handleSetOrganizationProfile,
-  get_organization_profile: handleGetOrganizationProfile,
 
   // ── Group 11: Procedure Management ───────────────────────────
   create_procedure: handleCreateProcedure,
-  get_procedure:    handleGetProcedure,
   update_procedure: handleUpdateProcedure,
   list_procedures:  handleListProcedures,
   export_procedure: handleExportProcedure,
@@ -434,26 +410,24 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   record_review_input:        handleRecordReviewInput,
   record_review_output:       handleRecordReviewOutput,
   complete_management_review: handleCompleteManagementReview,
-  get_management_review:      handleGetManagementReview,
   list_management_reviews:    handleListManagementReviews,
 
   // ── Group 13: Improvement Plan (Clause 10.1) ──────────────────
   create_improvement_opportunity: handleCreateImprovementOpportunity,
   update_improvement_opportunity: handleUpdateImprovementOpportunity,
-  get_improvement_opportunity:    handleGetImprovementOpportunity,
   list_improvement_opportunities: handleListImprovementOpportunities,
 
   // ── Group 14: Evidence Templates ──────────────────────────────
   generate_evidence_document: handleGenerateEvidenceDocument,
-  get_evidence_document:      handleGetEvidenceDocument,
   list_evidence_documents:    handleListEvidenceDocuments,
 };
 
 // ── registerAllTools ──────────────────────────────────────────
 
 /**
- * Register all 63 ISO 27001 MCP tools with the server.
+ * Register all 50 ISO 27001 MCP tools with the server.
  * Each tool callback runs the full security pipeline.
+ * Read-only lookup tools have been retired to MCP Resources (iso27001:// URIs).
  */
 export function registerAllTools(server: McpServer): void {
   for (const [toolName, description] of Object.entries(TOOL_DESCRIPTIONS)) {

@@ -75,7 +75,27 @@ describe("handleCreatePolicy", () => {
     mockDb.prepare.mockReturnValue(mockStmt);
   });
 
-  it("creates a policy and returns a preview", () => {
+  it("returns HITL preview when confirmed is omitted", () => {
+    const result = handleCreatePolicy({
+      type: "information_security",
+      organisation_name: "Acme Ltd",
+      scope: "All IT systems",
+      owner: "CISO",
+      effective_date: "2025-01-01",
+      review_cycle_months: 12,
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.policy_type).toBe("information_security");
+    expect(data.diff).toContain("type");
+    // No INSERT should have been called
+    expect(mockStmt.run).not.toHaveBeenCalled();
+  });
+
+  it("creates a policy and returns content_preview when confirmed=true", () => {
     mockStmt.run.mockReturnValue({ changes: 1 });
 
     const result = handleCreatePolicy({
@@ -85,6 +105,7 @@ describe("handleCreatePolicy", () => {
       owner: "CISO",
       effective_date: "2025-01-01",
       review_cycle_months: 12,
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
@@ -98,7 +119,7 @@ describe("handleCreatePolicy", () => {
     expect(typeof data.content_preview).toBe("string");
   });
 
-  it("calls readFileSync to load the template", () => {
+  it("calls readFileSync to load the template when confirmed=true", () => {
     mockStmt.run.mockReturnValue({ changes: 1 });
 
     handleCreatePolicy({
@@ -107,12 +128,13 @@ describe("handleCreatePolicy", () => {
       scope: "All IT systems",
       owner: "CISO",
       effective_date: "2025-01-01",
+      confirmed: true,
     });
 
     expect(readFileSync).toHaveBeenCalled();
   });
 
-  it("inserts the policy into the database via prepare().run()", () => {
+  it("inserts the policy into the database via prepare().run() when confirmed=true", () => {
     mockStmt.run.mockReturnValue({ changes: 1 });
 
     handleCreatePolicy({
@@ -121,6 +143,7 @@ describe("handleCreatePolicy", () => {
       scope: "All IT systems",
       owner: "CISO",
       effective_date: "2025-01-01",
+      confirmed: true,
     });
 
     // prepare is called twice: once by loadOrgProfileDefaults() and once for the INSERT
@@ -319,7 +342,7 @@ describe("handleCreatePolicy — template branch coverage", () => {
     mockDb.prepare.mockReturnValue(mockStmt);
   });
 
-  it("returns empty clause/control mappings when template has no frontmatter", () => {
+  it("returns empty clause/control mappings when template has no frontmatter (confirmed=true)", () => {
     vi.mocked(readFileSync).mockReturnValueOnce(
       "# {{organisation_name}} Policy\n\nScope: {{scope}}\nOwner: {{owner}}\n",
     );
@@ -331,6 +354,7 @@ describe("handleCreatePolicy — template branch coverage", () => {
       scope: "All IT systems",
       owner: "CISO",
       effective_date: "2025-01-01",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);
@@ -339,7 +363,7 @@ describe("handleCreatePolicy — template branch coverage", () => {
     expect(data.control_mappings).toHaveLength(0);
   });
 
-  it("returns empty mappings when frontmatter has no clause/control_mappings keys", () => {
+  it("returns empty mappings when frontmatter has no clause/control_mappings keys (confirmed=true)", () => {
     // Frontmatter is present but doesn't define the expected keys →
     // clauseMatch and controlMatch will both be null (covers if(clauseMatch)=false branch)
     vi.mocked(readFileSync).mockReturnValueOnce(
@@ -353,6 +377,7 @@ describe("handleCreatePolicy — template branch coverage", () => {
       scope: "All IT systems",
       owner: "CISO",
       effective_date: "2025-01-01",
+      confirmed: true,
     });
 
     expect(result.isError).toBe(false);

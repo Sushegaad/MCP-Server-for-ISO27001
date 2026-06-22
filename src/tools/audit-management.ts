@@ -10,6 +10,7 @@ import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { markdownToHtml, renderHtmlDocument } from "./template-utils.js";
+import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -89,10 +90,31 @@ export function handleCreateAudit(args: Record<string, unknown>): ToolResult {
   const {
     name, scope, auditor, planned_date,
     controls_in_scope, clauses_in_scope,
+    confirmed = false,
   } = args as {
     name: string; scope: string; auditor: string; planned_date: string;
     controls_in_scope?: string[]; clauses_in_scope?: string[];
+    confirmed?: boolean;
   };
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [
+      { field: "name",              old: null, new: name },
+      { field: "scope",             old: null, new: scope },
+      { field: "auditor",           old: null, new: auditor },
+      { field: "planned_date",      old: null, new: planned_date },
+      { field: "status",            old: null, new: "planned" },
+      { field: "controls_in_scope", old: null, new: controls_in_scope ?? [] },
+      { field: "clauses_in_scope",  old: null, new: clauses_in_scope ?? [] },
+    ];
+    return ok({
+      hitl_proposed: true,
+      status:        "preview",
+      message:       "⏸ No data written. Pass \"confirmed\": true to create this audit.",
+      diff:          buildDiffTable(rows),
+    });
+  }
 
   const id = newId();
   const ts = now();
@@ -118,9 +140,11 @@ export function handleRecordFinding(args: Record<string, unknown>): ToolResult {
   const {
     audit_id, type, clause_or_control, description,
     objective_evidence, severity,
+    confirmed = false,
   } = args as {
     audit_id: string; type: string; clause_or_control: string;
     description: string; objective_evidence: string; severity?: string;
+    confirmed?: boolean;
   };
 
   requireAudit(audit_id);
@@ -130,6 +154,24 @@ export function handleRecordFinding(args: Record<string, unknown>): ToolResult {
       "severity",
       "severity is required for NC findings (major or minor).",
     );
+  }
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [
+      { field: "audit_id",           old: null, new: audit_id },
+      { field: "type",               old: null, new: type },
+      { field: "clause_or_control",  old: null, new: clause_or_control },
+      { field: "severity",           old: null, new: severity ?? "—" },
+      { field: "description",        old: null, new: description },
+      { field: "objective_evidence", old: null, new: objective_evidence },
+    ];
+    return ok({
+      hitl_proposed: true,
+      status:        "preview",
+      message:       "⏸ No data written. Pass \"confirmed\": true to record this finding.",
+      diff:          buildDiffTable(rows),
+    });
   }
 
   const id = newId();
@@ -154,12 +196,32 @@ export function handleRecordFinding(args: Record<string, unknown>): ToolResult {
 export function handleCreateCorrectiveAction(args: Record<string, unknown>): ToolResult {
   const {
     finding_id, description, owner, due_date, root_cause,
+    confirmed = false,
   } = args as {
     finding_id: string; description: string; owner: string;
     due_date: string; root_cause?: string;
+    confirmed?: boolean;
   };
 
   requireFinding(finding_id);
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [
+      { field: "finding_id",   old: null, new: finding_id },
+      { field: "description",  old: null, new: description },
+      { field: "owner",        old: null, new: owner },
+      { field: "due_date",     old: null, new: due_date },
+      { field: "status",       old: null, new: "open" },
+      { field: "root_cause",   old: null, new: root_cause ?? "—" },
+    ];
+    return ok({
+      hitl_proposed: true,
+      status:        "preview",
+      message:       "⏸ No data written. Pass \"confirmed\": true to create this corrective action.",
+      diff:          buildDiffTable(rows),
+    });
+  }
 
   const id = newId();
   const ts = now();

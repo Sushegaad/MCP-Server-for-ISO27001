@@ -82,11 +82,7 @@ describe("handleRegisterEvidence", () => {
     mockDb.prepare.mockReturnValue(mockStmt);
   });
 
-  it("registers evidence and returns row with computed status", () => {
-    const insertStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
-    const selectStmt = { run: vi.fn(), get: vi.fn(() => EVIDENCE_ROW), all: vi.fn(() => []) };
-    mockDb.prepare.mockReturnValueOnce(insertStmt).mockReturnValueOnce(selectStmt);
-
+  it("returns HITL preview when confirmed is omitted", () => {
     const result = handleRegisterEvidence({
       control_id: "5.1",
       type: "policy",
@@ -99,6 +95,31 @@ describe("handleRegisterEvidence", () => {
 
     expect(result.isError).toBe(false);
     const data = parseResult(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.diff).toContain("control_id");
+    // No DB calls at all when previewing
+    expect(mockDb.prepare).not.toHaveBeenCalled();
+  });
+
+  it("registers evidence and returns row with computed status when confirmed=true", () => {
+    const insertStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
+    const selectStmt = { run: vi.fn(), get: vi.fn(() => EVIDENCE_ROW), all: vi.fn(() => []) };
+    mockDb.prepare.mockReturnValueOnce(insertStmt).mockReturnValueOnce(selectStmt);
+
+    const result = handleRegisterEvidence({
+      control_id: "5.1",
+      type: "policy",
+      description: "Information Security Policy document",
+      collected_by: "auditor@example.com",
+      collected_date: "2025-01-01",
+      expiry_date: "2026-01-01",
+      source_url: "https://example.com/policy.pdf",
+      confirmed: true,
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
     expect(data.id).toBe("ev-1");
     expect(data.control_id).toBe("5.1");
     expect(typeof data.status).toBe("string");
@@ -106,7 +127,7 @@ describe("handleRegisterEvidence", () => {
     expect(["current", "stale", "expired"]).toContain(data.status);
   });
 
-  it("returns 'expired' status when expiry_date is in the past", () => {
+  it("returns 'expired' status when expiry_date is in the past (confirmed=true)", () => {
     const expiredRow = { ...EVIDENCE_ROW, expiry_date: "2020-01-01" };
     const insertStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
     const selectStmt = { run: vi.fn(), get: vi.fn(() => expiredRow), all: vi.fn(() => []) };
@@ -119,13 +140,14 @@ describe("handleRegisterEvidence", () => {
       collected_by: "auditor",
       collected_date: "2020-01-01",
       expiry_date: "2020-01-01",
+      confirmed: true,
     });
 
     const data = parseResult(result);
     expect(data.status).toBe("expired");
   });
 
-  it("returns 'current' status when no expiry_date is set", () => {
+  it("returns 'current' status when no expiry_date is set (confirmed=true)", () => {
     const noExpiryRow = { ...EVIDENCE_ROW, expiry_date: null };
     const insertStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
     const selectStmt = { run: vi.fn(), get: vi.fn(() => noExpiryRow), all: vi.fn(() => []) };
@@ -137,6 +159,7 @@ describe("handleRegisterEvidence", () => {
       description: "Policy no expiry",
       collected_by: "auditor",
       collected_date: "2025-01-01",
+      confirmed: true,
     });
 
     const data = parseResult(result);

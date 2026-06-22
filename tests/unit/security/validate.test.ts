@@ -11,12 +11,12 @@ import { McpError } from "../../../src/types/errors.js";
 
 describe("validateToolInput", () => {
   it("returns parsed and defaulted input on success", () => {
-    // get_control schema: { control_id: string, version?: "2022"|"2013" }
-    const result = validateToolInput<{ control_id: string; version: string }>(
-      "get_control",
-      { control_id: "5.1", version: "2022" },
+    // search_controls schema: { query: string, version?: "2022"|"2013", limit?: number, offset?: number }
+    const result = validateToolInput<{ query: string; version: string }>(
+      "search_controls",
+      { query: "patch management", version: "2022" },
     );
-    expect(result.control_id).toBe("5.1");
+    expect(result.query).toBe("patch management");
     expect(result.version).toBe("2022");
   });
 
@@ -42,13 +42,13 @@ describe("validateToolInput", () => {
   });
 
   it("throws McpError VALIDATION_ERROR when required fields are missing", () => {
-    // get_control requires control_id
+    // search_controls requires query (freeText min length 1)
     expect(() =>
-      validateToolInput("get_control", {}),
+      validateToolInput("search_controls", {}),
     ).toThrow(McpError);
 
     try {
-      validateToolInput("get_control", {});
+      validateToolInput("search_controls", {});
     } catch (err) {
       expect((err as McpError).error_code).toBe("VALIDATION_ERROR");
     }

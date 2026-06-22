@@ -369,4 +369,194 @@ export function registerAssessmentResources(server: McpServer): void {
       };
     },
   );
+
+  // ── iso27001://assessment/{assessment_id}/summary ─────────────
+  server.resource(
+    "iso27001-assessment-summary",
+    new ResourceTemplate("iso27001://assessment/{assessment_id}/summary", { list: undefined }),
+    {
+      description:
+        "Compliance summary for a gap assessment: total controls, counts by status " +
+        "(implemented/partial/not_implemented/not_applicable/not_started), and compliance_percent. " +
+        "Pass assessment_id from iso27001://assessment/{assessment_id}.",
+      mimeType: "application/json",
+    },
+    (uri, variables, extra): ReadResourceResult => {
+      assertResourceAuth(extra);
+
+      const { assessment_id } = variables as { assessment_id: string };
+      const db = getDb();
+
+      const assessment = db
+        .prepare("SELECT * FROM gap_assessments WHERE id = ?")
+        .get(assessment_id) as AssessmentRow | undefined;
+
+      if (!assessment) {
+        throw new Error(
+          `Gap assessment not found: '${assessment_id}'. ` +
+          "Use list_gap_assessments to find valid IDs.",
+        );
+      }
+
+      const version         = assessment.isms_version;
+      const excludedIds     = fromJsonArray<string>(assessment.exclude_controls);
+      const themesInScope   = fromJsonArray<string>(assessment.themes_in_scope);
+
+      let controlQuery = "SELECT control_id FROM controls WHERE version = ?";
+      const controlParams: unknown[] = [version];
+      if (themesInScope.length > 0) {
+        controlQuery += ` AND theme IN (${themesInScope.map(() => "?").join(",")})`;
+        controlParams.push(...themesInScope);
+      }
+      const allControls = db.prepare(controlQuery).all(...controlParams) as { control_id: string }[];
+      const inScopeControls = excludedIds.length > 0
+        ? allControls.filter((c) => !excludedIds.includes(c.control_id))
+        : allControls;
+
+      const statuses = db.prepare(
+        "SELECT control_id, status FROM control_statuses WHERE assessment_id = ?",
+      ).all(assessment_id) as { control_id: string; status: string }[];
+      const statusMap = new Map(statuses.map((s) => [s.control_id, s.status]));
+
+      const totalControls  = inScopeControls.length;
+      const implemented    = inScopeControls.filter((c) => statusMap.get(c.control_id) === "implemented").length;
+      const partial        = inScopeControls.filter((c) => statusMap.get(c.control_id) === "partial").length;
+      const notImplemented = inScopeControls.filter((c) => statusMap.get(c.control_id) === "not_implemented").length;
+      const na             = inScopeControls.filter((c) => statusMap.get(c.control_id) === "na").length;
+      const notStarted     = inScopeControls.filter(
+        (c) => !statusMap.has(c.control_id) || statusMap.get(c.control_id) === "not_started",
+      ).length;
+      const compliancePercent = totalControls > 0
+        ? Math.round(((implemented + na) / totalControls) * 100)
+        : 0;
+
+      const summary = {
+        assessment_id,
+        assessment_name:    assessment.name,
+        isms_version:       version,
+        total_controls:     totalControls,
+        implemented,
+        partial,
+        not_implemented:    notImplemented,
+        not_applicable:     na,
+        not_started:        notStarted,
+        compliance_percent: compliancePercent,
+      };
+
+      return {
+        contents: [{
+          uri:      uri.toString(),
+          mimeType: "application/json",
+          text:     JSON.stringify(summary, null, 2),
+        }],
+      };
+    },
+  );
+
+  // ── iso27001://assessment/{assessment_id}/evidence-gaps ────────
+  server.resource(
+    "iso27001-assessment-evidence-gaps",
+    new ResourceTemplate("iso27001://assessment/{assessment_id}/evidence-gaps", { list: undefined }),
+    {
+      description:
+        "Controls within a gap assessment that are marked implemented or partial but have no " +
+        "current (non-expired) evidence records. Returns total_gaps and an array of gap objects " +
+        "with control_id, name, theme, current_status, and suggested_evidence_types.",
+      mimeType: "application/json",
+    },
+    (uri, variables, extra): ReadResourceResult => {
+      assertResourceAuth(extra);
+
+      const { assessment_id } = variables as { assessment_id: string };
+      const db = getDb();
+
+      const assessment = db
+        .prepare("SELECT id FROM gap_assessments WHERE id = ?")
+        .get(assessment_id) as { id: string } | undefined;
+
+      if (!assessment) {
+        throw new Error(
+          `Gap assessment not found: '${assessment_id}'. ` +
+          "Use list_gap_assessments to find valid IDs.",
+        );
+      }
+
+      // Controls that need evidence (implemented or partial)
+      const controlStatuses = db.prepare(`
+        SELECT cs.control_id, cs.status
+        FROM control_statuses cs
+        WHERE cs.assessment_id = ? AND cs.status IN ('implemented', 'partial')
+      `).all(assessment_id) as { control_id: string; status: string }[];
+
+      if (controlStatuses.length === 0) {
+        return {
+          contents: [{
+            uri:      uri.toString(),
+            mimeType: "application/json",
+            text:     JSON.stringify({ assessment_id, total_gaps: 0, gaps: [] }, null, 2),
+          }],
+        };
+      }
+
+      const controlIds   = controlStatuses.map((c) => c.control_id);
+      const placeholders = controlIds.map(() => "?").join(",");
+
+      const evidencedControls = db.prepare(`
+        SELECT DISTINCT control_id
+        FROM evidence
+        WHERE control_id IN (${placeholders})
+          AND (expiry_date IS NULL OR expiry_date > date('now'))
+      `).all(...controlIds) as { control_id: string }[];
+
+      const evidencedSet  = new Set(evidencedControls.map((e) => e.control_id));
+      const gapControlIds = controlIds.filter((cid) => !evidencedSet.has(cid));
+
+      if (gapControlIds.length === 0) {
+        return {
+          contents: [{
+            uri:      uri.toString(),
+            mimeType: "application/json",
+            text:     JSON.stringify({ assessment_id, total_gaps: 0, gaps: [] }, null, 2),
+          }],
+        };
+      }
+
+      const gapPlaceholders = gapControlIds.map(() => "?").join(",");
+      const controlDetails  = db.prepare(`
+        SELECT control_id, name, theme FROM controls WHERE control_id IN (${gapPlaceholders})
+      `).all(...gapControlIds) as { control_id: string; name: string; theme: string }[];
+
+      const detailMap = new Map(controlDetails.map((c) => [c.control_id, c]));
+
+      function suggestedTypes(theme: string): string[] {
+        switch (theme) {
+          case "Organizational": return ["policy", "procedure", "meeting_minutes"];
+          case "People":         return ["training_record", "contract"];
+          case "Physical":       return ["configuration", "screenshot", "log"];
+          case "Technological":  return ["log", "configuration", "screenshot", "test_result"];
+          default:               return ["policy", "procedure"];
+        }
+      }
+
+      const gaps = gapControlIds.map((cid) => {
+        const detail = detailMap.get(cid);
+        const theme  = detail?.theme ?? "";
+        return {
+          control_id:               cid,
+          name:                     detail?.name ?? cid,
+          theme,
+          current_status:           controlStatuses.find((cs) => cs.control_id === cid)?.status ?? "unknown",
+          suggested_evidence_types: suggestedTypes(theme),
+        };
+      });
+
+      return {
+        contents: [{
+          uri:      uri.toString(),
+          mimeType: "application/json",
+          text:     JSON.stringify({ assessment_id, total_gaps: gaps.length, gaps }, null, 2),
+        }],
+      };
+    },
+  );
 }

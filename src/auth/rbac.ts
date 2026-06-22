@@ -1,8 +1,9 @@
 /**
  * iso27001-mcp — Role-Based Access Control
  *
- * Permission matrix covering all 63 tools × 3 roles.
+ * Permission matrix covering all 50 tools × 3 roles.
  * Roles are hierarchical: admin ⊇ analyst ⊇ viewer.
+ * 13 read-only tools have been retired to MCP Resources (iso27001:// URIs).
  *
  * checkPermission(role, toolName) — returns true if allowed
  * minimumRole(toolName)           — returns the minimum role needed
@@ -26,40 +27,39 @@ const ROLE_LEVEL: Record<Role, number> = {
 const TOOL_MIN_ROLE: Record<string, Role> = {
 
   // ── Group 1: Control Registry ────────────────────────────
-  // All read-only; viewer can call all 7
-  get_control:               "viewer",
+  // get_control → retired to iso27001://control/{control_id}
+  // get_clause_requirement → retired to iso27001://clause/{clause_id}
   list_controls:             "viewer",
   search_controls:           "viewer",
   get_control_attributes:    "viewer",
   compare_versions:          "viewer",
-  get_clause_requirement:    "viewer",
   list_clause_requirements:  "viewer",
 
   // ── Group 2: Gap Analysis ────────────────────────────────
+  // get_gap_summary → retired to iso27001://assessment/{id}/summary
   // Reads: viewer; writes: analyst; archive: analyst
   create_gap_assessment:       "analyst",
   update_control_status:       "analyst",
-  get_gap_summary:             "viewer",
   list_gap_assessments:        "viewer",
   export_gap_report:           "viewer",
   generate_remediation_roadmap:"viewer",
   archive_gap_assessment:      "analyst",
 
   // ── Group 3: Risk Management ─────────────────────────────
+  // get_risk → retired to iso27001://risk/{risk_id}
+  // get_risk_summary → retired to iso27001://risks/summary
   // Reads: viewer; writes: analyst
   create_risk:            "analyst",
-  get_risk:               "viewer",
   update_risk:            "analyst",
   list_risks:             "viewer",
-  get_risk_summary:       "viewer",
   create_treatment_plan:  "analyst",
   update_treatment_status:"analyst",
   generate_risk_register: "viewer",
 
   // ── Group 4: Policy Management ───────────────────────────
+  // get_policy → retired to iso27001://policy/{policy_id}
   // Read: viewer; create: analyst; update (versioned): admin
   create_policy: "analyst",
-  get_policy:    "viewer",
   update_policy: "admin",
   list_policies: "viewer",
 
@@ -78,15 +78,14 @@ const TOOL_MIN_ROLE: Record<string, Role> = {
   generate_audit_report:     "viewer",
 
   // ── Group 7: Evidence Tracking ───────────────────────────
+  // get_evidence_gaps → retired to iso27001://assessment/{id}/evidence-gaps
   // Read: viewer; register + link: analyst
   register_evidence:  "analyst",
   list_evidence:      "viewer",
-  get_evidence_gaps:  "viewer",
   link_jira_ticket:   "analyst",
   link_github_issue:  "analyst",
 
-  // ── Group 8: Server Info ─────────────────────────────────
-  get_server_info: "viewer",
+  // ── Group 8: Server Info → retired to iso27001://server/info ─
 
   // ── Group 9: Admin & Key Management ─────────────────────
   query_audit_log: "admin",
@@ -94,36 +93,36 @@ const TOOL_MIN_ROLE: Record<string, Role> = {
   revoke_api_key:  "admin",
 
   // ── Group 10: Organization Profile ──────────────────────
+  // get_organization_profile → retired to iso27001://org/profile
   set_organization_profile: "admin",
-  get_organization_profile: "viewer",
 
   // ── Group 11: Procedure Management ──────────────────────
+  // get_procedure → retired to iso27001://procedure/{procedure_id}
   create_procedure: "analyst",
-  get_procedure:    "viewer",
   update_procedure: "admin",
   list_procedures:  "viewer",
   export_procedure: "analyst",
 
   // ── Group 12: Management Review (Clause 9.3) ─────────────
+  // get_management_review → retired to iso27001://management-review/{review_id}
   // Schedule/record: admin; read: viewer
   create_management_review:   "admin",
   record_review_input:        "admin",
   record_review_output:       "admin",
   complete_management_review: "admin",
-  get_management_review:      "viewer",
   list_management_reviews:    "viewer",
 
   // ── Group 13: Improvement Plan (Clause 10.1) ─────────────
+  // get_improvement_opportunity → retired to iso27001://improvement-plan/{opportunity_id}
   // Create/update: analyst; read: viewer
   create_improvement_opportunity: "analyst",
   update_improvement_opportunity: "analyst",
-  get_improvement_opportunity:    "viewer",
   list_improvement_opportunities: "viewer",
 
   // ── Group 14: Evidence Templates ──────────────────────────
+  // get_evidence_document → retired to iso27001://evidence-document/{document_id}
   // Generate (writes two tables): analyst; read: viewer
   generate_evidence_document: "analyst",
-  get_evidence_document:      "viewer",
   list_evidence_documents:    "viewer",
 };
 
@@ -167,5 +166,5 @@ export function toolsForRole(role: Role): string[] {
     .sort();
 }
 
-/** Total registered tool count — must equal 63. */
+/** Total registered tool count — must equal 50 (13 read-only tools retired to MCP Resources). */
 export const TOTAL_TOOLS = Object.keys(TOOL_MIN_ROLE).length;

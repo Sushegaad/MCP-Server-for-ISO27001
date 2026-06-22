@@ -10,6 +10,7 @@ import { newId, now, computeEvidenceStatus } from "../db/dal.js";
 import { notFound, integrationError } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { getEnv } from "../security/secrets.js";
+import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -85,11 +86,32 @@ export function handleRegisterEvidence(args: Record<string, unknown>): ToolResul
   const {
     control_id, type, description, source_url,
     collected_by, collected_date, expiry_date,
+    confirmed = false,
   } = args as {
     control_id: string; type: string; description: string;
     source_url?: string; collected_by: string;
     collected_date: string; expiry_date?: string;
+    confirmed?: boolean;
   };
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [
+      { field: "control_id",     old: null, new: control_id },
+      { field: "type",           old: null, new: type },
+      { field: "description",    old: null, new: description },
+      { field: "collected_by",   old: null, new: collected_by },
+      { field: "collected_date", old: null, new: collected_date },
+      { field: "expiry_date",    old: null, new: expiry_date ?? "—" },
+      { field: "source_url",     old: null, new: source_url ?? "—" },
+    ];
+    return ok({
+      hitl_proposed: true,
+      status:        "preview",
+      message:       "⏸ No data written. Pass \"confirmed\": true to register this evidence.",
+      diff:          buildDiffTable(rows),
+    });
+  }
 
   const id = newId();
   const ts = now();

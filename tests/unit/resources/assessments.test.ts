@@ -153,8 +153,8 @@ const CORRECTIVE_ACTION = {
 // ── Registration ──────────────────────────────────────────────
 
 describe("registerAssessmentResources", () => {
-  it("registers three resources", () => {
-    expect(captured).toHaveLength(3);
+  it("registers five resources", () => {
+    expect(captured).toHaveLength(5);
   });
 
   it("registers iso27001-assessment with list callback", () => {
@@ -167,6 +167,18 @@ describe("registerAssessmentResources", () => {
 
   it("registers iso27001-audit with list callback", () => {
     expect(getResource("iso27001-audit").listFn).toBeDefined();
+  });
+
+  it("registers iso27001-assessment-summary without list callback", () => {
+    const r = getResource("iso27001-assessment-summary");
+    expect(r).toBeDefined();
+    expect(r.listFn).toBeUndefined();
+  });
+
+  it("registers iso27001-assessment-evidence-gaps without list callback", () => {
+    const r = getResource("iso27001-assessment-evidence-gaps");
+    expect(r).toBeDefined();
+    expect(r.listFn).toBeUndefined();
   });
 });
 
@@ -368,5 +380,194 @@ describe("iso27001-audit read callback", () => {
       MOCK_EXTRA,
     );
     expect(mockAssertResourceAuth).toHaveBeenCalledWith(MOCK_EXTRA);
+  });
+});
+
+// ── iso27001-assessment-summary ───────────────────────────────
+
+describe("iso27001-assessment-summary read callback", () => {
+  it("returns summary with zero counts when no controls in scope", async () => {
+    stmts.assessments.get.mockReturnValue(ASSESSMENT_ROW);
+    stmts.assessments.all.mockReturnValue([]);  // controls query returns []
+    stmts.control_stats.all.mockReturnValue([]); // no statuses
+    const res = await getResource("iso27001-assessment-summary").readFn(
+      new URL("iso27001://assessment/ga-1/summary"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    ) as { contents: Array<{ mimeType: string; text: string }> };
+    expect(res.contents[0].mimeType).toBe("application/json");
+    const data = JSON.parse(res.contents[0].text);
+    expect(data.assessment_id).toBe("ga-1");
+    expect(data.assessment_name).toBe("2025 Gap Assessment");
+    expect(data.total_controls).toBe(0);
+    expect(data.compliance_percent).toBe(0);
+  });
+
+  it("calls assertResourceAuth", async () => {
+    stmts.assessments.get.mockReturnValue(ASSESSMENT_ROW);
+    stmts.assessments.all.mockReturnValue([]);
+    stmts.control_stats.all.mockReturnValue([]);
+    await getResource("iso27001-assessment-summary").readFn(
+      new URL("iso27001://assessment/ga-1/summary"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    );
+    expect(mockAssertResourceAuth).toHaveBeenCalledWith(MOCK_EXTRA);
+  });
+
+  it("throws when assessment not found", async () => {
+    stmts.assessments.get.mockReturnValue(undefined);
+    expect(() =>
+      getResource("iso27001-assessment-summary").readFn(
+        new URL("iso27001://assessment/missing/summary"),
+        { assessment_id: "missing" },
+        MOCK_EXTRA,
+      )
+    ).toThrow("Gap assessment not found");
+  });
+
+  it("computes compliance percent with controls in scope (excludes filtered controls)", async () => {
+    // Assessment excludes 5.7 — controls query returns 5.1 + 5.7, filter removes 5.7
+    stmts.assessments.get.mockReturnValue(ASSESSMENT_ROW); // exclude_controls: '["5.7"]'
+    stmts.assessments.all.mockReturnValue([
+      { control_id: "5.1" },
+      { control_id: "5.7" },
+    ]);
+    stmts.control_stats.all.mockReturnValue([
+      { control_id: "5.1", status: "implemented" },
+    ]);
+    const res = await getResource("iso27001-assessment-summary").readFn(
+      new URL("iso27001://assessment/ga-1/summary"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    ) as { contents: Array<{ text: string }> };
+    const data = JSON.parse(res.contents[0].text);
+    expect(data.total_controls).toBe(1);   // 5.7 excluded
+    expect(data.implemented).toBe(1);
+    expect(data.compliance_percent).toBe(100);
+  });
+
+  it("applies theme filter when themes_in_scope is populated", async () => {
+    const themeScopedAssessment = {
+      ...ASSESSMENT_ROW,
+      themes_in_scope: '["Organizational"]',
+      exclude_controls: null,
+    };
+    stmts.assessments.get.mockReturnValue(themeScopedAssessment);
+    stmts.assessments.all.mockReturnValue([{ control_id: "5.1" }]);
+    stmts.control_stats.all.mockReturnValue([
+      { control_id: "5.1", status: "not_started" },
+    ]);
+    const res = await getResource("iso27001-assessment-summary").readFn(
+      new URL("iso27001://assessment/ga-1/summary"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    ) as { contents: Array<{ text: string }> };
+    const data = JSON.parse(res.contents[0].text);
+    expect(data.total_controls).toBe(1);
+    expect(data.not_started).toBe(1);
+    expect(data.compliance_percent).toBe(0);
+  });
+});
+
+// ── iso27001-assessment-evidence-gaps ─────────────────────────
+
+describe("iso27001-assessment-evidence-gaps read callback", () => {
+  it("returns empty gaps when no implemented/partial controls", async () => {
+    stmts.assessments.get.mockReturnValue({ id: "ga-1" });
+    stmts.control_stats.all.mockReturnValue([]); // no implemented/partial statuses
+    const res = await getResource("iso27001-assessment-evidence-gaps").readFn(
+      new URL("iso27001://assessment/ga-1/evidence-gaps"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    ) as { contents: Array<{ mimeType: string; text: string }> };
+    expect(res.contents[0].mimeType).toBe("application/json");
+    const data = JSON.parse(res.contents[0].text);
+    expect(data.assessment_id).toBe("ga-1");
+    expect(data.total_gaps).toBe(0);
+    expect(data.gaps).toEqual([]);
+  });
+
+  it("calls assertResourceAuth", async () => {
+    stmts.assessments.get.mockReturnValue({ id: "ga-1" });
+    stmts.control_stats.all.mockReturnValue([]);
+    await getResource("iso27001-assessment-evidence-gaps").readFn(
+      new URL("iso27001://assessment/ga-1/evidence-gaps"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    );
+    expect(mockAssertResourceAuth).toHaveBeenCalledWith(MOCK_EXTRA);
+  });
+
+  it("throws when assessment not found", async () => {
+    stmts.assessments.get.mockReturnValue(undefined);
+    expect(() =>
+      getResource("iso27001-assessment-evidence-gaps").readFn(
+        new URL("iso27001://assessment/missing/evidence-gaps"),
+        { assessment_id: "missing" },
+        MOCK_EXTRA,
+      )
+    ).toThrow("Gap assessment not found");
+  });
+
+  it("returns gaps for implemented controls that lack evidence", async () => {
+    stmts.assessments.get.mockReturnValue({ id: "ga-1" });
+    stmts.control_stats.all.mockReturnValue([
+      { control_id: "8.8", status: "implemented" },
+    ]);
+    // First all() = evidence query: no evidence → 8.8 is a gap
+    // Second all() = control details for gap controls
+    stmts.assessments.all
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce([
+        { control_id: "8.8", name: "Vulnerability management", theme: "Technological" },
+      ]);
+    const res = await getResource("iso27001-assessment-evidence-gaps").readFn(
+      new URL("iso27001://assessment/ga-1/evidence-gaps"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    ) as { contents: Array<{ text: string }> };
+    const data = JSON.parse(res.contents[0].text);
+    expect(data.total_gaps).toBe(1);
+    expect(data.gaps[0].control_id).toBe("8.8");
+    expect(data.gaps[0].current_status).toBe("implemented");
+    expect(data.gaps[0].suggested_evidence_types).toContain("log");
+  });
+
+  it("returns zero gaps when all controls have current evidence", async () => {
+    stmts.assessments.get.mockReturnValue({ id: "ga-1" });
+    stmts.control_stats.all.mockReturnValue([
+      { control_id: "8.8", status: "partial" },
+    ]);
+    // Evidence query returns 8.8 → no gaps remain
+    stmts.assessments.all.mockReturnValue([{ control_id: "8.8" }]);
+    const res = await getResource("iso27001-assessment-evidence-gaps").readFn(
+      new URL("iso27001://assessment/ga-1/evidence-gaps"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    ) as { contents: Array<{ text: string }> };
+    const data = JSON.parse(res.contents[0].text);
+    expect(data.total_gaps).toBe(0);
+    expect(data.gaps).toEqual([]);
+  });
+
+  it("suggests Organizational evidence types for Organizational theme", async () => {
+    stmts.assessments.get.mockReturnValue({ id: "ga-1" });
+    stmts.control_stats.all.mockReturnValue([
+      { control_id: "5.1", status: "partial" },
+    ]);
+    stmts.assessments.all
+      .mockReturnValueOnce([])
+      .mockReturnValueOnce([
+        { control_id: "5.1", name: "Policies for information security", theme: "Organizational" },
+      ]);
+    const res = await getResource("iso27001-assessment-evidence-gaps").readFn(
+      new URL("iso27001://assessment/ga-1/evidence-gaps"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    ) as { contents: Array<{ text: string }> };
+    const data = JSON.parse(res.contents[0].text);
+    expect(data.gaps[0].suggested_evidence_types).toContain("policy");
+    expect(data.gaps[0].suggested_evidence_types).toContain("procedure");
   });
 });

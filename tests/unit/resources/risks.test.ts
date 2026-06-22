@@ -101,8 +101,14 @@ const TREATMENT_ROW = {
 // ── Registration ──────────────────────────────────────────────
 
 describe("registerRiskResources", () => {
-  it("registers one resource", () => {
-    expect(captured).toHaveLength(1);
+  it("registers two resources", () => {
+    expect(captured).toHaveLength(2);
+  });
+
+  it("registers iso27001-risks-summary without a list callback", () => {
+    const r = getResource("iso27001-risks-summary");
+    expect(r).toBeDefined();
+    expect(r.listFn).toBeUndefined();
   });
 
   it("registers iso27001-risk with a list callback", () => {
@@ -212,5 +218,44 @@ describe("iso27001-risk read callback", () => {
         MOCK_EXTRA,
       )
     ).toThrow("Risk not found");
+  });
+});
+
+// ── iso27001-risks-summary ────────────────────────────────────
+// The static resource callback signature is (_uri: URL, extra) — 2 params.
+// When stored as readFn(uri, vars, extra), vars becomes the `extra` argument.
+// So pass MOCK_EXTRA as the 2nd argument to trigger assertResourceAuth correctly.
+
+describe("iso27001-risks-summary read callback", () => {
+  it("returns aggregate risk statistics with zero values when DB is empty", async () => {
+    mockStmtRisk.get.mockReturnValue({ n: 0 });
+    mockStmtTreatments.get.mockReturnValue({ n: 0 });
+    mockStmtRisk.all.mockReturnValue([]);
+    mockStmtTreatments.all.mockReturnValue([]);
+    const res = await getResource("iso27001-risks-summary").readFn(
+      new URL("iso27001://risks/summary"),
+      // 2nd arg becomes `extra` in the 2-param static callback
+      MOCK_EXTRA as unknown as Record<string, string>,
+      {},
+    ) as { contents: Array<{ mimeType: string; text: string }> };
+    expect(res.contents[0].mimeType).toBe("application/json");
+    const data = JSON.parse(res.contents[0].text);
+    expect(data.total_risks).toBe(0);
+    expect(data.open_treatments).toBe(0);
+    expect(Array.isArray(data.by_level)).toBe(true);
+    expect(Array.isArray(data.top_10_by_score)).toBe(true);
+    expect(data.heatmap_5x5).toBeDefined();
+    expect(data.heatmap_5x5.matrix).toHaveLength(5);
+  });
+
+  it("calls assertResourceAuth", async () => {
+    mockStmtRisk.get.mockReturnValue({ n: 0 });
+    mockStmtTreatments.get.mockReturnValue({ n: 0 });
+    await getResource("iso27001-risks-summary").readFn(
+      new URL("iso27001://risks/summary"),
+      MOCK_EXTRA as unknown as Record<string, string>,
+      {},
+    );
+    expect(mockAssertResourceAuth).toHaveBeenCalledWith(MOCK_EXTRA);
   });
 });

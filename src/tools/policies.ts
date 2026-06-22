@@ -58,10 +58,12 @@ export function handleCreatePolicy(args: Record<string, unknown>): ToolResult {
   const {
     type, organisation_name, scope, owner, approver,
     review_cycle_months = 12, effective_date,
+    confirmed = false,
   } = args as {
     type: string; organisation_name?: string; scope?: string;
     owner: string; approver?: string;
     review_cycle_months?: number; effective_date: string;
+    confirmed?: boolean;
   };
 
   // Auto-inject org profile defaults when caller omits organisation_name / scope
@@ -77,8 +79,30 @@ export function handleCreatePolicy(args: Record<string, unknown>): ToolResult {
     );
   }
 
-  const id             = newId();
   const next_review    = addMonths(new Date(effective_date), review_cycle_months);
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [
+      { field: "type",              old: null, new: type },
+      { field: "organisation_name", old: null, new: resolvedOrgName },
+      { field: "owner",             old: null, new: owner },
+      { field: "approver",          old: null, new: approver ?? "TBD" },
+      { field: "status",            old: null, new: "draft" },
+      { field: "version",           old: null, new: 1 },
+      { field: "effective_date",    old: null, new: effective_date },
+      { field: "next_review_date",  old: null, new: next_review },
+    ];
+    return ok({
+      hitl_proposed: true,
+      status:        "preview",
+      policy_type:   type,
+      message:       "⏸ No data written. Pass \"confirmed\": true to generate and save this policy.",
+      diff:          buildDiffTable(rows),
+    });
+  }
+
+  const id             = newId();
   const ts             = now();
 
   // Load and render Mustache template

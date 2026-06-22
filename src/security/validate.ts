@@ -111,11 +111,8 @@ const normCybersecConcept = normEnum(["Identify", "Protect", "Detect", "Respond"
 const normControlType     = normEnum(["Preventive", "Detective", "Corrective"] as const);
 
 // ── Group 1: Control Registry ────────────────────────────────
-
-export const GetControlSchema = z.object({
-  control_id: z.string().min(1).max(20),
-  version:    versionEnum.optional(),
-});
+// GetControlSchema retired — use resource iso27001://control/{control_id}
+// GetClauseRequirementSchema retired — use resource iso27001://clause/{clause_id}
 
 export const ListControlsSchema = z.object({
   version:              versionEnum.optional(),
@@ -147,11 +144,6 @@ export const CompareVersionsSchema = z.object({
   { message: "At least one of v2013_id or v2022_id must be provided" },
 );
 
-export const GetClauseRequirementSchema = z.object({
-  clause_id:           z.string().min(1).max(10),
-  include_sub_clauses: coerceBool.optional().default(false),
-});
-
 export const ListClauseRequirementsSchema = z.object({
   parent_id: z.string().max(10).optional(),
 });
@@ -178,10 +170,7 @@ export const UpdateControlStatusSchema = z.object({
   confirmed:       coerceBool.optional().default(false),
 });
 
-export const GetGapSummarySchema = z.object({
-  assessment_id: uuid,
-  breakdown_by:  z.enum(["theme", "control_type", "cybersecurity_concept"]).optional(),
-});
+// GetGapSummarySchema retired — use resource iso27001://assessment/{assessment_id}/summary
 
 export const ListGapAssessmentsSchema = z.object({
   filter: z.enum(["active", "archived", "all"]).optional().default("active"),
@@ -215,10 +204,7 @@ export const CreateRiskSchema = z.object({
   status:           riskStatusEnum.optional().default("open"),
 });
 
-export const GetRiskSchema = z.object({
-  risk_id:            uuid,
-  include_treatments: coerceBool.optional().default(false),
-});
+// GetRiskSchema retired — use resource iso27001://risk/{risk_id}
 
 export const UpdateRiskSchema = z.object({
   risk_id:          uuid,
@@ -241,7 +227,7 @@ export const ListRisksSchema = z.object({
   offset:      paginationOffset,
 });
 
-export const GetRiskSummarySchema = z.object({});
+// GetRiskSummarySchema retired — use resource iso27001://risks/summary
 
 export const CreateTreatmentPlanSchema = z.object({
   risk_id:             uuid,
@@ -280,12 +266,10 @@ export const CreatePolicySchema = z.object({
   approver:             shortText(200).optional(),
   review_cycle_months:  z.coerce.number().int().min(1).max(36).optional().default(12),
   effective_date:       date,
+  confirmed:            coerceBool.optional().default(false),
 });
 
-export const GetPolicySchema = z.object({
-  policy_id:        uuid,
-  include_versions: coerceBool.optional().default(false),
-});
+// GetPolicySchema retired — use resource iso27001://policy/{policy_id}
 
 export const UpdatePolicySchema = z.object({
   policy_id:      uuid,
@@ -337,6 +321,7 @@ export const CreateAuditSchema = z.object({
   planned_date:      date,
   controls_in_scope: z.array(z.string().max(20)).optional(),
   clauses_in_scope:  z.array(z.string().max(10)).optional(),
+  confirmed:         coerceBool.optional().default(false),
 });
 
 export const RecordFindingSchema = z.object({
@@ -346,6 +331,7 @@ export const RecordFindingSchema = z.object({
   description:        freeText(2000),
   objective_evidence: freeText(2000),
   severity:           findingSeverityEnum.optional(),
+  confirmed:          coerceBool.optional().default(false),
 });
 
 export const CreateCorrectiveActionSchema = z.object({
@@ -354,6 +340,7 @@ export const CreateCorrectiveActionSchema = z.object({
   owner:       shortText(200),
   due_date:    date,
   root_cause:  freeText(2000).optional(),
+  confirmed:   coerceBool.optional().default(false),
 });
 
 export const UpdateCorrectiveActionSchema = z.object({
@@ -382,6 +369,7 @@ export const RegisterEvidenceSchema = z.object({
   collected_by:   shortText(200),
   collected_date: date,
   expiry_date:    date.optional(),
+  confirmed:      coerceBool.optional().default(false),
 });
 
 export const ListEvidenceSchema = z.object({
@@ -389,9 +377,7 @@ export const ListEvidenceSchema = z.object({
   status:     z.enum(["current", "stale", "expired"]).optional(),
 });
 
-export const GetEvidenceGapsSchema = z.object({
-  assessment_id: uuid,
-});
+// GetEvidenceGapsSchema retired — use resource iso27001://assessment/{assessment_id}/evidence-gaps
 
 export const LinkJiraTicketSchema = z.object({
   evidence_id: uuid,
@@ -413,9 +399,7 @@ export const LinkGithubIssueSchema = z.object({
   { message: "Provide either issue_number (to link) or title (to create)" },
 );
 
-// ── Group 8: Server Info ─────────────────────────────────────
-
-export const GetServerInfoSchema = z.object({});
+// ── Group 8: Server Info retired to resource iso27001://server/info ──────────
 
 // ── Group 9: Admin & Key Management ─────────────────────────
 
@@ -460,7 +444,7 @@ export const SetOrganizationProfileSchema = z.object({
   certification_body: z.string().max(200).optional(),
 });
 
-export const GetOrganizationProfileSchema = z.object({});
+// GetOrganizationProfileSchema retired — use resource iso27001://org/profile
 
 // ── Group 11: Procedure Management ───────────────────────────
 
@@ -493,10 +477,7 @@ export const CreateProcedureSchema = z.object({
   effective_date:       date,
 });
 
-export const GetProcedureSchema = z.object({
-  procedure_id:     uuid,
-  include_versions: coerceBool.optional().default(false),
-});
+// GetProcedureSchema retired — use resource iso27001://procedure/{procedure_id}
 
 export const UpdateProcedureSchema = z.object({
   procedure_id:     uuid,
@@ -575,9 +556,7 @@ export const CompleteManagementReviewSchema = z.object({
   confirmed:    coerceBool.optional().default(false),
 });
 
-export const GetManagementReviewSchema = z.object({
-  review_id: uuid,
-});
+// GetManagementReviewSchema retired — use resource iso27001://management-review/{review_id}
 
 export const ListManagementReviewsSchema = z.object({
   status: reviewStatusEnum.optional(),
@@ -618,9 +597,7 @@ export const UpdateImprovementOpportunitySchema = z.object({
   description:    freeText(2000).optional(),
 });
 
-export const GetImprovementOpportunitySchema = z.object({
-  opportunity_id: uuid,
-});
+// GetImprovementOpportunitySchema retired — use resource iso27001://improvement-plan/{opportunity_id}
 
 export const ListImprovementOpportunitiesSchema = z.object({
   status:    improvementStatusEnum.optional(),
@@ -651,9 +628,7 @@ export const GenerateEvidenceDocumentSchema = z.object({
   vars:              z.record(z.string()).optional().default({}),
 });
 
-export const GetEvidenceDocumentSchema = z.object({
-  document_id: uuid,
-});
+// GetEvidenceDocumentSchema retired — use resource iso27001://evidence-document/{document_id}
 
 export const ListEvidenceDocumentsSchema = z.object({
   template_type: evidenceTemplateTypeEnum.optional(),
@@ -666,34 +641,28 @@ export const ListEvidenceDocumentsSchema = z.object({
 // ── Registry: tool name → schema ─────────────────────────────
 
 export const TOOL_SCHEMAS: Record<string, z.ZodTypeAny> = {
-  // Group 1
-  get_control:               GetControlSchema,
+  // Group 1 (get_control + get_clause_requirement → retired to resources)
   list_controls:             ListControlsSchema,
   search_controls:           SearchControlsSchema,
   get_control_attributes:    GetControlAttributesSchema,
   compare_versions:          CompareVersionsSchema,
-  get_clause_requirement:    GetClauseRequirementSchema,
   list_clause_requirements:  ListClauseRequirementsSchema,
-  // Group 2
+  // Group 2 (get_gap_summary → retired to resource)
   create_gap_assessment:        CreateGapAssessmentSchema,
   update_control_status:        UpdateControlStatusSchema,
-  get_gap_summary:              GetGapSummarySchema,
   list_gap_assessments:         ListGapAssessmentsSchema,
   export_gap_report:            ExportGapReportSchema,
   generate_remediation_roadmap: GenerateRemediationRoadmapSchema,
   archive_gap_assessment:       ArchiveGapAssessmentSchema,
-  // Group 3
+  // Group 3 (get_risk + get_risk_summary → retired to resources)
   create_risk:            CreateRiskSchema,
-  get_risk:               GetRiskSchema,
   update_risk:            UpdateRiskSchema,
   list_risks:             ListRisksSchema,
-  get_risk_summary:       GetRiskSummarySchema,
   create_treatment_plan:  CreateTreatmentPlanSchema,
   update_treatment_status:UpdateTreatmentStatusSchema,
   generate_risk_register: GenerateRiskRegisterSchema,
-  // Group 4
+  // Group 4 (get_policy → retired to resource)
   create_policy: CreatePolicySchema,
-  get_policy:    GetPolicySchema,
   update_policy: UpdatePolicySchema,
   list_policies: ListPoliciesSchema,
   // Group 5
@@ -706,42 +675,35 @@ export const TOOL_SCHEMAS: Record<string, z.ZodTypeAny> = {
   create_corrective_action: CreateCorrectiveActionSchema,
   update_corrective_action: UpdateCorrectiveActionSchema,
   generate_audit_report:    GenerateAuditReportSchema,
-  // Group 7
+  // Group 7 (get_evidence_gaps → retired to resource)
   register_evidence: RegisterEvidenceSchema,
   list_evidence:     ListEvidenceSchema,
-  get_evidence_gaps: GetEvidenceGapsSchema,
   link_jira_ticket:  LinkJiraTicketSchema,
   link_github_issue: LinkGithubIssueSchema,
-  // Group 8
-  get_server_info: GetServerInfoSchema,
+  // Group 8 → retired to resource iso27001://server/info
   // Group 9
   query_audit_log: QueryAuditLogSchema,
   list_api_keys:   ListApiKeysSchema,
   revoke_api_key:  RevokeApiKeySchema,
-  // Group 10
+  // Group 10 (get_organization_profile → retired to resource)
   set_organization_profile: SetOrganizationProfileSchema,
-  get_organization_profile: GetOrganizationProfileSchema,
-  // Group 11
+  // Group 11 (get_procedure → retired to resource)
   create_procedure: CreateProcedureSchema,
-  get_procedure:    GetProcedureSchema,
   update_procedure: UpdateProcedureSchema,
   list_procedures:  ListProceduresSchema,
   export_procedure: ExportProcedureSchema,
-  // Group 12
+  // Group 12 (get_management_review → retired to resource)
   create_management_review:  CreateManagementReviewSchema,
   record_review_input:       RecordReviewInputSchema,
   record_review_output:      RecordReviewOutputSchema,
   complete_management_review:CompleteManagementReviewSchema,
-  get_management_review:     GetManagementReviewSchema,
   list_management_reviews:   ListManagementReviewsSchema,
-  // Group 13
+  // Group 13 (get_improvement_opportunity → retired to resource)
   create_improvement_opportunity: CreateImprovementOpportunitySchema,
   update_improvement_opportunity: UpdateImprovementOpportunitySchema,
-  get_improvement_opportunity:    GetImprovementOpportunitySchema,
   list_improvement_opportunities: ListImprovementOpportunitiesSchema,
-  // Group 14
+  // Group 14 (get_evidence_document → retired to resource)
   generate_evidence_document: GenerateEvidenceDocumentSchema,
-  get_evidence_document:      GetEvidenceDocumentSchema,
   list_evidence_documents:    ListEvidenceDocumentsSchema,
 };
 
