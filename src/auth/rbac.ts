@@ -15,7 +15,7 @@ import { rbacDenied } from "../types/errors.js";
 
 // ── Role hierarchy ────────────────────────────────────────────
 
-const ROLE_LEVEL: Record<Role, number> = {
+export const ROLE_LEVEL: Record<Role, number> = {
   viewer:  0,
   analyst: 1,
   admin:   2,

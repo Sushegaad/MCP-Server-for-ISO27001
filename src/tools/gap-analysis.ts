@@ -8,27 +8,12 @@
 
 import { getDb } from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray, withTransaction } from "../db/dal.js";
+import type { AssessmentRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
-
-interface AssessmentRow {
-  id: string;
-  name: string;
-  scope: string | null;
-  isms_version: string;
-  status: string;
-  themes_in_scope: string | null;
-  exclude_controls: string | null;
-  exclude_justification: string | null;
-  archived_at: string | null;
-  archived_by: string | null;
-  archive_reason: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 interface ControlRow {
   control_id: string;

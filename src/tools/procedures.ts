@@ -11,46 +11,12 @@
 import Mustache from "mustache";
 import { getDb } from "../db/connection.js";
 import { newId, now, addMonths, fromJsonArray } from "../db/dal.js";
+import type { ProcedureRow, ProcedureVersionRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { loadTemplate, loadPartials, stripFrontmatter, markdownToHtml, renderHtmlDocument } from "./template-utils.js";
 import { loadOrgProfileDefaults } from "./org-profile.js";
 import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
-
-// ── Types ─────────────────────────────────────────────────────
-
-interface ProcedureRow {
-  id:                  string;
-  procedure_type:      string;
-  policy_id:           string | null;
-  organisation_name:   string;
-  scope:               string;
-  owner:               string;
-  approver:            string | null;
-  status:              string;
-  version:             number;
-  content:             string;
-  clause_mappings:     string | null;
-  control_mappings:    string | null;
-  related_controls:    string | null;
-  review_cycle_months: number;
-  effective_date:      string;
-  next_review_date:    string;
-  reviewed_by:         string | null;
-  approved_by:         string | null;
-  created_at:          string;
-  updated_at:          string;
-}
-
-interface ProcedureVersionRow {
-  id:            string;
-  procedure_id:  string;
-  version:       number;
-  content:       string;
-  change_summary: string | null;
-  reviewed_by:   string | null;
-  archived_at:   string;
-}
 
 
 // ── create_procedure ──────────────────────────────────────────

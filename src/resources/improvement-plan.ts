@@ -13,23 +13,9 @@ import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { McpServer }   from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
 import { getDb }            from "../db/connection.js";
+import { PRIORITY_SORT_SQL } from "../db/dal.js";
+import type { OpportunityRow } from "../db/types.js";
 import { assertResourceAuth } from "./resource-auth.js";
-
-// ── Types ─────────────────────────────────────────────────────
-
-interface OpportunityRow {
-  id:          string;
-  title:       string;
-  description: string;
-  source:      string;
-  priority:    string;
-  owner:       string | null;
-  target_date: string | null;
-  status:      string;
-  review_id:   string | null;
-  created_at:  string;
-  updated_at:  string;
-}
 
 // ── Registration ──────────────────────────────────────────────
 
@@ -46,8 +32,7 @@ export function registerImprovementPlanResources(server: McpServer): void {
             FROM improvement_opportunities
             WHERE status != 'closed'
             ORDER BY
-              CASE priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1
-                            WHEN 'medium'   THEN 2 ELSE 3 END ASC,
+              ${PRIORITY_SORT_SQL} ASC,
               target_date ASC,
               created_at DESC
           `)

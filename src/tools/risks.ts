@@ -7,45 +7,10 @@
 
 import { getDb } from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
+import type { RiskRow, TreatmentRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
-
-// ── Types ─────────────────────────────────────────────────────
-
-interface RiskRow {
-  id: string;
-  asset: string;
-  threat: string;
-  vulnerability: string;
-  likelihood: number;
-  impact: number;
-  risk_score: number;
-  risk_level: string;
-  owner: string | null;
-  status: string;
-  related_controls: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface TreatmentRow {
-  id: string;
-  risk_id: string;
-  treatment_type: string;
-  description: string;
-  owner: string;
-  due_date: string;
-  controls: string | null;
-  status: string;
-  residual_likelihood: number | null;
-  residual_impact: number | null;
-  residual_risk_score: number | null;
-  residual_risk_level: string | null;
-  evidence_ref: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 
 function shapeRisk(r: RiskRow): Omit<RiskRow, "related_controls"> & { related_controls: string[] } {

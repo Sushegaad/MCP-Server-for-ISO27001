@@ -16,7 +16,8 @@ import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { McpServer }   from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
 import { getDb }           from "../db/connection.js";
-import { fromJsonArray }   from "../db/dal.js";
+import { fromJsonArray, PRIORITY_SORT_SQL } from "../db/dal.js";
+import type { OpportunityRow } from "../db/types.js";
 import { assertResourceAuth } from "./resource-auth.js";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -52,20 +53,6 @@ interface ReviewOutputRow {
   decision:    string;
   owner:       string | null;
   due_date:    string | null;
-  created_at:  string;
-  updated_at:  string;
-}
-
-interface OpportunityRow {
-  id:          string;
-  title:       string;
-  description: string;
-  source:      string;
-  priority:    string;
-  owner:       string | null;
-  target_date: string | null;
-  status:      string;
-  review_id:   string | null;
   created_at:  string;
   updated_at:  string;
 }
@@ -164,7 +151,7 @@ export function registerManagementReviewResources(server: McpServer): void {
         .prepare(`
           SELECT * FROM improvement_opportunities
           ORDER BY
-            CASE priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END ASC,
+            ${PRIORITY_SORT_SQL} ASC,
             target_date ASC NULLS LAST,
             created_at DESC
         `)

@@ -101,3 +101,14 @@ export function withTransaction<T>(fn: () => T): T {
   const db = getDb();
   return db.transaction(fn)();
 }
+
+// ── SQL fragment constants ────────────────────────────────────
+
+/**
+ * ORDER BY fragment that sorts improvement opportunities by priority:
+ * critical(0) → high(1) → medium(2) → low/everything else(3).
+ * Interpolate into a template literal ORDER BY clause followed by
+ * any secondary sort columns.
+ */
+export const PRIORITY_SORT_SQL =
+  "CASE priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END";

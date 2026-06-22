@@ -15,43 +15,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
 import { getDb } from "../db/connection.js";
 import { fromJsonArray } from "../db/dal.js";
+import type { RiskRow, TreatmentRow } from "../db/types.js";
 import { assertResourceAuth } from "./resource-auth.js";
-
-// ── Types ─────────────────────────────────────────────────────
-
-interface RiskRow {
-  id:               string;
-  asset:            string;
-  threat:           string;
-  vulnerability:    string;
-  likelihood:       number;
-  impact:           number;
-  risk_score:       number;
-  risk_level:       string;
-  owner:            string | null;
-  status:           string;
-  related_controls: string | null; // JSON array
-  created_at:       string;
-  updated_at:       string;
-}
-
-interface TreatmentRow {
-  id:                   string;
-  risk_id:              string;
-  treatment_type:       string;
-  description:          string;
-  owner:                string;
-  due_date:             string;
-  controls:             string | null; // JSON array
-  status:               string;
-  residual_likelihood:  number | null;
-  residual_impact:      number | null;
-  residual_risk_score:  number | null;
-  residual_risk_level:  string | null;
-  evidence_ref:         string | null;
-  created_at:           string;
-  updated_at:           string;
-}
 
 // ── Serialization ─────────────────────────────────────────────
 

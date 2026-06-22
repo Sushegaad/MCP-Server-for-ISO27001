@@ -18,41 +18,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
 import { getDb } from "../db/connection.js";
 import { fromJsonArray } from "../db/dal.js";
+import type { PolicyRow, PolicyVersionRow } from "../db/types.js";
 import { assertResourceAuth } from "./resource-auth.js";
-
-// ── Types ─────────────────────────────────────────────────────
-
-interface PolicyRow {
-  id:                  string;
-  type:                string;
-  organisation_name:   string;
-  scope:               string;
-  owner:               string;
-  approver:            string | null;
-  status:              string;
-  version:             number;
-  content:             string;
-  clause_mappings:     string | null;
-  control_mappings:    string | null;
-  review_cycle_months: number;
-  effective_date:      string;
-  next_review_date:    string;
-  reviewed_by:         string | null;
-  approved_by:         string | null;
-  created_at:          string;
-  updated_at:          string;
-}
-
-interface PolicyVersionRow {
-  id:             string;
-  policy_id:      string;
-  version:        number;
-  content:        string;
-  change_summary: string | null;
-  reviewed_by:    string | null;
-  approved_by:    string | null;
-  archived_at:    string;
-}
 
 // ── Frontmatter envelope ──────────────────────────────────────
 

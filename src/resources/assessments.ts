@@ -23,25 +23,9 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
 import { getDb } from "../db/connection.js";
 import { fromJsonArray } from "../db/dal.js";
+import type { AssessmentRow, AuditRow, FindingRow, CorrectiveActionRow } from "../db/types.js";
+import { suggestedTypes } from "../tools/evidence-utils.js";
 import { assertResourceAuth } from "./resource-auth.js";
-
-// ── Types ─────────────────────────────────────────────────────
-
-interface AssessmentRow {
-  id:                    string;
-  name:                  string;
-  scope:                 string | null;
-  isms_version:          string;
-  status:                string;
-  themes_in_scope:       string | null; // JSON array
-  exclude_controls:      string | null; // JSON array
-  exclude_justification: string | null;
-  archived_at:           string | null;
-  archived_by:           string | null;
-  archive_reason:        string | null;
-  created_at:            string;
-  updated_at:            string;
-}
 
 interface ControlStatusSummaryRow {
   status: string;
@@ -67,46 +51,6 @@ interface SoaEntryRow {
   responsible_party: string | null;
   created_at:        string;
   updated_at:        string;
-}
-
-interface AuditRow {
-  id:                string;
-  name:              string;
-  scope:             string;
-  auditor:           string;
-  planned_date:      string;
-  actual_date:       string | null;
-  status:            string;
-  controls_in_scope: string | null; // JSON array
-  clauses_in_scope:  string | null; // JSON array
-  created_at:        string;
-  updated_at:        string;
-}
-
-interface FindingRow {
-  id:                 string;
-  audit_id:           string;
-  type:               string;
-  clause_or_control:  string;
-  description:        string;
-  objective_evidence: string;
-  severity:           string | null;
-  created_at:         string;
-  updated_at:         string;
-}
-
-interface CorrectiveActionRow {
-  id:                      string;
-  finding_id:              string;
-  description:             string;
-  owner:                   string;
-  due_date:                string;
-  status:                  string;
-  root_cause:              string | null;
-  effectiveness_verified:  number;  // 0|1
-  evidence_ref:            string | null;
-  created_at:              string;
-  updated_at:              string;
 }
 
 // ── Serialization ─────────────────────────────────────────────
@@ -527,16 +471,6 @@ export function registerAssessmentResources(server: McpServer): void {
       `).all(...gapControlIds) as { control_id: string; name: string; theme: string }[];
 
       const detailMap = new Map(controlDetails.map((c) => [c.control_id, c]));
-
-      function suggestedTypes(theme: string): string[] {
-        switch (theme) {
-          case "Organizational": return ["policy", "procedure", "meeting_minutes"];
-          case "People":         return ["training_record", "contract"];
-          case "Physical":       return ["configuration", "screenshot", "log"];
-          case "Technological":  return ["log", "configuration", "screenshot", "test_result"];
-          default:               return ["policy", "procedure"];
-        }
-      }
 
       const gaps = gapControlIds.map((cid) => {
         const detail = detailMap.get(cid);

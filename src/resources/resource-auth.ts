@@ -12,16 +12,11 @@
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { ServerRequest, ServerNotification } from "@modelcontextprotocol/sdk/types.js";
 import { validateKey, loadRole } from "../auth/api-key.js";
+import { ROLE_LEVEL } from "../auth/rbac.js";
 import { rbacDenied } from "../types/errors.js";
 import type { Role } from "../auth/api-key.js";
 
 type Extra = RequestHandlerExtra<ServerRequest, ServerNotification>;
-
-const ROLE_LEVEL: Record<Role, number> = {
-  viewer:  0,
-  analyst: 1,
-  admin:   2,
-};
 
 /**
  * Extract the API key from request _meta or the MCP_API_KEY environment

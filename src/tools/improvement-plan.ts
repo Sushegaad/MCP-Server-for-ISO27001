@@ -12,25 +12,10 @@
  */
 
 import { getDb }             from "../db/connection.js";
-import { newId, now }        from "../db/dal.js";
+import { newId, now, PRIORITY_SORT_SQL } from "../db/dal.js";
+import type { OpportunityRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
-
-// ── Types ─────────────────────────────────────────────────────
-
-interface OpportunityRow {
-  id:          string;
-  title:       string;
-  description: string;
-  source:      string;
-  priority:    string;
-  owner:       string | null;
-  target_date: string | null;
-  status:      string;
-  review_id:   string | null;
-  created_at:  string;
-  updated_at:  string;
-}
 
 
 // ── Forward-only status transition guard ──────────────────────
@@ -187,7 +172,7 @@ export function handleListImprovementOpportunities(args: Record<string, unknown>
     SELECT * FROM improvement_opportunities
     ${where}
     ORDER BY
-      CASE priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END ASC,
+      ${PRIORITY_SORT_SQL} ASC,
       target_date ASC NULLS LAST,
       created_at DESC
     LIMIT ? OFFSET ?

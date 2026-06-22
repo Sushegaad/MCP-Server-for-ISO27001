@@ -7,52 +7,11 @@
 
 import { getDb } from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
+import type { AuditRow, FindingRow, CorrectiveActionRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { markdownToHtml, renderHtmlDocument } from "./template-utils.js";
 import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
-
-// ── Types ─────────────────────────────────────────────────────
-
-interface AuditRow {
-  id: string;
-  name: string;
-  scope: string;
-  auditor: string;
-  planned_date: string;
-  actual_date: string | null;
-  status: string;
-  controls_in_scope: string | null;
-  clauses_in_scope: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface FindingRow {
-  id: string;
-  audit_id: string;
-  type: string;
-  clause_or_control: string;
-  description: string;
-  objective_evidence: string;
-  severity: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface CarRow {
-  id: string;
-  finding_id: string;
-  description: string;
-  owner: string;
-  due_date: string;
-  status: string;
-  root_cause: string | null;
-  effectiveness_verified: number;
-  evidence_ref: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 
 function shapeAudit(r: AuditRow): Omit<AuditRow, "controls_in_scope" | "clauses_in_scope"> & { controls_in_scope: string[]; clauses_in_scope: string[] } {
@@ -63,7 +22,7 @@ function shapeAudit(r: AuditRow): Omit<AuditRow, "controls_in_scope" | "clauses_
   };
 }
 
-function shapeCar(r: CarRow): Omit<CarRow, "effectiveness_verified"> & { effectiveness_verified: boolean } {
+function shapeCar(r: CorrectiveActionRow): Omit<CorrectiveActionRow, "effectiveness_verified"> & { effectiveness_verified: boolean } {
   return {
     ...r,
     effectiveness_verified: r.effectiveness_verified === 1,
@@ -236,7 +195,7 @@ export function handleCreateCorrectiveAction(args: Record<string, unknown>): Too
     root_cause ?? null, ts, ts,
   );
 
-  const created = getDb().prepare("SELECT * FROM corrective_actions WHERE id = ?").get(id) as CarRow;
+  const created = getDb().prepare("SELECT * FROM corrective_actions WHERE id = ?").get(id) as CorrectiveActionRow;
   return ok(shapeCar(created));
 }
 
@@ -253,7 +212,7 @@ export function handleUpdateCorrectiveAction(args: Record<string, unknown>): Too
   };
 
   const db = getDb();
-  const existing = db.prepare("SELECT * FROM corrective_actions WHERE id = ?").get(car_id) as CarRow | undefined;
+  const existing = db.prepare("SELECT * FROM corrective_actions WHERE id = ?").get(car_id) as CorrectiveActionRow | undefined;
   if (!existing) throw notFound("corrective_action", car_id);
 
   if (status === "closed" && effectiveness_verified !== true) {
@@ -284,7 +243,7 @@ export function handleUpdateCorrectiveAction(args: Record<string, unknown>): Too
     ts, car_id,
   );
 
-  const updated = db.prepare("SELECT * FROM corrective_actions WHERE id = ?").get(car_id) as CarRow;
+  const updated = db.prepare("SELECT * FROM corrective_actions WHERE id = ?").get(car_id) as CorrectiveActionRow;
   return ok(shapeCar(updated));
 }
 
@@ -304,10 +263,10 @@ export function handleGenerateAuditReport(args: Record<string, unknown>): ToolRe
   const cars = findings.length > 0
     ? db.prepare(
         `SELECT * FROM corrective_actions WHERE finding_id IN (${findings.map(() => "?").join(",")}) ORDER BY created_at`
-      ).all(...findings.map((f) => f.id)) as CarRow[]
+      ).all(...findings.map((f) => f.id)) as CorrectiveActionRow[]
     : [];
 
-  const carsByFinding = new Map<string, CarRow[]>();
+  const carsByFinding = new Map<string, CorrectiveActionRow[]>();
   for (const car of cars) {
     const existing = carsByFinding.get(car.finding_id) ?? [];
     existing.push(car);
@@ -338,7 +297,7 @@ export function handleGenerateAuditReport(args: Record<string, unknown>): ToolRe
       ``,
       `| CAR ID | Finding | Owner | Due Date | Status | Verified |`,
       `|---|---|---|---|---|---|`,
-      ...cars.map((c: CarRow) =>
+      ...cars.map((c: CorrectiveActionRow) =>
         `| ${c.id.slice(-8)} | ${c.finding_id.slice(-8)} | ${c.owner} | ${c.due_date} | ${c.status} | ${c.effectiveness_verified ? "✓ Yes" : "No"} |`
       ),
     ];

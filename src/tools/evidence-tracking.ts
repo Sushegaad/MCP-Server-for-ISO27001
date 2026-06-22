@@ -11,6 +11,7 @@ import { notFound, integrationError } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { getEnv } from "../security/secrets.js";
 import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
+import { suggestedTypes } from "./evidence-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -48,16 +49,6 @@ function requireEvidence(id: string): EvidenceRow {
   const row = db.prepare("SELECT * FROM evidence WHERE id = ?").get(id) as EvidenceRow | undefined;
   if (!row) throw notFound("evidence", id);
   return row;
-}
-
-function suggestedTypes(theme: string): string[] {
-  switch (theme) {
-    case "Organizational": return ["policy", "procedure", "meeting_minutes"];
-    case "People":         return ["training_record", "contract"];
-    case "Physical":       return ["configuration", "screenshot", "log"];
-    case "Technological":  return ["log", "configuration", "screenshot", "test_result"];
-    default:               return ["policy", "procedure"];
-  }
 }
 
 // ── Retry helper ──────────────────────────────────────────────

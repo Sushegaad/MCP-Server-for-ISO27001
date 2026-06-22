@@ -43,6 +43,8 @@ vi.mock("../../../src/db/dal.js", () => ({
   fromJsonArray: vi.fn((raw: string | null) =>
     raw ? (JSON.parse(raw) as unknown[]) : [],
   ),
+  PRIORITY_SORT_SQL:
+    "CASE priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END",
 }));
 
 const mockAssertResourceAuth = vi.fn();
