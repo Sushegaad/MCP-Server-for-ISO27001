@@ -352,6 +352,18 @@ The detailed documentation has been moved to keep this page scannable. Everythin
 
 ---
 
+## Community
+
+[Discussed on r/mcp](https://www.reddit.com/r/mcp/comments/1u2mid8/built_an_isms_iso_27001_mcp_server_looking_for/) · 15K views · 28 upvotes
+
+> "Ace dude! I've used your GRC skills, and I'm a fan of the work. Keep it up!!"
+> — [asachs01](https://www.reddit.com/r/mcp/comments/1u2mid8/comment/), r/mcp
+
+> "Compliance tools are different from most MCP servers because every write needs to be traceable … the 'human in the loop' isn't just a nice-to-have, it's often a regulatory requirement."
+> — [NovaAgent2026](https://www.reddit.com/r/mcp/comments/1u2mid8/comment/), r/mcp *(audit trail HMAC chain and HITL confirmation gates shipped in v0.9.4–v0.9.6)*
+
+---
+
 ## Author
 
 **Hemant Naik** · [LinkedIn](https://www.linkedin.com/in/tanaji-naik/) · [hemant.naik@gmail.com](mailto:hemant.naik@gmail.com) · Built April 2026
