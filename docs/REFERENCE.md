@@ -1044,19 +1044,19 @@ Sessions expire after `SESSION_TTL_HOURS` hours of inactivity. In `NODE_ENV=prod
 
 ## Sample Outputs
 
-The [`samples/`](samples/) directory contains auditor-ready example outputs generated from a demo ISMS for a fictitious organisation ("Acme Financial Services Ltd" — a UK payments processor preparing for ISO 27001:2022 certification). Each file states which tool(s) produced it.
+The [`samples/`](../samples/) directory contains auditor-ready example outputs generated from a demo ISMS for a fictitious organisation ("Acme Financial Services Ltd" — a UK payments processor preparing for ISO 27001:2022 certification). Each file states which tool(s) produced it.
 
 | Sample | Description |
 |--------|-------------|
-| [gap-assessment-summary.md](samples/gap-assessment-summary.md) | Complete gap assessment across all 93 controls |
-| [remediation-roadmap.md](samples/remediation-roadmap.md) | 26-week prioritised remediation plan with owners and effort estimates |
-| [risk-register.csv](samples/risk-register.csv) | Risk register with 10 risks, scores, and treatment plans |
-| [statement-of-applicability.csv](samples/statement-of-applicability.csv) | Full SoA — all 93 ISO 27001:2022 controls with applicability justifications |
-| [access-control-policy.md](samples/access-control-policy.md) | Generated access control policy (Annex A 5.15–5.18, 8.2–8.5) |
-| [incident-handling-procedure.md](samples/incident-handling-procedure.md) | Incident handling procedure with severity tiers and GDPR notification |
-| [internal-audit-report.md](samples/internal-audit-report.md) | Internal audit report — 3 major NCs, 4 minor NCs, 2 positive observations |
-| [corrective-action-record.md](samples/corrective-action-record.md) | Two corrective action records: one in progress, one closed and verified |
-| [evidence-package.md](samples/evidence-package.md) | 47-item evidence inventory with 28-control gap analysis |
+| [gap-assessment-summary.md](../samples/gap-assessment-summary.md) | Complete gap assessment across all 93 controls |
+| [remediation-roadmap.md](../samples/remediation-roadmap.md) | 26-week prioritised remediation plan with owners and effort estimates |
+| [risk-register.csv](../samples/risk-register.csv) | Risk register with 10 risks, scores, and treatment plans |
+| [statement-of-applicability.csv](../samples/statement-of-applicability.csv) | Full SoA — all 93 ISO 27001:2022 controls with applicability justifications |
+| [access-control-policy.md](../samples/access-control-policy.md) | Generated access control policy (Annex A 5.15–5.18, 8.2–8.5) |
+| [incident-handling-procedure.md](../samples/incident-handling-procedure.md) | Incident handling procedure with severity tiers and GDPR notification |
+| [internal-audit-report.md](../samples/internal-audit-report.md) | Internal audit report — 3 major NCs, 4 minor NCs, 2 positive observations |
+| [corrective-action-record.md](../samples/corrective-action-record.md) | Two corrective action records: one in progress, one closed and verified |
+| [evidence-package.md](../samples/evidence-package.md) | 47-item evidence inventory with 28-control gap analysis |
 
 ---
 
