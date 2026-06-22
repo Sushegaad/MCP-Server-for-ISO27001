@@ -1,3 +1,64 @@
+## What's new in v0.9.7
+
+### 13 tools retired to MCP Resources — 50 tools remain
+
+Read-only lookup tools have been migrated to the MCP Resources protocol (`iso27001://` URIs). Clients that support `listResources` / `readResource` access them without consuming tool-schema context window slots. The 50 remaining tools cover all write operations and stateful workflows.
+
+**New resources (accessible via `iso27001://` URIs):**
+
+| Resource URI pattern | Replaces tool |
+|---|---|
+| `iso27001://control/{control_id}` | `get_control` |
+| `iso27001://controls` | `list_controls` |
+| `iso27001://clause/{clause_id}` | `get_clause_requirements` |
+| `iso27001://assessment/{assessment_id}` | `get_gap_assessment` |
+| `iso27001://assessment-summary` | `get_assessment_summary` |
+| `iso27001://assessment-evidence-gaps/{assessment_id}` | `get_evidence_gaps` |
+| `iso27001://soa/{soa_id}` | `get_soa` |
+| `iso27001://audit/{audit_id}` | `get_audit` |
+| `iso27001://risk/{risk_id}` | `get_risk` |
+| `iso27001://risks-summary` | `get_risk_summary` |
+| `iso27001://policy/{policy_id}` | `get_policy` |
+| `iso27001://procedure/{procedure_id}` | `get_procedure` |
+| `iso27001://improvement-plan/{opportunity_id}` | `get_improvement_opportunity` |
+| `iso27001://management-review/{review_id}` | `get_management_review` |
+| `iso27001://server/info` | `get_server_info` |
+
+### HITL confirmation gates on all mutating tools
+
+Every tool that writes, updates, or deletes data now accepts a `confirmed` boolean (default `false`). When `confirmed` is omitted, the tool returns a preview diff table and writes nothing — Claude presents the change to the user for approval before committing.
+
+```json
+{ "hitl_proposed": true, "status": "preview", "diff": "..." }
+```
+
+Passing `"confirmed": true` commits the write. The audit log records `outcome: "proposed"` for previewed-but-not-committed calls, keeping the tamper-evident HMAC chain intact.
+
+### Provenance tracking in the audit log (Migration 0008 + 0009)
+
+`actor_type` (`"ai"` | `"human"` | `"system"`) and `model_id` are now recorded on every audit row and included in the HMAC hash input. This makes the provenance of every write tamper-evident — you can prove whether a given change was made by Claude, a human operator, or an automated pipeline. Migration 0009 widens the `outcome` CHECK constraint to include `"proposed"` for HITL preview calls.
+
+### KISS / DRY refactoring
+
+- **`src/db/types.ts`** — new file; single source of truth for 11 shared DB row interfaces (`RiskRow`, `TreatmentRow`, `AssessmentRow`, `AuditRow`, `FindingRow`, `CorrectiveActionRow`, `PolicyRow`, `PolicyVersionRow`, `ProcedureRow`, `ProcedureVersionRow`, `OpportunityRow`). Eliminates 7 duplicate interface declarations that had drifted across `src/tools/` and `src/resources/`.
+- **`src/tools/evidence-utils.ts`** — `suggestedTypes()` extracted into a shared module; removes copy-paste from `evidence-tracking.ts` and a nested duplicate inside `assessments.ts`.
+- **`PRIORITY_SORT_SQL` constant** — priority CASE expression defined once in `src/db/dal.ts` and interpolated in the three files that sort improvement opportunities.
+- **`ROLE_LEVEL` deduplicated** — exported from `src/auth/rbac.ts`; the parallel declaration in `resource-auth.ts` removed.
+- **`CarRow` renamed `CorrectiveActionRow`** throughout `audit-management.ts` to match the canonical name.
+- **Dead code removed** — `src/tools/server-info.ts` deleted (superseded by the `iso27001://server/info` resource; was not imported anywhere).
+
+### Counts
+
+| | v0.9.61 | v0.9.7 |
+|---|---|---|
+| MCP Tools | 63 | 50 |
+| MCP Resources | 0 | 15 |
+| SQL migrations | 7 | 9 |
+| Tests | 617 | 633 |
+| Coverage (stmts / funcs / branches / lines) | 94 / 95 / 84 / 94 | 95.75 / 96.72 / 85.58 / 96.23 |
+
+---
+
 ## What's new in v0.9.3
 
 ### Copyright compliance — all seeded control text rewritten
