@@ -106,7 +106,7 @@ iso27001-mcp — health check
   All 10 checks passed. Restart Claude Desktop if you just ran init.
 ```
 
-Then **restart Claude Desktop fully** and you should see 63 tools in the tools panel.
+Then **restart Claude Desktop fully** and you should see 50 tools in the tools panel.
 
 > **macOS:** press **Cmd+Q** to quit (clicking the red dot only closes the window — the server won't reload).  
 > **Windows:** right-click the taskbar icon → **Quit**.
@@ -127,7 +127,7 @@ Common causes: wrong Node.js version loaded by Claude Desktop, missing `DB_ENCRY
 ### Five prompts to try first
 
 ```
-"Use get_server_info to verify the server is running."
+"Read the iso27001://server/info resource to check the server is running."
 "Run an ISO 27001 gap assessment for a 50-person SaaS company."
 "Create a risk register for a startup using AWS, GitHub, Slack, and Google Workspace."
 "Generate a Statement of Applicability for ISO 27001:2022."
@@ -138,24 +138,24 @@ Common causes: wrong Node.js version loaded by Claude Desktop, missing `DB_ENCRY
 
 ## Tool Categories
 
-63 tools across 14 groups. All require an API key; minimum role is shown.
+50 tools across 14 groups. All require an API key; minimum role is shown. Read-only lookups (single-record fetches, summaries) have been moved to MCP Resources (`iso27001://` URIs) — they appear in Claude's resource panel, not the tools list.
 
 | Group | Tools | Min. role | What it does |
 |-------|-------|-----------|--------------|
-| **Control Registry** | 7 | viewer | Search, filter, and compare ISO 27001:2022 and 2013 controls; browse clause requirements |
-| **Gap Analysis** | 7 | viewer / analyst | Create and track gap assessments; export gap reports; generate remediation roadmaps |
-| **Risk Management** | 8 | viewer / analyst | Risk register with likelihood × impact scoring, treatment plans, and heat-map summaries |
-| **Policy Management** | 4 | viewer / analyst / admin | Generate, version, and export policies from 12 Mustache templates |
+| **Control Registry** | 5 | viewer | Search, filter, and compare ISO 27001:2022 and 2013 controls; browse clause requirements |
+| **Gap Analysis** | 6 | viewer / analyst | Create and track gap assessments; export gap reports; generate remediation roadmaps |
+| **Risk Management** | 6 | viewer / analyst | Risk register with likelihood × impact scoring, treatment plans, and heat-map summaries |
+| **Policy Management** | 3 | analyst / admin | Generate, version, and export policies from 12 Mustache templates |
 | **Statement of Applicability** | 3 | analyst | Build and export SoA from a gap assessment; all 93 controls with applicability decisions |
-| **Audit Management** | 5 | viewer / admin | Plan audits, record findings (NCs, OFIs), raise CARs, and close with effectiveness check |
-| **Evidence Tracking** | 5 | viewer / analyst | Register evidence artefacts, spot gaps, link to Jira / GitHub issues |
-| **Server Info** | 1 | viewer | Server version, tool count, capability summary |
-| **Admin & Key Management** | 6 | admin | Generate / revoke API keys, query the HMAC audit log |
-| **Organisation Profile** | 2 | admin (write) / viewer (read) | Set org name, scope, and defaults used by all templates |
-| **Procedure Management** | 5 | viewer / analyst / admin | Generate, version, and export procedures from 12 Mustache templates |
-| **Management Review** | 6 | viewer / admin | Full Clause 9.3 lifecycle — inputs, outputs, completion (enforces all 7 required input categories) |
-| **Improvement Plan** | 4 | viewer / analyst | Clause 10.1 improvement opportunities — track, link, and report |
-| **Evidence Templates** | 3 | viewer / analyst | Generate Mustache-rendered evidence documents; dual-write to evidence and generated_evidence tables |
+| **Audit Management** | 5 | admin | Plan audits, record findings (NCs, OFIs), raise CARs, and close with effectiveness check |
+| **Evidence Tracking** | 4 | analyst | Register evidence artefacts, spot gaps, link to Jira / GitHub issues |
+| **Server Info** | — | — | Retired to MCP Resource — access via `iso27001://server/info` |
+| **Admin & Key Management** | 3 | admin | Generate / revoke API keys, query the HMAC audit log |
+| **Organisation Profile** | 1 | admin | Set org name, scope, and defaults used by all templates |
+| **Procedure Management** | 4 | analyst / admin | Generate, version, and export procedures from 12 Mustache templates |
+| **Management Review** | 5 | admin | Full Clause 9.3 lifecycle — inputs, outputs, completion (enforces all 7 required input categories) |
+| **Improvement Plan** | 3 | analyst | Clause 10.1 improvement opportunities — track, link, and report |
+| **Evidence Templates** | 2 | analyst | Generate Mustache-rendered evidence documents; dual-write to evidence and generated_evidence tables |
 
 ---
 
@@ -207,7 +207,7 @@ Three roles with strict hierarchy. A key can only call tools at or below its ass
 | View and query the audit log | — | — | ✅ |
 | Generate and revoke API keys | — | — | ✅ |
 
-**Tool counts:** Viewer — 31 tools · Analyst — 49 tools · Admin — 63 tools
+**Tool counts:** Viewer — 18 tools · Analyst — 36 tools · Admin — 50 tools
 
 ### What never leaves your machine
 
@@ -341,7 +341,7 @@ The detailed documentation has been moved to keep this page scannable. Everythin
 - [Installation](docs/REFERENCE.md#installation) — prerequisites, `iso27001-mcp init`, `doctor`, Claude Desktop config
 - [Connecting to Claude](docs/REFERENCE.md#connecting-to-claude) — Claude Desktop JSON, Claude Code, API key management
 - [Advanced / Manual Setup](docs/REFERENCE.md#advanced--manual-setup) — CI/CD, custom paths, full env var table
-- [Tools Reference](docs/REFERENCE.md#tools-reference) — all 63 tools across 14 groups with full parameter tables
+- [Tools Reference](docs/REFERENCE.md#tools-reference) — all 50 tools across 14 groups with full parameter tables
 - [MCP Resources](docs/REFERENCE.md#mcp-resources) — 12 `iso27001://` URIs, formats, example prompts
 - [Architecture](docs/REFERENCE.md#architecture) — 7-step security pipeline, database schema, seed data
 - [Modes](docs/REFERENCE.md#modes) — local / CI / team / hosted with SSE endpoint reference

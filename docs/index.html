@@ -284,7 +284,7 @@
     <div id="section-gap" class="section active">
 
       <div class="notice">
-        💡 This simulates the <strong>create_gap_assessment</strong>, <strong>update_control_status</strong>, <strong>get_gap_summary</strong>, and <strong>generate_remediation_roadmap</strong> tools. Click any control to cycle its status.
+        💡 This simulates the <strong>create_gap_assessment</strong>, <strong>update_control_status</strong>, and <strong>generate_remediation_roadmap</strong> tools. Click any control to cycle its status. Gap summaries are available as the <code>iso27001://assessments/{id}/gap-summary</code> resource.
       </div>
 
       <!-- Stat row -->
@@ -388,7 +388,7 @@
     <!-- ════════════════════════════════════════════════════════ -->
     <div id="section-risk" class="section">
       <div class="notice">
-        💡 Simulates <strong>create_risk</strong>, <strong>list_risks</strong>, <strong>get_risk_summary</strong>, and <strong>create_treatment_plan</strong>. Risk score = likelihood × impact (1–5 scale).
+        💡 Simulates <strong>create_risk</strong>, <strong>list_risks</strong>, and <strong>create_treatment_plan</strong>. Risk score = likelihood × impact (1–5 scale). The risk heatmap and summary are available via the <code>iso27001://risks/summary</code> resource.
       </div>
 
       <div class="grid-2 mb-4">
@@ -559,7 +559,7 @@
     <!-- ════════════════════════════════════════════════════════ -->
     <div id="section-tools" class="section">
       <div class="notice">
-        💡 All 63 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 31 tools), analyst (49 tools), admin (all 63 tools).
+        💡 All 50 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 18 tools), analyst (36 tools), admin (all 50 tools).
       </div>
 
       <div class="card">
@@ -581,7 +581,7 @@
         .proc-type-meta { font-size: 10px; color: var(--muted); margin-top: 1px; }
       </style>
       <div class="notice">
-        💡 Simulates <strong>generate_procedure</strong>, <strong>get_procedure</strong>, and <strong>export_procedure</strong>. Select a procedure type, fill in your org details, and click Generate to render a full ISO 27001-aligned operating procedure document.
+        💡 Simulates <strong>create_procedure</strong>, <strong>list_procedures</strong>, and <strong>update_procedure</strong>. Select a procedure type, fill in your org details, and click Generate to render a full ISO 27001-aligned operating procedure document.
       </div>
       <div class="grid-2">
         <!-- Left: form -->
@@ -1093,7 +1093,7 @@
         .evid-template-controls { font-size: 10px; color: var(--muted); }
       </style>
       <div class="notice">
-        💡 Simulates <strong>generate_evidence_document</strong>, <strong>get_evidence_document</strong>, and <strong>list_evidence_documents</strong>. Generated documents are dual-written to both the <code>evidence</code> and <code>generated_evidence</code> tables, enabling both tracking and version history.
+        💡 Simulates <strong>generate_evidence_document</strong> and <strong>list_evidence_documents</strong>. Generated documents are dual-written to both the <code>evidence</code> and <code>generated_evidence</code> tables, enabling both tracking and version history. Individual documents are readable via the <code>iso27001://evidence/documents/{id}</code> resource.
       </div>
 
       <div class="grid-2">
@@ -1267,7 +1267,7 @@
         <p>A stateful MCP server that gives Claude a complete Information Security Management System. Run gap assessments, manage risks, generate ISO-aligned policies and procedures, track evidence, and schedule management reviews — all backed by an AES-256 encrypted SQLite database on your own machine.</p>
         <div class="res-hero-stats">
           <div class="res-hero-stat">
-            <div class="res-hero-stat-value">63</div>
+            <div class="res-hero-stat-value">50</div>
             <div class="res-hero-stat-label">MCP Tools</div>
           </div>
           <div class="res-hero-stat">
@@ -1350,7 +1350,7 @@
           <div class="res-step-num">3</div>
           <div class="res-step-body">
             <div class="res-step-title">Verify and connect</div>
-            <div class="res-step-desc">Run the health check, then restart Claude Desktop (quit fully and reopen). You should see <strong>63 tools</strong> in the tools panel.</div>
+            <div class="res-step-desc">Run the health check, then restart Claude Desktop (quit fully and reopen). You should see <strong>50 tools</strong> in the tools panel.</div>
             <div class="res-code"><span class="cmd">iso27001-mcp doctor</span>
 <span class="comment"># All 10 checks should show ✅</span>
 <span class="comment"># Then restart Claude Desktop</span></div>
@@ -1362,7 +1362,7 @@
           <div class="res-step-body">
             <div class="res-step-title">Try it with Claude</div>
             <div class="res-step-desc">Ask Claude any of these to get started:</div>
-            <div class="res-code"><span class="val">"Use get_server_info to verify the server is running."</span>
+            <div class="res-code"><span class="val">"Read the iso27001://server/info resource to check the server is running."</span>
 <span class="val">"Run an ISO 27001 gap assessment for a 50-person SaaS company."</span>
 <span class="val">"Register a new risk: our customer DB is exposed to SQL injection — likelihood 4, impact 5."</span></div>
           </div>
@@ -1391,7 +1391,7 @@
           <div class="res-link-icon">📄</div>
           <div>
             <div class="res-link-title">Full Documentation</div>
-            <div class="res-link-desc">Complete tools reference with all 63 tools, parameter tables, architecture diagram, and security model.</div>
+            <div class="res-link-desc">Complete tools reference with all 50 tools, parameter tables, architecture diagram, and security model.</div>
             <div class="res-link-url">github.com/…/README.md</div>
           </div>
         </a>
@@ -1515,9 +1515,6 @@ const RISKS = [
 
 const TOOLS = [
   { group:'Group 1 — Control Registry', role:'viewer', tools:[
-    { name:'get_control',             desc:'Fetch a single control by ID and version (2022 or 2013)',
-      params:[['control_id','✅','string','e.g. 8.28'],['version','—','enum','2022 | 2013']],
-      example:'{ "control_id": "8.28", "version": "2022" }' },
     { name:'list_controls',           desc:'List controls with filters: version, theme, control_type, new_in_2022',
       params:[['version','—','enum','2022 | 2013'],['theme','—','string','e.g. Technological'],['new_in_2022','—','boolean',''],['limit','—','integer','default 50']],
       example:'{ "version": "2022", "theme": "Technological", "new_in_2022": true }' },
@@ -1530,9 +1527,6 @@ const TOOLS = [
     { name:'compare_versions',        desc:'Show the mapping between a 2013 control and its 2022 equivalent',
       params:[['v2013_id','—','string','ISO 2013 ID'],['v2022_id','—','string','ISO 2022 ID']],
       example:'{ "v2013_id": "A.10.1.1" }' },
-    { name:'get_clause_requirement',  desc:'Fetch a clause requirement (4–10) with optional sub-clauses',
-      params:[['clause_id','✅','string','e.g. 9.2'],['include_sub_clauses','—','boolean','default false']],
-      example:'{ "clause_id": "9.2", "include_sub_clauses": true }' },
     { name:'list_clause_requirements',desc:'List all clause requirements, optionally filtered by parent',
       params:[['parent_id','—','string','e.g. 9']],
       example:'{ "parent_id": "9" }' },
@@ -1544,9 +1538,6 @@ const TOOLS = [
     { name:'update_control_status',       desc:'Set a control\'s status within an assessment',
       params:[['assessment_id','✅','uuid',''],['control_id','✅','string',''],['status','✅','enum','implemented | partial | not_implemented | na | not_started'],['notes','—','string','']],
       example:'{ "assessment_id": "uuid", "control_id": "8.28", "status": "partial", "notes": "Secure coding standard drafted, not yet enforced" }' },
-    { name:'get_gap_summary',             desc:'Compliance %, counts by status, top-10 remediation priority list',
-      params:[['assessment_id','✅','uuid',''],['breakdown_by','—','enum','theme | control_type | cybersecurity_concept']],
-      example:'{ "assessment_id": "uuid", "breakdown_by": "theme" }' },
     { name:'list_gap_assessments',        desc:'List assessments filtered by active / archived / all',
       params:[['filter','—','enum','active | archived | all']],
       example:'{ "filter": "active" }' },
@@ -1564,11 +1555,6 @@ const TOOLS = [
     { name:'create_risk',           desc:'Register a risk (asset, threat, vulnerability, likelihood 1–5, impact 1–5)',
       params:[['asset','✅','string',''],['threat','✅','string',''],['vulnerability','✅','string',''],['likelihood','✅','integer','1–5'],['impact','✅','integer','1–5'],['owner','—','string',''],['status','—','enum','open | accepted | mitigated | transferred | closed']],
       example:'{ "asset": "Customer DB", "threat": "SQL Injection", "vulnerability": "Unparameterised queries", "likelihood": 4, "impact": 5 }' },
-    { name:'get_risk',              desc:'Fetch a risk with optional treatment plans',
-      params:[['risk_id','✅','uuid',''],['include_treatments','—','boolean','default false']],
-      example:'{ "risk_id": "uuid", "include_treatments": true }' },
-    { name:'get_risk_summary',      desc:'Aggregates: counts by level, 5×5 heatmap matrix, top 10 by score',
-      params:[], example:'{}' },
     { name:'list_risks',            desc:'List risks with filters: risk_level, status, owner',
       params:[['risk_level','—','enum','Low | Medium | High | Critical'],['status','—','enum','open | accepted | mitigated | transferred | closed'],['limit','—','integer','default 50']],
       example:'{ "risk_level": "Critical", "status": "open" }' },
@@ -1589,9 +1575,6 @@ const TOOLS = [
     { name:'create_policy', desc:'Render a policy from a Mustache template with org-specific variables',
       params:[['type','✅','enum','information_security | access_control | risk_management | …'],['organisation_name','✅','string',''],['scope','✅','string',''],['owner','✅','string',''],['effective_date','✅','string','YYYY-MM-DD']],
       example:'{ "type": "information_security", "organisation_name": "Acme Ltd", "scope": "All cloud systems", "owner": "CISO", "effective_date": "2026-06-01" }' },
-    { name:'get_policy',    desc:'Fetch policy content with optional version history',
-      params:[['policy_id','✅','uuid',''],['include_versions','—','boolean','default false']],
-      example:'{ "policy_id": "uuid", "include_versions": true }' },
     { name:'update_policy', desc:'Archive the current version and create a new one (admin only)',
       params:[['policy_id','✅','uuid',''],['reviewed_by','✅','string',''],['change_summary','✅','string',''],['scope','—','string','']],
       example:'{ "policy_id": "uuid", "reviewed_by": "CISO", "change_summary": "Updated cloud scope to include GCP" }' },
@@ -1634,9 +1617,6 @@ const TOOLS = [
     { name:'list_evidence',     desc:'List evidence for a control, filtered by status: current, stale, expired',
       params:[['control_id','✅','string',''],['status','—','enum','current | stale | expired']],
       example:'{ "control_id": "8.20", "status": "current" }' },
-    { name:'get_evidence_gaps', desc:'Find implemented/partial controls with no current evidence',
-      params:[['assessment_id','✅','uuid','']],
-      example:'{ "assessment_id": "uuid" }' },
     { name:'link_jira_ticket',  desc:'Link evidence to an existing Jira issue or create a new one',
       params:[['evidence_id','✅','uuid',''],['jira_key','—','string','links existing issue, e.g. ISMS-42'],['summary','—','string','creates new issue']],
       example:'{ "evidence_id": "uuid", "summary": "Firewall config screenshot — annual review" }' },
@@ -1645,8 +1625,8 @@ const TOOLS = [
       example:'{ "evidence_id": "uuid", "title": "Track annual firewall review evidence" }' },
   ]},
   { group:'Group 8 — Server Info', role:'viewer', tools:[
-    { name:'get_server_info', desc:'Return version, uptime, DB stats, control counts, and rate limit config',
-      params:[], example:'{}' },
+    { name:'iso27001://server/info', desc:'[MCP Resource] Returns version, uptime, DB stats, control counts, and rate limit config. Access via the Resources panel — not a tool.',
+      params:[], example:'Read iso27001://server/info' },
   ]},
   { group:'Group 9 — Admin & Key Management', role:'admin', tools:[
     { name:'query_audit_log',desc:'Query the tamper-evident audit log with date/tool/outcome filters',
@@ -1662,16 +1642,11 @@ const TOOLS = [
     { name:'set_organization_profile', desc:'Upsert the singleton org profile. Once set, organisation_name and scope are auto-injected into create_policy and create_procedure.',
       params:[['legal_entity_name','✅','string',''],['registered_jurisdiction','✅','string',''],['in_scope_activities','✅','string',''],['isms_scope_statement','✅','string','becomes scope default'],['raci_roles','—','object','ciso, dpo, isms_manager, etc.'],['review_cadence_months','—','integer','default 12']],
       example:'{ "legal_entity_name": "Acme Ltd", "registered_jurisdiction": "England and Wales", "in_scope_activities": "Cloud SaaS", "isms_scope_statement": "All cloud-hosted systems and remote employees" }' },
-    { name:'get_organization_profile', desc:'Retrieve the singleton organisation profile. Returns { profile: null } if not yet set.',
-      params:[], example:'{}' },
   ]},
   { group:'Group 11 — Procedure Management', role:'analyst', tools:[
     { name:'create_procedure', desc:'Render a procedure from a Mustache template. 12 types available. organisation_name and scope auto-injected from org profile if set.',
       params:[['type','✅','enum','incident_handling | access_provisioning | backup_restore | change_management | vulnerability_management | …'],['owner','✅','string',''],['effective_date','✅','string','YYYY-MM-DD'],['policy_id','—','uuid','link to parent policy'],['related_controls','—','array','']],
       example:'{ "type": "incident_handling", "owner": "CISO", "effective_date": "2026-07-01" }' },
-    { name:'get_procedure', desc:'Fetch a procedure by ID with optional version history.',
-      params:[['procedure_id','✅','uuid',''],['include_versions','—','boolean','default false']],
-      example:'{ "procedure_id": "uuid", "include_versions": true }' },
     { name:'list_procedures', desc:'List procedures with filters: type, status, policy linkage, overdue flag.',
       params:[['procedure_type','—','enum','any type'],['status','—','enum','draft | active | archived'],['overdue_only','—','boolean',''],['limit','—','integer','default 50']],
       example:'{ "status": "active", "overdue_only": true }' },
@@ -1695,9 +1670,6 @@ const TOOLS = [
     { name:'complete_management_review', desc:'Mark a management review as complete and record the outcome summary.',
       params:[['review_id','✅','uuid',''],['outcome_summary','✅','string','']],
       example:'{ "review_id": "uuid", "outcome_summary": "ISMS performing well. 2 improvement opportunities identified and assigned." }' },
-    { name:'get_management_review', desc:'Fetch a management review with all inputs, outputs, and completion status.',
-      params:[['review_id','✅','uuid','']],
-      example:'{ "review_id": "uuid" }' },
     { name:'list_management_reviews', desc:'List management reviews with optional status filter.',
       params:[['status','—','enum','scheduled | in_progress | completed'],['limit','—','integer','default 20']],
       example:'{ "status": "completed", "limit": 10 }' },
@@ -1709,9 +1681,6 @@ const TOOLS = [
     { name:'update_improvement_opportunity', desc:'Update status, owner, due date, or resolution notes of an improvement opportunity.',
       params:[['opportunity_id','✅','uuid',''],['status','—','enum','open | in_progress | completed | cancelled'],['owner','—','string',''],['due_date','—','string','YYYY-MM-DD'],['resolution_notes','—','string','required when closing']],
       example:'{ "opportunity_id": "uuid", "status": "completed", "resolution_notes": "Automated via quarterly IAM report" }' },
-    { name:'get_improvement_opportunity', desc:'Fetch a single improvement opportunity by ID.',
-      params:[['opportunity_id','✅','uuid','']],
-      example:'{ "opportunity_id": "uuid" }' },
     { name:'list_improvement_opportunities', desc:'List improvement opportunities with optional filters by status, priority, or source.',
       params:[['status','—','enum','open | in_progress | completed | cancelled'],['priority','—','enum','low | medium | high | critical'],['source','—','enum','audit | management_review | incident | risk_assessment | self_assessment | other'],['limit','—','integer','default 50']],
       example:'{ "status": "open", "priority": "high" }' },
@@ -1720,9 +1689,6 @@ const TOOLS = [
     { name:'generate_evidence_document', desc:'Render a Mustache evidence template and dual-write to evidence + generated_evidence tables. 6 template types available.',
       params:[['template_type','✅','enum','access_review_attestation | bcp_test_report | incident_post_mortem | risk_treatment_sign_off | supplier_security_questionnaire | training_acknowledgement'],['title','✅','string',''],['generated_by','✅','string',''],['organisation_name','—','string','auto-injected from org profile'],['control_id','—','string','default: general'],['vars','—','object','additional template variables']],
       example:'{ "template_type": "access_review_attestation", "title": "Q2 2026 Access Review", "generated_by": "alice", "vars": { "reviewer_name": "Alice Smith", "review_period": "Q2 2026" } }' },
-    { name:'get_evidence_document', desc:'Fetch a generated evidence document by ID including rendered content and clause/control mappings.',
-      params:[['document_id','✅','uuid','']],
-      example:'{ "document_id": "uuid" }' },
     { name:'list_evidence_documents', desc:'List generated evidence documents with optional filters by template type, author, or linked control.',
       params:[['template_type','—','enum','any template type'],['generated_by','—','string',''],['control_id','—','string',''],['limit','—','integer','default 20']],
       example:'{ "template_type": "access_review_attestation", "generated_by": "alice" }' },
@@ -1918,7 +1884,7 @@ const SECTION_META = {
   gap:    { title:'Gap Assessment',    sub:'Acme Financial Services · ISO 27001:2022 · 24 controls shown' },
   risk:   { title:'Risk Register',     sub:'6 risks across all levels · click any risk to view treatment plan' },
   policy: { title:'Policy Generator',  sub:'12 ISO 27001-aligned policy templates · rendered with your org details' },
-  tools:  { title:'Tools Explorer',    sub:'63 MCP tools across 14 groups · all require a valid API key' },
+  tools:  { title:'Tools Explorer',    sub:'50 MCP tools across 14 groups · all require a valid API key' },
   procedures:      { title: 'Procedure Generator',   sub: '12 ISO 27001 operating procedures · rendered with Mustache partials' },
   'audit':         { title: 'Internal Audit',   sub: 'ISO 27001:2022 Clause 9.2 · Plan · Record findings (NC/OBS/OFI) · Raise CARs · Close' },
   'mgmt-review':   { title: 'Management Review',      sub: 'ISO 27001:2022 Clause 9.3 · 7 required inputs + at least 1 output · enforced business rule' },
