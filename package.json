@@ -1,6 +1,6 @@
 {
   "name": "iso27001-mcp",
-  "version": "0.9.7",
+  "version": "0.9.72",
   "mcpName": "io.github.Sushegaad/iso27001-mcp",
   "description": "ISO 27001 compliance workspace for Claude — controls, risks, policies, evidence, audits, and SoA in one local encrypted MCP server",
   "license": "MIT",

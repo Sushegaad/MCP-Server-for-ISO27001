@@ -1,3 +1,15 @@
+## What's new in v0.9.72
+
+### Documentation corrections
+
+- All tool count references corrected throughout README and demo site: 50 tools total (viewer=18, analyst=36, admin=50)
+- Per-group counts in the Tool Categories table updated to match `TOOL_MIN_ROLE` in `src/auth/rbac.ts`
+- Server Info group row updated to reflect retirement to MCP Resource (`iso27001://server/info`)
+- Demo site JS tool data pruned — retired tools removed from all 14 group arrays
+- Demo section notices updated to reference current tool names and resource URIs
+
+---
+
 ## What's new in v0.9.7
 
 ### 13 tools retired to MCP Resources — 50 tools remain
