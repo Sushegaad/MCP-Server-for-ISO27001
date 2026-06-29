@@ -1,0 +1,80 @@
+# iso27001-mcp — Roadmap
+
+Items here are planned but not yet implemented. PRs and feature requests are welcome — open an issue to discuss or vote on priorities.
+
+---
+
+## Near-term (next 1–2 releases)
+
+### CSV / spreadsheet import
+Many target users already have risk registers, evidence inventories, and control status trackers in spreadsheets. The goal is to meet them where they are:
+- `import_risks` — ingest a CSV of risks (asset, threat, vulnerability, likelihood, impact, owner, status) and bulk-register them into the risk register
+- `import_control_statuses` — bulk-update a gap assessment from a CSV (control_id, status, notes) — useful for teams migrating from existing spreadsheet workflows
+- `import_evidence` — register a batch of evidence artefacts from a CSV export of an existing evidence tracker
+
+Priority: **high** — this is the single biggest adoption barrier for users with existing compliance artefacts.
+
+### Auditor validation note
+A lightweight "reviewed by" section to be added to documentation and template headers indicating which controls, clause mappings, and policy templates have been reviewed against the published ISO 27001:2022 Annex A and clause text by a qualified practitioner.
+
+---
+
+## Medium-term
+
+### Confluence / Notion / SharePoint evidence ingestion
+Pull evidence artefacts directly from the platforms where teams actually store their policies and procedures:
+- Confluence: ingest page as a policy or procedure record (with version tracking)
+- Notion: ingest database entries as evidence records
+- SharePoint / OneDrive: register a document as evidence with source URL
+
+### Slack integration
+- Notify a Slack channel when a CAR is opened, overdue, or closed
+- Surface overdue evidence reviews and management review reminders
+- Weekly ISMS health digest (open risks, overdue CARs, expiring evidence)
+
+### Google Drive / Docs integration
+- Register a Google Doc as a policy or procedure and track its version
+- Sync policy review dates from a Google Sheets tracker
+
+---
+
+## Longer-term
+
+### Team / hosted mode improvements
+The server already supports SSE transport for team use. Planned improvements:
+- Web dashboard for viewing ISMS status without a Claude Desktop session
+- Webhook support — emit events on risk creation, CAR state changes, audit completion
+- Read-only guest access (no API key required for public resource URIs in hosted mode)
+
+### ISO 27001:2022 clause health scoring
+An automated "certification readiness score" (0–100) computed from:
+- Gap assessment compliance %
+- Open vs closed risks
+- Policy and procedure review status
+- Outstanding CARs
+- Evidence currency
+- Management review completion
+
+### Multi-framework support
+Extend the control registry and SoA tooling to support additional frameworks alongside ISO 27001:2022:
+- SOC 2 Trust Services Criteria
+- NIST CSF 2.0
+- ISO 27001:2013 (already seeded — full workflow support planned)
+- CIS Controls v8
+
+---
+
+## Completed
+
+| Feature | Version |
+|---------|---------|
+| 13 tools retired to MCP Resources (20 resource URIs) | v0.9.7 |
+| HITL confirmation gates on all mutating tools | v0.9.7 |
+| Shared DB types, constants, evidence utils (KISS/DRY refactor) | v0.9.7 |
+| Evidence document templates (6 types, dual-write) | v0.9.6 |
+| Management review — Clause 9.3 full lifecycle | v0.9.5 |
+| Improvement plan — Clause 10.1 | v0.9.5 |
+| SSE transport for team/hosted mode | v0.9.4 |
+| HMAC-SHA256 tamper-evident audit log | v0.9.3 |
+| Jira and GitHub issue linking for evidence | v0.9.2 |
+| AES-256 encrypted SQLite (`better-sqlite3-multiple-ciphers`) | v0.9.1 |

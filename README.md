@@ -9,7 +9,7 @@
 [![ISO 27001:2022](https://img.shields.io/badge/ISO%2027001-2022-blue.svg)](https://www.iso.org/standard/27001)
 [![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.72)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.72)
 
-**[▶ Live Interactive Demo](https://sushegaad.github.io/MCP-Server-for-ISO27001/)**
+**[▶ Live Interactive Demo](https://sushegaad.github.io/MCP-Server-for-ISO27001/)** · **[Guided First-Run Checklist →](QUICKSTART.md)** · **[Roadmap →](ROADMAP.md)**
 
 <div align="center">
   <a href="https://youtu.be/BGHYTYbL8wE">
@@ -182,6 +182,14 @@ Pre-structured evidence documents for auditor submissions: `access_review_attest
 The [`samples/`](samples/) directory contains auditor-ready example outputs for a fictitious organisation ("Acme Financial Services Ltd") — a full gap assessment, remediation roadmap, risk register CSV, SoA CSV, access control policy, incident handling procedure, internal audit report, corrective action records, and evidence package. See [Sample Outputs](docs/REFERENCE.md#sample-outputs) for the full index.
 
 > **ISO 27001 keywords:** ISO 27001 Statement of Applicability generator · ISO 27001 risk register template · ISO 27001 gap assessment tool · ISO 27001 audit evidence tracker · ISO 27001 MCP server · Claude ISO 27001 compliance assistant · AI GRC tool open source
+
+---
+
+## Content Accuracy
+
+Control identifiers, Annex A control names, clause numbers (4–10), and the 93-control 2022 / 114-control 2013 structure are mapped directly from the published ISO/IEC 27001:2022 and ISO/IEC 27001:2013 texts. Policy and procedure templates follow the clause structure and RACI patterns common in practitioner guidance.
+
+> **Note:** Template content and clause mappings have not yet been independently reviewed by a certified ISO 27001 Lead Auditor. They are intended as a starting point, not a substitute for professional audit or legal advice. A formal practitioner review is planned — see [Roadmap](ROADMAP.md).
 
 ---
 

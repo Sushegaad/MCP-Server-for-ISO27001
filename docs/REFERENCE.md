@@ -55,7 +55,7 @@ Runs 10 health checks and prints `✅ / ❌ / --` for each. All green means Clau
 
 Quit the app fully and reopen it. The ISO 27001 tools will appear in the tools panel.
 
-> **Tip:** Ask Claude `"Use get_server_info to verify the server is running"` to confirm the connection.
+> **Tip:** Ask Claude to read `iso27001://server/info` (a resource, not a tool) to confirm the connection.
 
 ---
 
@@ -105,9 +105,9 @@ export DB_PATH=$HOME/.iso27001/isms.db
 
 ```bash
 # Generate additional keys for team members
-iso27001-mcp keygen --label "Alice" --role viewer       # read-only, 31 tools
-iso27001-mcp keygen --label "Bob"   --role analyst --expires 90d  # 49 tools
-iso27001-mcp keygen --label "CISO"  --role admin  --expires 1y    # all 63 tools
+iso27001-mcp keygen --label "Alice" --role viewer       # read-only, 18 tools
+iso27001-mcp keygen --label "Bob"   --role analyst --expires 90d  # 36 tools
+iso27001-mcp keygen --label "CISO"  --role admin  --expires 1y    # all 50 tools
 
 # List all keys
 iso27001-mcp keys list
@@ -183,19 +183,13 @@ npm run build
 
 ## Tools Reference
 
-The server exposes **63 tools** across 14 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
+The server exposes **50 tools** across 14 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
 
 ---
 
 ### Group 1 — Control Registry *(minimum role: viewer)*
 
-#### `get_control`
-Fetch a single control by ID and version.
-
-| Parameter | Req | Type | Values / Notes |
-|-----------|-----|------|----------------|
-| `control_id` | ✅ | string | e.g. `5.1`, `A.8.1` |
-| `version` | — | enum | `2022` \| `2013` |
+> **Read single records via MCP Resources:** `iso27001://control/{control_id}`, `iso27001://control/{control_id}/version/{version}`, and `iso27001://clause/{clause_id}` replace the retired `get_control` and `get_clause_requirement` tools and are accessible from the resource panel without consuming tool quota.
 
 #### `list_controls`
 List controls with optional filters.
@@ -236,14 +230,6 @@ Show the mapping between a 2013 control and its 2022 equivalent. Provide at leas
 | `v2013_id` | — | string | ISO 27001:2013 control ID |
 | `v2022_id` | — | string | ISO 27001:2022 control ID |
 
-#### `get_clause_requirement`
-Fetch a clause requirement (clauses 4–10) with optional sub-clauses.
-
-| Parameter | Req | Type | Values / Notes |
-|-----------|-----|------|----------------|
-| `clause_id` | ✅ | string | e.g. `4.1`, `9.2` |
-| `include_sub_clauses` | — | boolean | Default: `false` |
-
 #### `list_clause_requirements`
 List all clause requirements, optionally filtered by parent.
 
@@ -253,7 +239,9 @@ List all clause requirements, optionally filtered by parent.
 
 ---
 
-### Group 2 — Gap Analysis *(reads: viewer+, writes: analyst+)*
+### Group 2 — Gap Analysis *(minimum role: analyst)*
+
+> **Read summaries via MCP Resources:** `iso27001://assessment/{assessment_id}/summary` replaces `get_gap_summary` and `iso27001://assessment/{assessment_id}/evidence-gaps` replaces `get_evidence_gaps`.
 
 #### `create_gap_assessment`
 Create a new gap assessment. Pre-populates all in-scope controls as `not_started`.
@@ -279,14 +267,6 @@ Set a control's implementation status within an assessment.
 | `notes` | — | string | Implementation notes |
 | `na_justification` | — | string | Required when `status=na` |
 | `assessed_by` | — | string | Assessor name |
-
-#### `get_gap_summary`
-Return compliance %, counts by status, and a top-10 remediation priority list.
-
-| Parameter | Req | Type | Values / Notes |
-|-----------|-----|------|----------------|
-| `assessment_id` | ✅ | string (UUID) | |
-| `breakdown_by` | — | enum | `theme` \| `control_type` \| `cybersecurity_concept` |
 
 #### `list_gap_assessments`
 List assessments with a status filter.
@@ -321,7 +301,9 @@ Archive a completed assessment.
 
 ---
 
-### Group 3 — Risk Management *(reads: viewer+, writes: analyst+)*
+### Group 3 — Risk Management *(minimum role: analyst)*
+
+> **Read records via MCP Resources:** `iso27001://risk/{risk_id}` replaces `get_risk` and `iso27001://risks/summary` replaces `get_risk_summary`.
 
 #### `create_risk`
 Register a new risk. `risk_score` is computed automatically as `likelihood × impact`.
@@ -336,14 +318,6 @@ Register a new risk. `risk_score` is computed automatically as `likelihood × im
 | `owner` | — | string | Risk owner |
 | `related_controls` | — | array | Control IDs |
 | `status` | — | enum | `open` \| `accepted` \| `mitigated` \| `transferred` \| `closed` — default: `open` |
-
-#### `get_risk`
-Fetch a risk record with optional treatment plans.
-
-| Parameter | Req | Type | Values / Notes |
-|-----------|-----|------|----------------|
-| `risk_id` | ✅ | string (UUID) | |
-| `include_treatments` | — | boolean | Default: `false` |
 
 #### `update_risk`
 Update any mutable field; `risk_score` recomputes automatically.
@@ -370,9 +344,6 @@ List risks with optional filters.
 | `owner` | — | string | |
 | `limit` | — | integer | Default: `50`, max `100` |
 | `offset` | — | integer | Default: `0` |
-
-#### `get_risk_summary`
-Return aggregated stats: counts by level, 5×5 heatmap matrix, top 10 by score. No parameters.
 
 #### `create_treatment_plan`
 Create a risk treatment plan. `mitigate` type requires at least one control reference.
@@ -411,7 +382,9 @@ Export the full risk register.
 
 ---
 
-### Group 4 — Policy Management *(reads: viewer+, create: analyst+, update: admin)*
+### Group 4 — Policy Management *(create: analyst+, update: admin)*
+
+> **Read policies via MCP Resources:** `iso27001://policy/{policy_id}` and `iso27001://policy/{policy_id}/version/{n}` replace `get_policy`.
 
 #### `create_policy`
 Render a policy from a Mustache template with org-specific variables.
@@ -425,14 +398,6 @@ Render a policy from a Mustache template with org-specific variables.
 | `approver` | — | string | |
 | `review_cycle_months` | — | integer | 1–36, default: `12` |
 | `effective_date` | ✅ | string | `YYYY-MM-DD` |
-
-#### `get_policy`
-Fetch a policy with optional version history.
-
-| Parameter | Req | Type | Values / Notes |
-|-----------|-----|------|----------------|
-| `policy_id` | ✅ | string (UUID) | |
-| `include_versions` | — | boolean | Default: `false` |
 
 #### `update_policy`
 Archive the current version and create a new one. Admin only.
@@ -553,7 +518,9 @@ Export a full audit report (executive summary, findings, CARs).
 
 ---
 
-### Group 7 — Evidence Tracking *(reads: viewer+, writes: analyst+)*
+### Group 7 — Evidence Tracking *(minimum role: analyst)*
+
+> **Read gaps via MCP Resources:** `iso27001://assessment/{assessment_id}/evidence-gaps` replaces `get_evidence_gaps`.
 
 #### `register_evidence`
 Register an evidence artefact for a control.
@@ -575,13 +542,6 @@ List evidence for a control, optionally filtered by currency.
 |-----------|-----|------|----------------|
 | `control_id` | ✅ | string | |
 | `status` | — | enum | `current` \| `stale` \| `expired` |
-
-#### `get_evidence_gaps`
-Find controls marked `implemented` or `partial` that have no current evidence.
-
-| Parameter | Req | Type | Values / Notes |
-|-----------|-----|------|----------------|
-| `assessment_id` | ✅ | string (UUID) | |
 
 #### `link_jira_ticket`
 Link evidence to an existing Jira issue (`jira_key`) or create a new one (`summary`). Provide at least one.
@@ -605,10 +565,9 @@ Link evidence to an existing GitHub issue (`issue_number`) or create a new one (
 
 ---
 
-### Group 8 — Server Info *(minimum role: viewer)*
+### Group 8 — Server Info *(MCP Resource — no tool)*
 
-#### `get_server_info`
-Return version, uptime, DB stats, control counts, and rate limit config. No parameters.
+> **Retired to MCP Resource.** Read `iso27001://server/info` from the resource panel. Returns version, uptime, DB stats, control counts, and rate limit config. No tool call needed.
 
 ---
 
@@ -640,7 +599,9 @@ Immediately revoke a key by label.
 
 ---
 
-### Group 10 — Organisation Profile *(minimum role: admin for writes, viewer for reads)*
+### Group 10 — Organisation Profile *(minimum role: admin)*
+
+> **Read profile via MCP Resources:** `iso27001://org/profile` replaces `get_organization_profile`.
 
 #### `set_organization_profile`
 Upsert the singleton organisation profile. Used to auto-inject `organisation_name` and `scope` into `create_policy` and `create_procedure`.
@@ -656,12 +617,11 @@ Upsert the singleton organisation profile. Used to auto-inject `organisation_nam
 | `raci_roles` | — | object | Keys: `ciso`, `dpo`, `data_owner`, `isms_manager`, `internal_auditor` |
 | `review_cadence_months` | — | integer | Default: `12` |
 
-#### `get_organization_profile`
-Retrieve the singleton organisation profile. Returns `{ profile: null }` if not yet set. No parameters.
-
 ---
 
-### Group 11 — Procedure Management *(reads: viewer+, create/export: analyst+, update: admin)*
+### Group 11 — Procedure Management *(create/export: analyst+, update: admin)*
+
+> **Read procedures via MCP Resources:** `iso27001://procedure/{procedure_id}` and `iso27001://procedure/{procedure_id}/version/{n}` replace `get_procedure`.
 
 #### `create_procedure`
 Render a procedure from a Mustache template and store it in the database.
@@ -677,14 +637,6 @@ Render a procedure from a Mustache template and store it in the database.
 | `policy_id` | — | string (UUID) | Link to a parent policy (must be active) |
 | `related_controls` | — | array | Control IDs |
 | `review_cycle_months` | — | integer | 1–36, default: `12` |
-
-#### `get_procedure`
-Fetch a procedure by ID, optionally including archived version history.
-
-| Parameter | Req | Type | Values / Notes |
-|-----------|-----|------|----------------|
-| `procedure_id` | ✅ | string (UUID) | |
-| `include_versions` | — | boolean | Default: `false` |
 
 #### `list_procedures`
 List procedures with optional filters, sorted by upcoming review date.
@@ -721,7 +673,9 @@ Export a procedure as Markdown or JSON.
 
 ---
 
-### Group 12 — Management Review *(reads: viewer+, writes: admin)* — Clause 9.3
+### Group 12 — Management Review *(minimum role: admin)* — Clause 9.3
+
+> **Read reviews via MCP Resources:** `iso27001://management-review/{review_id}` replaces `get_management_review`.
 
 #### `create_management_review`
 Schedule a management review meeting.
@@ -763,13 +717,6 @@ Mark a management review as complete and record the outcome.
 | `review_id` | ✅ | string (UUID) | |
 | `outcome_summary` | ✅ | string | |
 
-#### `get_management_review`
-Fetch a management review with all inputs, outputs, and status.
-
-| Parameter | Req | Type | Values / Notes |
-|-----------|-----|------|----------------|
-| `review_id` | ✅ | string (UUID) | |
-
 #### `list_management_reviews`
 List management reviews with optional status filter.
 
@@ -781,7 +728,9 @@ List management reviews with optional status filter.
 
 ---
 
-### Group 13 — Improvement Plan *(reads: viewer+, writes: analyst+)* — Clause 10.1
+### Group 13 — Improvement Plan *(minimum role: analyst)* — Clause 10.1
+
+> **Read individual items via MCP Resources:** `iso27001://improvement-plan/{opportunity_id}` replaces `get_improvement_opportunity`. The full plan list is available at `iso27001://improvement-plan`.
 
 #### `create_improvement_opportunity`
 Register an improvement opportunity, typically identified during a management review or audit.
@@ -808,13 +757,6 @@ Update the status, owner, or due date of an improvement opportunity.
 | `due_date` | — | string | `YYYY-MM-DD` |
 | `resolution_notes` | — | string | Required when closing |
 
-#### `get_improvement_opportunity`
-Fetch a single improvement opportunity by ID.
-
-| Parameter | Req | Type | Values / Notes |
-|-----------|-----|------|----------------|
-| `opportunity_id` | ✅ | string (UUID) | |
-
 #### `list_improvement_opportunities`
 List improvement opportunities with optional filters.
 
@@ -828,7 +770,9 @@ List improvement opportunities with optional filters.
 
 ---
 
-### Group 14 — Evidence Templates *(reads: viewer+, generate: analyst+)*
+### Group 14 — Evidence Templates *(minimum role: analyst)*
+
+> **Read individual documents via MCP Resources:** `iso27001://evidence-document/{document_id}` replaces `get_evidence_document`.
 
 #### `generate_evidence_document`
 Render a Mustache evidence template and store it. The document is dual-written to both the `evidence` table and the `generated_evidence` table for tracking and version history.
@@ -841,13 +785,6 @@ Render a Mustache evidence template and store it. The document is dual-written t
 | `organisation_name` | — | string | Auto-injected from org profile if set |
 | `control_id` | — | string | Link to a specific control (default: `general`) |
 | `vars` | — | object | Additional Mustache template variables |
-
-#### `get_evidence_document`
-Fetch a generated evidence document by ID, including rendered content and clause/control mappings.
-
-| Parameter | Req | Type | Values / Notes |
-|-----------|-----|------|----------------|
-| `document_id` | ✅ | string (UUID) | |
 
 #### `list_evidence_documents`
 List generated evidence documents with optional filters.
@@ -870,34 +807,52 @@ Resources are read-only. Write operations always go through tools (which enforce
 
 ### Resource URI Scheme
 
-| Resource | URI pattern | Auth |
-|----------|-------------|------|
-| `iso27001-control` | `iso27001://control/{control_id}` | Public |
-| `iso27001-control-versioned` | `iso27001://control/{control_id}/version/{version}` | Public |
-| `iso27001-clause` | `iso27001://clause/{clause_id}` | Public |
-| `iso27001-org-profile` | `iso27001://org/profile` | Viewer |
-| `iso27001-policy` | `iso27001://policy/{policy_id}` | Viewer |
-| `iso27001-policy-versioned` | `iso27001://policy/{policy_id}/version/{n}` | Viewer |
-| `iso27001-procedure` | `iso27001://procedure/{procedure_id}` | Viewer |
-| `iso27001-procedure-versioned` | `iso27001://procedure/{procedure_id}/version/{n}` | Viewer |
-| `iso27001-risk` | `iso27001://risk/{risk_id}` | Viewer |
-| `iso27001-assessment` | `iso27001://assessment/{assessment_id}` | Viewer |
-| `iso27001-soa` | `iso27001://soa/{soa_id}` | Viewer |
-| `iso27001-audit` | `iso27001://audit/{audit_id}` | Viewer |
+20 read-only resources are available. Public resources require no API key; Viewer+ resources require any valid key.
+
+| Resource | URI pattern | Auth | Replaces tool |
+|----------|-------------|------|---------------|
+| Server info | `iso27001://server/info` | Public | `get_server_info` |
+| Control (single) | `iso27001://control/{control_id}` | Public | `get_control` |
+| Control (versioned) | `iso27001://control/{control_id}/version/{version}` | Public | — |
+| Clause requirement | `iso27001://clause/{clause_id}` | Public | `get_clause_requirement` |
+| Organisation profile | `iso27001://org/profile` | Viewer | `get_organization_profile` |
+| Policy | `iso27001://policy/{policy_id}` | Viewer | `get_policy` |
+| Policy (versioned) | `iso27001://policy/{policy_id}/version/{n}` | Viewer | — |
+| Procedure | `iso27001://procedure/{procedure_id}` | Viewer | `get_procedure` |
+| Procedure (versioned) | `iso27001://procedure/{procedure_id}/version/{n}` | Viewer | — |
+| Risk (single) | `iso27001://risk/{risk_id}` | Viewer | `get_risk` |
+| Risk summary | `iso27001://risks/summary` | Viewer | `get_risk_summary` |
+| Assessment | `iso27001://assessment/{assessment_id}` | Viewer | — |
+| Assessment gap summary | `iso27001://assessment/{assessment_id}/summary` | Viewer | `get_gap_summary` |
+| Assessment evidence gaps | `iso27001://assessment/{assessment_id}/evidence-gaps` | Viewer | `get_evidence_gaps` |
+| Statement of Applicability | `iso27001://soa/{soa_id}` | Viewer | — |
+| Audit | `iso27001://audit/{audit_id}` | Viewer | — |
+| Management review | `iso27001://management-review/{review_id}` | Viewer | `get_management_review` |
+| Improvement plan (full) | `iso27001://improvement-plan` | Viewer | — |
+| Improvement opportunity | `iso27001://improvement-plan/{opportunity_id}` | Viewer | `get_improvement_opportunity` |
+| Evidence document | `iso27001://evidence-document/{document_id}` | Viewer | `get_evidence_document` |
 
 ### Resource Formats
+
+**Server info** (`application/json`) — version, uptime, DB path, control counts, and rate limit config.
 
 **Controls and clauses** (`application/json`) — full control record including `control_type`, `attributes`, `related_controls`, and ISO clause refs.
 
 **Policies and procedures** (`text/markdown`) — rendered document body with a YAML frontmatter envelope containing `uri`, `procedure_type` / policy `type`, version, owner, clause and control mappings, and review dates.
 
-**Risks** (`application/json`) — risk record with nested `treatments` array.
+**Risks** (`application/json`) — risk record with nested `treatments` array. The `iso27001://risks/summary` singleton returns aggregated counts by level and a 5×5 heatmap matrix.
 
-**Assessments** (`application/json`) — assessment record with `control_status_summary` (counts by status).
+**Assessments** (`application/json`) — assessment record with `control_status_summary` (counts by status). The `/summary` sub-resource adds compliance % and top-10 remediation priority list. The `/evidence-gaps` sub-resource lists implemented/partial controls with no current evidence.
 
 **Statement of Applicability** (`application/json`) — SoA record with nested `entries` array (boolean `included` field).
 
 **Audits** (`application/json`) — audit record with nested `findings` array, each containing its `corrective_actions`.
+
+**Management reviews** (`application/json`) — review record with nested `inputs` and `outputs` arrays and completion status.
+
+**Improvement plan** (`application/json`) — `iso27001://improvement-plan` returns all open opportunities sorted by priority. `iso27001://improvement-plan/{id}` returns a single opportunity record.
+
+**Evidence documents** (`text/markdown`) — rendered document body with YAML frontmatter containing template type, author, control mapping, and generation timestamp.
 
 ### Example
 
@@ -916,7 +871,7 @@ Resources are read-only. Write operations always go through tools (which enforce
 │                     Claude (LLM)                        │
 └──────────┬───────────────────────────────┬──────────────┘
            │  MCP Tools (read/write)        │  MCP Resources (read-only)
-           │  63 tools, RBAC enforced       │  12 iso27001:// URIs
+           │  50 tools, RBAC enforced       │  20 iso27001:// URIs
 ┌──────────▼───────────────────────────────▼──────────────┐
 │                   iso27001-mcp server                   │
 │                                                         │
@@ -945,7 +900,7 @@ Resources are read-only. Write operations always go through tools (which enforce
 │  └─────────────┘  └──────────┘  └────────────────────┘  │
 │  ┌─────────────────────────────────────────────────┐    │
 │  │  Org Profile · Audit Log (HMAC-SHA256 chain)    │    │
-│  │  Session Token Store · API Key RBAC (63 tools)  │    │
+│  │  Session Token Store · API Key RBAC (50 tools)  │    │
 │  └─────────────────────────────────────────────────┘    │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐    │
@@ -999,9 +954,9 @@ Three roles with strict hierarchy. A key can only call tools at or below its ass
 
 | Role | Tools available | Typical user |
 |------|----------------|--------------|
-| `viewer` | 31 (all read-only tools) | Auditor, stakeholder |
-| `analyst` | 49 (reads + gap/risk/policy/procedure/evidence/improvement writes) | ISMS practitioner, consultant |
-| `admin` | 63 (all tools, including org profile, audit management, audit log and key management) | CISO, ISMS owner |
+| `viewer` | 18 (read-only tools) | Auditor, stakeholder |
+| `analyst` | 36 (18 viewer tools + gap/risk/policy/procedure/evidence/improvement writes) | ISMS practitioner, consultant |
+| `admin` | 50 (all tools, including org profile, audit management, audit log and key management) | CISO, ISMS owner |
 
 ---
 
@@ -1126,13 +1081,13 @@ src/
 │   └── claude-config.ts      Claude Desktop config detection + entry builder
 ├── auth/
 │   ├── api-key.ts            Key generation, HMAC validation, expiry, revocation
-│   ├── rbac.ts               Permission matrix (63 tools × 3 roles)
+│   ├── rbac.ts               Permission matrix (50 tools × 3 roles)
 │   └── session-store.ts      SSE session token store (opaque token → keyHash + role)
 ├── security/
 │   ├── sanitise.ts           Prompt-injection stripping for free-text fields
 │   ├── rate-limiter.ts       Sliding-window RPM counter per key hash
 │   ├── secrets.ts            Env var validation (fail-fast on startup)
-│   └── validate.ts           Zod schemas for all 63 tool inputs
+│   └── validate.ts           Zod schemas for all 50 tool inputs
 ├── audit/
 │   └── logger.ts             Tamper-evident audit event writer
 ├── db/
