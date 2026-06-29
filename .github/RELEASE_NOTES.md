@@ -1,3 +1,14 @@
+## What's new in v0.9.73
+
+### Documentation overhaul — reviewer feedback addressed
+
+- **`docs/REFERENCE.md`** fully corrected: all 13 retired tool sections removed, replaced with `>` callout blocks pointing to MCP Resource URIs. All stale counts fixed (63→50, 31→18, 49→36). MCP Resources table expanded from 12 to 20 URIs with a "Replaces tool" column. Resource Formats section expanded to cover all new resource types. Architecture diagram updated (50 tools, 20 URIs).
+- **`QUICKSTART.md`** (new): 8-step guided first-run checklist with concrete Claude prompts — org profile → gap assessment → risk register → SoA → policy pack → procedures → remediation roadmap → internal audit. Produces a full Stage 1 audit readiness evidence package in one session.
+- **`ROADMAP.md`** (new): Near-term (CSV/spreadsheet import, auditor validation), medium-term (Confluence/Notion/Slack/Google Drive integrations), longer-term (readiness score, multi-framework), and completed features table.
+- **`README.md`**: Links to QUICKSTART and ROADMAP added above the fold. New "Content Accuracy" section with honest disclaimer about practitioner review status.
+
+---
+
 ## What's new in v0.9.72
 
 ### Documentation corrections

@@ -7,7 +7,7 @@
 [![CI](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml/badge.svg)](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![ISO 27001:2022](https://img.shields.io/badge/ISO%2027001-2022-blue.svg)](https://www.iso.org/standard/27001)
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.72)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.72)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.73)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.73)
 
 **[▶ Live Interactive Demo](https://sushegaad.github.io/MCP-Server-for-ISO27001/)** · **[Guided First-Run Checklist →](QUICKSTART.md)** · **[Roadmap →](ROADMAP.md)**
 
