@@ -37,6 +37,7 @@ vi.mock("../../src/db/connection.js", () => ({
 import { handleUpdateControlStatus }   from "../../src/tools/gap-analysis.js";
 import { handleCreateTreatmentPlan }   from "../../src/tools/risks.js";
 import { handleUpdateCorrectiveAction } from "../../src/tools/audit-management.js";
+import { _testSeedProposal } from "../../src/tools/hitl-utils.js";
 
 // ── Reset mocks between tests ─────────────────────────────────
 
@@ -59,12 +60,16 @@ describe("Business rule: silent status downgrade", () => {
       .mockReturnValueOnce({ id: "a1", status: "active" })   // assessment row
       .mockReturnValueOnce({ id: "cs1" });                    // existing control_status row
 
+    const BR_PROPOSAL_1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    _testSeedProposal(BR_PROPOSAL_1, "update_control_status");
+
     const result = handleUpdateControlStatus({
       assessment_id: "a1",
       control_id:    "5.1",
       status:        "implemented",
       // No evidence_refs — triggers silent downgrade
       confirmed:     true,
+      proposal_id:   BR_PROPOSAL_1,
     });
 
     expect(result.isError).toBe(false);
@@ -81,12 +86,16 @@ describe("Business rule: silent status downgrade", () => {
       .mockReturnValueOnce({ id: "a1", status: "active" })
       .mockReturnValueOnce({ id: "cs1" });
 
+    const BR_PROPOSAL_2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    _testSeedProposal(BR_PROPOSAL_2, "update_control_status");
+
     const result = handleUpdateControlStatus({
       assessment_id: "a1",
       control_id:    "5.1",
       status:        "implemented",
       evidence_refs: ["550e8400-e29b-41d4-a716-446655440001"],
       confirmed:     true,
+      proposal_id:   BR_PROPOSAL_2,
     });
 
     expect(result.isError).toBe(false);

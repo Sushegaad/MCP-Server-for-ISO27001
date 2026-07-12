@@ -16,7 +16,7 @@ import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { loadTemplate, loadPartials, stripFrontmatter } from "./template-utils.js";
 import { loadOrgProfileDefaults } from "./org-profile.js";
-import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
+import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
 
 
 // ── create_policy ─────────────────────────────────────────────
@@ -25,12 +25,12 @@ export function handleCreatePolicy(args: Record<string, unknown>): ToolResult {
   const {
     type, organisation_name, scope, owner, approver,
     review_cycle_months = 12, effective_date,
-    confirmed = false,
+    confirmed = false, proposal_id,
   } = args as {
     type: string; organisation_name?: string; scope?: string;
     owner: string; approver?: string;
     review_cycle_months?: number; effective_date: string;
-    confirmed?: boolean;
+    confirmed?: boolean; proposal_id?: string;
   };
 
   // Auto-inject org profile defaults when caller omits organisation_name / scope
@@ -60,15 +60,19 @@ export function handleCreatePolicy(args: Record<string, unknown>): ToolResult {
       { field: "effective_date",    old: null, new: effective_date },
       { field: "next_review_date",  old: null, new: next_review },
     ];
+    const proposal_id_token = createProposal("create_policy");
     return ok({
       hitl_proposed: true,
       status:        "preview",
+      proposal_id:   proposal_id_token,
+      expires_in:    "10 minutes",
       policy_type:   type,
       message:       "⏸ No data written. Pass \"confirmed\": true to generate and save this policy.",
       diff:          buildDiffTable(rows),
     });
   }
 
+  consumeProposal(proposal_id, "create_policy");
   const id             = newId();
   const ts             = now();
 
@@ -148,10 +152,10 @@ export function handleGetPolicy(args: Record<string, unknown>): ToolResult {
 // ── update_policy ─────────────────────────────────────────────
 
 export function handleUpdatePolicy(args: Record<string, unknown>): ToolResult {
-  const { policy_id, scope, owner, approver, reviewed_by, change_summary, confirmed = false } = args as {
+  const { policy_id, scope, owner, approver, reviewed_by, change_summary, confirmed = false, proposal_id } = args as {
     policy_id: string; scope?: string; owner?: string;
     approver?: string; reviewed_by: string; change_summary: string;
-    confirmed?: boolean;
+    confirmed?: boolean; proposal_id?: string;
   };
 
   const db      = getDb();
@@ -173,9 +177,12 @@ export function handleUpdatePolicy(args: Record<string, unknown>): ToolResult {
       rows.push({ field: "approver", old: current.approver, new: approver });
     rows.push({ field: "reviewed_by", old: current.reviewed_by, new: reviewed_by });
     rows.push({ field: "change_summary", old: "(none)", new: change_summary });
+    const proposal_id_token = createProposal("update_policy");
     return ok({
       hitl_proposed: true,
       status:        "preview",
+      proposal_id:   proposal_id_token,
+      expires_in:    "10 minutes",
       policy_id,
       policy_type:   current.type,
       message:       "⏸ No data written. The current version will be archived and a new version created. Pass \"confirmed\": true to apply this change.",
@@ -183,6 +190,7 @@ export function handleUpdatePolicy(args: Record<string, unknown>): ToolResult {
     });
   }
 
+  consumeProposal(proposal_id, "update_policy");
   const ts         = now();
   const newVersion = current.version + 1;
 

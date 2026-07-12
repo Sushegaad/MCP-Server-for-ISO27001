@@ -39,6 +39,7 @@ import {
   handleListPolicies,
 } from "../../../src/tools/policies.js";
 import { McpError } from "../../../src/types/errors.js";
+import { _testSeedProposal } from "../../../src/tools/hitl-utils.js";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -98,6 +99,9 @@ describe("handleCreatePolicy", () => {
   it("creates a policy and returns content_preview when confirmed=true", () => {
     mockStmt.run.mockReturnValue({ changes: 1 });
 
+    const PROPOSAL_CP_1 = "a1a1a1a1-a1a1-4a1a-aa1a-a1a1a1a1a1a1";
+    _testSeedProposal(PROPOSAL_CP_1, "create_policy");
+
     const result = handleCreatePolicy({
       type: "information_security",
       organisation_name: "Acme Ltd",
@@ -106,6 +110,7 @@ describe("handleCreatePolicy", () => {
       effective_date: "2025-01-01",
       review_cycle_months: 12,
       confirmed: true,
+      proposal_id: PROPOSAL_CP_1,
     });
 
     expect(result.isError).toBe(false);
@@ -122,6 +127,9 @@ describe("handleCreatePolicy", () => {
   it("calls readFileSync to load the template when confirmed=true", () => {
     mockStmt.run.mockReturnValue({ changes: 1 });
 
+    const PROPOSAL_CP_2 = "b2b2b2b2-b2b2-4b2b-ab2b-b2b2b2b2b2b2";
+    _testSeedProposal(PROPOSAL_CP_2, "create_policy");
+
     handleCreatePolicy({
       type: "information_security",
       organisation_name: "Acme Ltd",
@@ -129,6 +137,7 @@ describe("handleCreatePolicy", () => {
       owner: "CISO",
       effective_date: "2025-01-01",
       confirmed: true,
+      proposal_id: PROPOSAL_CP_2,
     });
 
     expect(readFileSync).toHaveBeenCalled();
@@ -137,6 +146,9 @@ describe("handleCreatePolicy", () => {
   it("inserts the policy into the database via prepare().run() when confirmed=true", () => {
     mockStmt.run.mockReturnValue({ changes: 1 });
 
+    const PROPOSAL_CP_3 = "c3c3c3c3-c3c3-4c3c-ac3c-c3c3c3c3c3c3";
+    _testSeedProposal(PROPOSAL_CP_3, "create_policy");
+
     handleCreatePolicy({
       type: "information_security",
       organisation_name: "Acme Ltd",
@@ -144,6 +156,7 @@ describe("handleCreatePolicy", () => {
       owner: "CISO",
       effective_date: "2025-01-01",
       confirmed: true,
+      proposal_id: PROPOSAL_CP_3,
     });
 
     // prepare is called twice: once by loadOrgProfileDefaults() and once for the INSERT
@@ -208,6 +221,9 @@ describe("handleUpdatePolicy", () => {
       .mockReturnValueOnce(archiveStmt)
       .mockReturnValueOnce(updateStmt);
 
+    const PROPOSAL_UP_1 = "d4d4d4d4-d4d4-4d4d-ad4d-d4d4d4d4d4d4";
+    _testSeedProposal(PROPOSAL_UP_1, "update_policy");
+
     const result = handleUpdatePolicy({
       policy_id: "pol-1",
       scope: "Updated scope",
@@ -215,6 +231,7 @@ describe("handleUpdatePolicy", () => {
       reviewed_by: "auditor@example.com",
       change_summary: "Scope revised",
       confirmed: true,
+      proposal_id: PROPOSAL_UP_1,
     });
 
     expect(result.isError).toBe(false);
@@ -348,6 +365,9 @@ describe("handleCreatePolicy — template branch coverage", () => {
     );
     mockStmt.run.mockReturnValue({ changes: 1 });
 
+    const PROPOSAL_CP_4 = "e5e5e5e5-e5e5-4e5e-ae5e-e5e5e5e5e5e5";
+    _testSeedProposal(PROPOSAL_CP_4, "create_policy");
+
     const result = handleCreatePolicy({
       type: "information_security",
       organisation_name: "Acme Ltd",
@@ -355,6 +375,7 @@ describe("handleCreatePolicy — template branch coverage", () => {
       owner: "CISO",
       effective_date: "2025-01-01",
       confirmed: true,
+      proposal_id: PROPOSAL_CP_4,
     });
 
     expect(result.isError).toBe(false);
@@ -371,6 +392,9 @@ describe("handleCreatePolicy — template branch coverage", () => {
     );
     mockStmt.run.mockReturnValue({ changes: 1 });
 
+    const PROPOSAL_CP_5 = "f6f6f6f6-f6f6-4f6f-af6f-f6f6f6f6f6f6";
+    _testSeedProposal(PROPOSAL_CP_5, "create_policy");
+
     const result = handleCreatePolicy({
       type: "information_security",
       organisation_name: "Acme Ltd",
@@ -378,6 +402,7 @@ describe("handleCreatePolicy — template branch coverage", () => {
       owner: "CISO",
       effective_date: "2025-01-01",
       confirmed: true,
+      proposal_id: PROPOSAL_CP_5,
     });
 
     expect(result.isError).toBe(false);
@@ -440,11 +465,15 @@ describe("handleUpdatePolicy — no scope/owner provided", () => {
       .mockReturnValueOnce(updateStmt);
 
     // scope and owner deliberately omitted → handler uses current.scope / current.owner
+    const PROPOSAL_UP_2 = "a7a7a7a7-a7a7-4a7a-aa7a-a7a7a7a7a7a7";
+    _testSeedProposal(PROPOSAL_UP_2, "update_policy");
+
     const result = handleUpdatePolicy({
       policy_id: "pol-1",
       reviewed_by: "auditor@example.com",
       change_summary: "Minor text cleanup",
       confirmed: true,
+      proposal_id: PROPOSAL_UP_2,
     });
 
     expect(result.isError).toBe(false);

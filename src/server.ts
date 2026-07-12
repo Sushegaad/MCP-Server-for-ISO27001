@@ -1,9 +1,9 @@
 /**
  * iso27001-mcp — MCP server factory
  *
- * createServer() returns a fully configured McpServer with all 50 tools
- * and 12 MCP resources registered. The caller is responsible for
- * connecting a transport and calling server.connect(transport).
+ * createServer() returns a fully configured McpServer with all 52 tools,
+ * 12 MCP resources, and 4 workflow prompts registered. The caller is
+ * responsible for connecting a transport and calling server.connect(transport).
  *
  * Resources are browseable via the iso27001:// URI scheme:
  *   - Public: iso27001://control/*, iso27001://clause/*
@@ -14,6 +14,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAllTools }     from "./tools/index.js";
 import { registerAllResources } from "./resources/index.js";
+import { registerAllPrompts }   from "./prompts/index.js";
 
 // ── Server factory ───────────────────────────────────────────
 
@@ -25,6 +26,7 @@ export function createServer(): McpServer {
 
   registerAllTools(server);
   registerAllResources(server);
+  registerAllPrompts(server);
 
   return server;
 }

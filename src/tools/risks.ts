@@ -10,7 +10,7 @@ import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
 import type { RiskRow, TreatmentRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
-import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
+import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
 
 
 function shapeRisk(r: RiskRow): Omit<RiskRow, "related_controls"> & { related_controls: string[] } {
@@ -88,12 +88,12 @@ export function handleGetRisk(args: Record<string, unknown>): ToolResult {
 export function handleUpdateRisk(args: Record<string, unknown>): ToolResult {
   const {
     risk_id, asset, threat, vulnerability, likelihood, impact,
-    owner, status, related_controls, confirmed = false,
+    owner, status, related_controls, confirmed = false, proposal_id,
   } = args as {
     risk_id: string; asset?: string; threat?: string;
     vulnerability?: string; likelihood?: number; impact?: number;
     owner?: string; status?: string; related_controls?: string[];
-    confirmed?: boolean;
+    confirmed?: boolean; proposal_id?: string;
   };
 
   const existing = requireRisk(risk_id);
@@ -117,15 +117,19 @@ export function handleUpdateRisk(args: Record<string, unknown>): ToolResult {
       rows.push({ field: "status", old: existing.status, new: status });
     if (related_controls !== undefined)
       rows.push({ field: "related_controls", old: fromJsonArray<string>(existing.related_controls), new: related_controls });
+    const proposal_id_token = createProposal("update_risk");
     return ok({
       hitl_proposed: true,
       status:        "preview",
+      proposal_id:   proposal_id_token,
+      expires_in:    "10 minutes",
       risk_id,
       message:       "⏸ No data written. Pass \"confirmed\": true to apply this change.",
       diff:          buildDiffTable(rows),
     });
   }
 
+  consumeProposal(proposal_id, "update_risk");
   const ts = now();
 
   getDb().prepare(`
@@ -280,11 +284,11 @@ export function handleCreateTreatmentPlan(args: Record<string, unknown>): ToolRe
 export function handleUpdateTreatmentStatus(args: Record<string, unknown>): ToolResult {
   const {
     treatment_id, status, evidence_ref, residual_likelihood, residual_impact,
-    confirmed = false,
+    confirmed = false, proposal_id,
   } = args as {
     treatment_id: string; status: string;
     evidence_ref?: string; residual_likelihood?: number; residual_impact?: number;
-    confirmed?: boolean;
+    confirmed?: boolean; proposal_id?: string;
   };
 
   const db      = getDb();
@@ -303,9 +307,12 @@ export function handleUpdateTreatmentStatus(args: Record<string, unknown>): Tool
       rows.push({ field: "residual_likelihood", old: current.residual_likelihood, new: residual_likelihood });
     if (residual_impact !== undefined && residual_impact !== current.residual_impact)
       rows.push({ field: "residual_impact", old: current.residual_impact, new: residual_impact });
+    const proposal_id_token = createProposal("update_treatment_status");
     return ok({
       hitl_proposed: true,
       status:        "preview",
+      proposal_id:   proposal_id_token,
+      expires_in:    "10 minutes",
       treatment_id,
       risk_id:       current.risk_id,
       message:       "⏸ No data written. Pass \"confirmed\": true to apply this change.",
@@ -313,6 +320,7 @@ export function handleUpdateTreatmentStatus(args: Record<string, unknown>): Tool
     });
   }
 
+  consumeProposal(proposal_id, "update_treatment_status");
   const ts = now();
   db.prepare(`
     UPDATE risk_treatments SET

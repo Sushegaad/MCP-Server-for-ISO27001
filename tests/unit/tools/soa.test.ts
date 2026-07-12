@@ -30,6 +30,7 @@ import {
   handleExportSoa,
 } from "../../../src/tools/soa.js";
 import { McpError } from "../../../src/types/errors.js";
+import { _testSeedProposal } from "../../../src/tools/hitl-utils.js";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -183,6 +184,9 @@ describe("handleUpdateSoaEntry", () => {
       .mockReturnValueOnce(updateStmt)
       .mockReturnValueOnce(updateSoaStmt);
 
+    const PROPOSAL_USE_1 = "aaaabbbb-aaaa-4aaa-aaaa-aaaaaaaaaaaa";
+    _testSeedProposal(PROPOSAL_USE_1, "update_soa_entry");
+
     const result = handleUpdateSoaEntry({
       soa_id: "soa-1",
       control_id: "5.1",
@@ -191,6 +195,7 @@ describe("handleUpdateSoaEntry", () => {
       status: "implemented",
       responsible_party: "CISO",
       confirmed: true,
+      proposal_id: PROPOSAL_USE_1,
     });
 
     expect(result.isError).toBe(false);
@@ -396,6 +401,9 @@ describe("handleUpdateSoaEntry — included=false, no optionals", () => {
       .mockReturnValueOnce(updateStmt)
       .mockReturnValueOnce(updateSoaStmt);
 
+    const PROPOSAL_USE_2 = "bbbbcccc-bbbb-4bbb-bbbb-bbbbbbbbbbbb";
+    _testSeedProposal(PROPOSAL_USE_2, "update_soa_entry");
+
     const result = handleUpdateSoaEntry({
       soa_id: "soa-1",
       control_id: "5.1",
@@ -403,6 +411,7 @@ describe("handleUpdateSoaEntry — included=false, no optionals", () => {
       justification: "Control not applicable to scope",
       // status and responsible_party deliberately omitted → exercises `?? null`
       confirmed: true,
+      proposal_id: PROPOSAL_USE_2,
     });
 
     expect(result.isError).toBe(false);

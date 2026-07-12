@@ -46,3 +46,82 @@ export function buildDiffTable(rows: DiffRow[]): string {
   ];
   return lines.join("\n");
 }
+
+// ── Proposal token store ──────────────────────────────────────
+// Short-lived (10 min) single-use tokens bound to a specific tool.
+// Prevents a model from bypassing HITL by self-confirming without
+// ever returning the preview to a human.
+
+import { randomUUID } from "node:crypto";
+import { businessRule } from "../types/errors.js";
+
+interface ProposalRecord {
+  tool:       string;
+  expires_at: number;
+}
+
+const proposals = new Map<string, ProposalRecord>();
+const PROPOSAL_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+/** Purge expired proposals (called on every create). */
+function purgeExpired(): void {
+  const now = Date.now();
+  for (const [id, rec] of proposals) {
+    if (now > rec.expires_at) proposals.delete(id);
+  }
+}
+
+/**
+ * Create a single-use proposal token bound to the named tool.
+ * Returns a UUID the caller embeds in the preview response.
+ */
+export function createProposal(tool: string): string {
+  purgeExpired();
+  const id = randomUUID();
+  proposals.set(id, { tool, expires_at: Date.now() + PROPOSAL_TTL_MS });
+  return id;
+}
+
+/**
+ * Consume a proposal token, asserting it matches the named tool and has not
+ * expired. Deletes the token (single-use). Throws McpError on any violation.
+ */
+export function consumeProposal(proposal_id: string | undefined, tool: string): void {
+  if (!proposal_id) {
+    throw businessRule(
+      "proposal_id",
+      "Pass the proposal_id returned by the preview call, then set confirmed=true to commit.",
+    );
+  }
+  const rec = proposals.get(proposal_id);
+  if (!rec) {
+    throw businessRule(
+      "proposal_id",
+      "Proposal not found or already used. Call without confirmed=true to generate a new preview.",
+    );
+  }
+  if (Date.now() > rec.expires_at) {
+    proposals.delete(proposal_id);
+    throw businessRule(
+      "proposal_id",
+      "Proposal expired (10-minute TTL). Call without confirmed=true to generate a new preview.",
+    );
+  }
+  if (rec.tool !== tool) {
+    throw businessRule(
+      "proposal_id",
+      `Proposal was issued for '${rec.tool}', not '${tool}'.`,
+    );
+  }
+  proposals.delete(proposal_id); // single-use
+}
+
+/**
+ * @internal Test-only helper — seeds a proposal token directly into the store,
+ * bypassing the preview call. Allows unit tests to call commit branches without
+ * needing to duplicate mock-DB stubs for the preview path.
+ * Do not use outside of test files.
+ */
+export function _testSeedProposal(id: string, tool: string): void {
+  proposals.set(id, { tool, expires_at: Date.now() + PROPOSAL_TTL_MS });
+}

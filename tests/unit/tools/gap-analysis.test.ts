@@ -39,6 +39,7 @@ import {
   handleArchiveGapAssessment,
 } from "../../../src/tools/gap-analysis.js";
 import { McpError } from "../../../src/types/errors.js";
+import { _testSeedProposal } from "../../../src/tools/hitl-utils.js";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────
 
@@ -138,12 +139,16 @@ describe("handleUpdateControlStatus", () => {
       .mockReturnValueOnce(existingStmt)  // SELECT existing control_status
       .mockReturnValueOnce(updateStmt);   // UPDATE
 
+    const TEST_PROPOSAL_ID = "11111111-1111-4111-8111-111111111111";
+    _testSeedProposal(TEST_PROPOSAL_ID, "update_control_status");
+
     const result = handleUpdateControlStatus({
       assessment_id: "assess-1",
       control_id: "5.1",
       status: "partial",
       notes: "In progress",
       confirmed: true,
+      proposal_id: TEST_PROPOSAL_ID,
     });
 
     expect(result.isError).toBe(false);
@@ -162,12 +167,16 @@ describe("handleUpdateControlStatus", () => {
       .mockReturnValueOnce(existingStmt)
       .mockReturnValueOnce(updateStmt);
 
+    const TEST_PROPOSAL_ID = "22222222-2222-4222-8222-222222222222";
+    _testSeedProposal(TEST_PROPOSAL_ID, "update_control_status");
+
     const result = handleUpdateControlStatus({
       assessment_id: "assess-1",
       control_id: "5.1",
       status: "implemented",
       // intentionally no evidence_refs
       confirmed: true,
+      proposal_id: TEST_PROPOSAL_ID,
     });
 
     expect(result.isError).toBe(false);
@@ -245,11 +254,15 @@ describe("handleUpdateControlStatus", () => {
       .mockReturnValueOnce(existingStmt)
       .mockReturnValueOnce(insertStmt);
 
+    const TEST_PROPOSAL_ID = "33333333-3333-4333-8333-333333333333";
+    _testSeedProposal(TEST_PROPOSAL_ID, "update_control_status");
+
     const result = handleUpdateControlStatus({
       assessment_id: "assess-1",
       control_id: "5.99",
       status: "not_implemented",
       confirmed: true,
+      proposal_id: TEST_PROPOSAL_ID,
     });
 
     expect(result.isError).toBe(false);

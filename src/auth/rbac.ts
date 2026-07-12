@@ -1,7 +1,7 @@
 /**
  * iso27001-mcp — Role-Based Access Control
  *
- * Permission matrix covering all 50 tools × 3 roles.
+ * Permission matrix covering all 52 tools × 3 roles.
  * Roles are hierarchical: admin ⊇ analyst ⊇ viewer.
  * 13 read-only tools have been retired to MCP Resources (iso27001:// URIs).
  *
@@ -124,6 +124,10 @@ const TOOL_MIN_ROLE: Record<string, Role> = {
   // Generate (writes two tables): analyst; read: viewer
   generate_evidence_document: "analyst",
   list_evidence_documents:    "viewer",
+
+  // ── Group 15: CSV Import ─────────────────────────────────────
+  import_risks:            "analyst",
+  import_control_statuses: "analyst",
 };
 
 // ── Public API ────────────────────────────────────────────────
@@ -166,5 +170,5 @@ export function toolsForRole(role: Role): string[] {
     .sort();
 }
 
-/** Total registered tool count — must equal 50 (13 read-only tools retired to MCP Resources). */
+/** Total registered tool count — must equal 52 (13 read-only tools retired to MCP Resources). */
 export const TOTAL_TOOLS = Object.keys(TOOL_MIN_ROLE).length;

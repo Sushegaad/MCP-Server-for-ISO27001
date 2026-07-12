@@ -9,7 +9,7 @@ import { newId, now, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { renderHtmlDocument } from "./template-utils.js";
-import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
+import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -138,11 +138,11 @@ export function handleGenerateSoa(args: Record<string, unknown>): ToolResult {
 export function handleUpdateSoaEntry(args: Record<string, unknown>): ToolResult {
   const {
     soa_id, control_id, included, justification,
-    status, responsible_party, confirmed = false,
+    status, responsible_party, confirmed = false, proposal_id,
   } = args as {
     soa_id: string; control_id: string; included: boolean;
     justification: string; status?: string; responsible_party?: string;
-    confirmed?: boolean;
+    confirmed?: boolean; proposal_id?: string;
   };
 
   const db = getDb();
@@ -169,9 +169,12 @@ export function handleUpdateSoaEntry(args: Record<string, unknown>): ToolResult 
       rows.push({ field: "status", old: entry.status, new: status });
     if (responsible_party !== undefined && responsible_party !== entry.responsible_party)
       rows.push({ field: "responsible_party", old: entry.responsible_party, new: responsible_party });
+    const proposal_id_token = createProposal("update_soa_entry");
     return ok({
       hitl_proposed: true,
       status:        "preview",
+      proposal_id:   proposal_id_token,
+      expires_in:    "10 minutes",
       soa_id,
       control_id,
       message:       "⏸ No data written. Pass \"confirmed\": true to apply this change.",
@@ -179,6 +182,7 @@ export function handleUpdateSoaEntry(args: Record<string, unknown>): ToolResult 
     });
   }
 
+  consumeProposal(proposal_id, "update_soa_entry");
   const ts = now();
   db.prepare(`
     UPDATE soa_entries SET

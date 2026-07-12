@@ -168,6 +168,7 @@ export const UpdateControlStatusSchema = z.object({
   na_justification:freeText(1000).optional(),
   assessed_by:     shortText(200).optional(),
   confirmed:       coerceBool.optional().default(false),
+  proposal_id:     z.string().uuid().optional(),
 });
 
 // GetGapSummarySchema retired — use resource iso27001://assessment/{assessment_id}/summary
@@ -217,6 +218,7 @@ export const UpdateRiskSchema = z.object({
   status:           riskStatusEnum.optional(),
   related_controls: z.array(z.string().max(20)).optional(),
   confirmed:        coerceBool.optional().default(false),
+  proposal_id:      z.string().uuid().optional(),
 });
 
 export const ListRisksSchema = z.object({
@@ -248,6 +250,7 @@ export const UpdateTreatmentStatusSchema = z.object({
   residual_likelihood: likelihood1to5.optional(),
   residual_impact:     likelihood1to5.optional(),
   confirmed:           coerceBool.optional().default(false),
+  proposal_id:         z.string().uuid().optional(),
 });
 
 export const GenerateRiskRegisterSchema = z.object({
@@ -267,6 +270,7 @@ export const CreatePolicySchema = z.object({
   review_cycle_months:  z.coerce.number().int().min(1).max(36).optional().default(12),
   effective_date:       date,
   confirmed:            coerceBool.optional().default(false),
+  proposal_id:          z.string().uuid().optional(),
 });
 
 // GetPolicySchema retired — use resource iso27001://policy/{policy_id}
@@ -279,6 +283,7 @@ export const UpdatePolicySchema = z.object({
   reviewed_by:    shortText(200),
   change_summary: freeText(500),
   confirmed:      coerceBool.optional().default(false),
+  proposal_id:    z.string().uuid().optional(),
 });
 
 export const ListPoliciesSchema = z.object({
@@ -305,6 +310,7 @@ export const UpdateSoaEntrySchema = z.object({
   status:            controlStatusEnum.optional(),
   responsible_party: shortText(200).optional(),
   confirmed:         coerceBool.optional().default(false),
+  proposal_id:       z.string().uuid().optional(),
 });
 
 export const ExportSoaSchema = z.object({
@@ -322,6 +328,7 @@ export const CreateAuditSchema = z.object({
   controls_in_scope: z.array(z.string().max(20)).optional(),
   clauses_in_scope:  z.array(z.string().max(10)).optional(),
   confirmed:         coerceBool.optional().default(false),
+  proposal_id:       z.string().uuid().optional(),
 });
 
 export const RecordFindingSchema = z.object({
@@ -332,6 +339,7 @@ export const RecordFindingSchema = z.object({
   objective_evidence: freeText(2000),
   severity:           findingSeverityEnum.optional(),
   confirmed:          coerceBool.optional().default(false),
+  proposal_id:        z.string().uuid().optional(),
 });
 
 export const CreateCorrectiveActionSchema = z.object({
@@ -341,6 +349,7 @@ export const CreateCorrectiveActionSchema = z.object({
   due_date:    date,
   root_cause:  freeText(2000).optional(),
   confirmed:   coerceBool.optional().default(false),
+  proposal_id: z.string().uuid().optional(),
 });
 
 export const UpdateCorrectiveActionSchema = z.object({
@@ -370,6 +379,7 @@ export const RegisterEvidenceSchema = z.object({
   collected_date: date,
   expiry_date:    date.optional(),
   confirmed:      coerceBool.optional().default(false),
+  proposal_id:    z.string().uuid().optional(),
 });
 
 export const ListEvidenceSchema = z.object({
@@ -488,6 +498,7 @@ export const UpdateProcedureSchema = z.object({
   reviewed_by:      shortText(200),
   change_summary:   freeText(500),
   confirmed:        coerceBool.optional().default(false),
+  proposal_id:      z.string().uuid().optional(),
 });
 
 export const ListProceduresSchema = z.object({
@@ -554,6 +565,7 @@ export const CompleteManagementReviewSchema = z.object({
   review_id:    uuid,
   completed_by: shortText(200),
   confirmed:    coerceBool.optional().default(false),
+  proposal_id:  z.string().uuid().optional(),
 });
 
 // GetManagementReviewSchema retired — use resource iso27001://management-review/{review_id}
@@ -638,6 +650,24 @@ export const ListEvidenceDocumentsSchema = z.object({
   offset:        paginationOffset,
 });
 
+// ── Group 15: CSV Import ─────────────────────────────────────
+
+export const ImportRisksSchema = z.object({
+  csv_content:    z.string().min(1).max(500_000).describe(
+    "CSV string with headers: asset, threat, vulnerability, likelihood (1-5), impact (1-5), owner (optional), status (optional), related_controls (optional, semicolon-separated)",
+  ),
+  default_status: riskStatusEnum.optional().default("open"),
+  dry_run:        coerceBool.optional().default(false),
+});
+
+export const ImportControlStatusesSchema = z.object({
+  assessment_id: uuid,
+  csv_content:   z.string().min(1).max(500_000).describe(
+    "CSV string with headers: control_id, status (implemented|partial|not_implemented|na|not_started), notes (optional), na_justification (required when status=na)",
+  ),
+  dry_run:       coerceBool.optional().default(false),
+});
+
 // ── Registry: tool name → schema ─────────────────────────────
 
 export const TOOL_SCHEMAS: Record<string, z.ZodTypeAny> = {
@@ -705,6 +735,9 @@ export const TOOL_SCHEMAS: Record<string, z.ZodTypeAny> = {
   // Group 14 (get_evidence_document → retired to resource)
   generate_evidence_document: GenerateEvidenceDocumentSchema,
   list_evidence_documents:    ListEvidenceDocumentsSchema,
+  // Group 15 — CSV Import
+  import_risks:             ImportRisksSchema,
+  import_control_statuses:  ImportControlStatusesSchema,
 };
 
 // ── validateToolInput ─────────────────────────────────────────

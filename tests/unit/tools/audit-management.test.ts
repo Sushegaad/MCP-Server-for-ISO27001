@@ -32,6 +32,7 @@ import {
   handleGenerateAuditReport,
 } from "../../../src/tools/audit-management.js";
 import { McpError } from "../../../src/types/errors.js";
+import { _testSeedProposal } from "../../../src/tools/hitl-utils.js";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -109,12 +110,16 @@ describe("handleCreateAudit", () => {
     const selectStmt = { run: vi.fn(), get: vi.fn(() => AUDIT_ROW), all: vi.fn(() => []) };
     mockDb.prepare.mockReturnValueOnce(insertStmt).mockReturnValueOnce(selectStmt);
 
+    const PROPOSAL_CA_1 = "11111111-1111-4111-a111-111111111111";
+    _testSeedProposal(PROPOSAL_CA_1, "create_audit");
+
     const result = handleCreateAudit({
       name: "Annual Internal Audit",
       scope: "All ISMS controls",
       auditor: "John Auditor",
       planned_date: "2025-06-01",
       confirmed: true,
+      proposal_id: PROPOSAL_CA_1,
     });
 
     expect(result.isError).toBe(false);
@@ -139,6 +144,9 @@ describe("handleCreateAudit", () => {
     };
     mockDb.prepare.mockReturnValueOnce(insertStmt).mockReturnValueOnce(selectStmt);
 
+    const PROPOSAL_CA_2 = "22222222-2222-4222-a222-222222222222";
+    _testSeedProposal(PROPOSAL_CA_2, "create_audit");
+
     const result = handleCreateAudit({
       name: "Scoped Audit",
       scope: "Clause 8",
@@ -147,6 +155,7 @@ describe("handleCreateAudit", () => {
       controls_in_scope: ["5.1", "5.2"],
       clauses_in_scope: ["6", "8"],
       confirmed: true,
+      proposal_id: PROPOSAL_CA_2,
     });
 
     expect(result.isError).toBe(false);
@@ -192,6 +201,9 @@ describe("handleRecordFinding", () => {
       .mockReturnValueOnce(insertStmt)
       .mockReturnValueOnce(selectStmt);
 
+    const PROPOSAL_RF_1 = "33333333-3333-4333-a333-333333333333";
+    _testSeedProposal(PROPOSAL_RF_1, "record_finding");
+
     const result = handleRecordFinding({
       audit_id: "audit-1",
       type: "nc",
@@ -200,6 +212,7 @@ describe("handleRecordFinding", () => {
       objective_evidence: "No inventory found",
       severity: "major",
       confirmed: true,
+      proposal_id: PROPOSAL_RF_1,
     });
 
     expect(result.isError).toBe(false);
@@ -263,6 +276,9 @@ describe("handleRecordFinding", () => {
       .mockReturnValueOnce(insertStmt)
       .mockReturnValueOnce(selectStmt);
 
+    const PROPOSAL_RF_2 = "44444444-4444-4444-a444-444444444444";
+    _testSeedProposal(PROPOSAL_RF_2, "record_finding");
+
     const result = handleRecordFinding({
       audit_id: "audit-1",
       type: "obs",
@@ -270,6 +286,7 @@ describe("handleRecordFinding", () => {
       description: "Minor observation",
       objective_evidence: "Verbal confirmation",
       confirmed: true,
+      proposal_id: PROPOSAL_RF_2,
     });
 
     expect(result.isError).toBe(false);
@@ -316,6 +333,9 @@ describe("handleCreateCorrectiveAction", () => {
       .mockReturnValueOnce(insertStmt)
       .mockReturnValueOnce(selectStmt);
 
+    const PROPOSAL_CCA_1 = "55555555-5555-4555-a555-555555555555";
+    _testSeedProposal(PROPOSAL_CCA_1, "create_corrective_action");
+
     const result = handleCreateCorrectiveAction({
       finding_id: "finding-1",
       description: "Create asset inventory",
@@ -323,6 +343,7 @@ describe("handleCreateCorrectiveAction", () => {
       due_date: "2025-09-01",
       root_cause: "No defined process",
       confirmed: true,
+      proposal_id: PROPOSAL_CCA_1,
     });
 
     expect(result.isError).toBe(false);

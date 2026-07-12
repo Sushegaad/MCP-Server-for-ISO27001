@@ -1,3 +1,42 @@
+## What's new in v0.9.74
+
+### CSV bulk import (2 new tools — Group 15)
+
+Users with existing risk registers and control status trackers in spreadsheets can now migrate them directly:
+
+- **`import_risks`** — paste a CSV string to bulk-register risks. Required headers: `asset`, `threat`, `vulnerability`, `likelihood` (1–5), `impact` (1–5). Optional: `owner`, `status`, `related_controls` (semicolon-separated). Supports `dry_run=true` for a validation preview before writing.
+- **`import_control_statuses`** — paste a CSV string to bulk-update control statuses in a gap assessment. Required headers: `control_id`, `status`. Optional: `notes`, `na_justification`. Validates every row against the assessment before writing.
+
+Both tools abort on the first validation failure (unless `dry_run=true`), return per-row error detail, and are available to `analyst` role and above. Tool count: 50 → **52**.
+
+### HITL proposal tokens — server-side HITL guarantee
+
+The previous `confirmed: boolean` gate had a gap: a model could propose an operation, observe that `confirmed=true` was needed, and immediately call again with `confirmed=true` — bypassing human review entirely.
+
+Fixed with server-side single-use proposal tokens:
+
+- All 12 mutating tools now return a `proposal_id` (UUID) in their preview response
+- The commit call requires both `confirmed: true` **and** the `proposal_id` received from the preview
+- Tokens are bound to a specific tool, expire after 10 minutes, and are deleted on first use
+- A model that has not returned the preview to a human cannot fabricate a valid `proposal_id` cold
+
+The audit log continues to record `outcome: "proposed"` for previewed-but-not-committed calls.
+
+### 4 MCP Workflow Prompts
+
+High-level workflow prompts registered via the MCP Prompts protocol reduce the 52-tool catalogue to four guided entry points:
+
+| Prompt | Sequences |
+|--------|-----------|
+| `conduct_gap_assessment` | org profile → assessment → control statuses → summary → roadmap → export |
+| `register_and_treat_risk` | duplicate check → risk registration → risk summary → treatment plan |
+| `prepare_internal_audit` | existing assessment review → audit creation → findings → CARs → report |
+| `prepare_management_review` | review scheduling → all 7 §9.3.2 inputs → outputs → completion |
+
+Each prompt fetches relevant resources, explains required parameters, and sequences the correct tool calls with HITL confirmation reminders built in.
+
+---
+
 ## What's new in v0.9.73
 
 ### Documentation overhaul — reviewer feedback addressed

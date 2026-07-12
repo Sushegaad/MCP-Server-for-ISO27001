@@ -6,13 +6,11 @@ Items here are planned but not yet implemented. PRs and feature requests are wel
 
 ## Near-term (next 1–2 releases)
 
-### CSV / spreadsheet import
-Many target users already have risk registers, evidence inventories, and control status trackers in spreadsheets. The goal is to meet them where they are:
-- `import_risks` — ingest a CSV of risks (asset, threat, vulnerability, likelihood, impact, owner, status) and bulk-register them into the risk register
-- `import_control_statuses` — bulk-update a gap assessment from a CSV (control_id, status, notes) — useful for teams migrating from existing spreadsheet workflows
+### CSV / spreadsheet import — remaining
+`import_risks` and `import_control_statuses` shipped in v0.9.74. Still planned:
 - `import_evidence` — register a batch of evidence artefacts from a CSV export of an existing evidence tracker
 
-Priority: **high** — this is the single biggest adoption barrier for users with existing compliance artefacts.
+Priority: **medium** — completes the CSV migration path.
 
 ### Auditor validation note
 A lightweight "reviewed by" section to be added to documentation and template headers indicating which controls, clause mappings, and policy templates have been reviewed against the published ISO 27001:2022 Annex A and clause text by a qualified practitioner.
@@ -68,6 +66,9 @@ Extend the control registry and SoA tooling to support additional frameworks alo
 
 | Feature | Version |
 |---------|---------|
+| CSV bulk import — `import_risks` + `import_control_statuses` with dry-run preview | v0.9.74 |
+| HITL proposal tokens — server-side single-use UUID prevents model self-confirmation | v0.9.74 |
+| 4 MCP Workflow Prompts — `conduct_gap_assessment`, `register_and_treat_risk`, `prepare_internal_audit`, `prepare_management_review` | v0.9.74 |
 | 13 tools retired to MCP Resources (20 resource URIs) | v0.9.7 |
 | HITL confirmation gates on all mutating tools | v0.9.7 |
 | Shared DB types, constants, evidence utils (KISS/DRY refactor) | v0.9.7 |

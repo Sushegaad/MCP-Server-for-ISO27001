@@ -47,6 +47,7 @@ The difference from generating static documents: Claude can *query, reason, and 
 | **Evidence tracking** | *"Show me all implemented controls with no current evidence."* |
 | **Remediation roadmap** | *"Generate a 26-week remediation roadmap grouped by risk level."* |
 | **Management review** | *"Prepare agenda items for our Clause 9.3 management review."* |
+| **CSV bulk import** | *"Import this CSV of 40 risks into the risk register — dry-run first to check for errors."* |
 
 ---
 
@@ -106,7 +107,7 @@ iso27001-mcp — health check
   All 10 checks passed. Restart Claude Desktop if you just ran init.
 ```
 
-Then **restart Claude Desktop fully** and you should see 50 tools in the tools panel.
+Then **restart Claude Desktop fully** and you should see 52 tools in the tools panel.
 
 > **macOS:** press **Cmd+Q** to quit (clicking the red dot only closes the window — the server won't reload).  
 > **Windows:** right-click the taskbar icon → **Quit**.
@@ -138,7 +139,7 @@ Common causes: wrong Node.js version loaded by Claude Desktop, missing `DB_ENCRY
 
 ## Tool Categories
 
-50 tools across 14 groups. All require an API key; minimum role is shown. Read-only lookups (single-record fetches, summaries) have been moved to MCP Resources (`iso27001://` URIs) — they appear in Claude's resource panel, not the tools list.
+52 tools across 15 groups. All require an API key; minimum role is shown. Read-only lookups (single-record fetches, summaries) have been moved to MCP Resources (`iso27001://` URIs) — they appear in Claude's resource panel, not the tools list.
 
 | Group | Tools | Min. role | What it does |
 |-------|-------|-----------|--------------|
@@ -156,6 +157,7 @@ Common causes: wrong Node.js version loaded by Claude Desktop, missing `DB_ENCRY
 | **Management Review** | 5 | admin | Full Clause 9.3 lifecycle — inputs, outputs, completion (enforces all 7 required input categories) |
 | **Improvement Plan** | 3 | analyst | Clause 10.1 improvement opportunities — track, link, and report |
 | **Evidence Templates** | 2 | analyst | Generate Mustache-rendered evidence documents; dual-write to evidence and generated_evidence tables |
+| **CSV Import** | 2 | analyst | Bulk-import risks and control statuses from a CSV string; supports `dry_run=true` validation preview before writing |
 
 ---
 
@@ -179,7 +181,7 @@ Pre-structured evidence documents for auditor submissions: `access_review_attest
 
 ### Sample Outputs
 
-The [`samples/`](samples/) directory contains auditor-ready example outputs for a fictitious organisation ("Acme Financial Services Ltd") — a full gap assessment, remediation roadmap, risk register CSV, SoA CSV, access control policy, incident handling procedure, internal audit report, corrective action records, and evidence package. See [Sample Outputs](docs/REFERENCE.md#sample-outputs) for the full index.
+The [`samples/`](samples/) directory contains audit-pack-ready example outputs for a fictitious organisation ("Acme Financial Services Ltd") — a full gap assessment, remediation roadmap, risk register CSV, SoA CSV, access control policy, incident handling procedure, internal audit report, corrective action records, and evidence package. See [Sample Outputs](docs/REFERENCE.md#sample-outputs) for the full index.
 
 > **ISO 27001 keywords:** ISO 27001 Statement of Applicability generator · ISO 27001 risk register template · ISO 27001 gap assessment tool · ISO 27001 audit evidence tracker · ISO 27001 MCP server · Claude ISO 27001 compliance assistant · AI GRC tool open source
 
@@ -215,7 +217,7 @@ Three roles with strict hierarchy. A key can only call tools at or below its ass
 | View and query the audit log | — | — | ✅ |
 | Generate and revoke API keys | — | — | ✅ |
 
-**Tool counts:** Viewer — 18 tools · Analyst — 36 tools · Admin — 50 tools
+**Tool counts:** Viewer — 18 tools · Analyst — 38 tools · Admin — 52 tools
 
 ### What never leaves your machine
 
@@ -229,7 +231,7 @@ For the full security profile — threat model, hardening guide, supply chain at
 - **API keys** — HMAC-SHA256 hashed; raw key printed once and never stored
 - **Audit log** — HMAC-SHA256 hash chain; every row linked to its predecessor — insertion, deletion, or reordering is detectable; `actor_type` (`ai` | `human` | `system`) and `model_id` are included in the hash so provenance claims are tamper-evident
 - **Prompt injection** — free-text fields sanitised before passing to any handler
-- **HITL confirmation gates** — 7 critical write tools (`update_control_status`, `update_risk`, `update_treatment_status`, `update_soa_entry`, `update_policy`, `update_procedure`, `complete_management_review`) require `confirmed: true` to commit; omitting it returns a preview diff and records `outcome: "proposed"` in the audit log
+- **HITL confirmation gates** — 12 mutating tools require `confirmed: true` plus a server-issued `proposal_id` to commit; omitting either returns a preview diff and records `outcome: "proposed"` in the audit log. The `proposal_id` is a server-generated single-use UUID (10-minute TTL) — the model cannot self-confirm by calling the same tool twice with `confirmed: true`, because it must return a token it received from the preview response
 
 ---
 
@@ -349,11 +351,11 @@ The detailed documentation has been moved to keep this page scannable. Everythin
 - [Installation](docs/REFERENCE.md#installation) — prerequisites, `iso27001-mcp init`, `doctor`, Claude Desktop config
 - [Connecting to Claude](docs/REFERENCE.md#connecting-to-claude) — Claude Desktop JSON, Claude Code, API key management
 - [Advanced / Manual Setup](docs/REFERENCE.md#advanced--manual-setup) — CI/CD, custom paths, full env var table
-- [Tools Reference](docs/REFERENCE.md#tools-reference) — all 50 tools across 14 groups with full parameter tables
-- [MCP Resources](docs/REFERENCE.md#mcp-resources) — 12 `iso27001://` URIs, formats, example prompts
+- [Tools Reference](docs/REFERENCE.md#tools-reference) — all 52 tools across 15 groups with full parameter tables
+- [MCP Resources](docs/REFERENCE.md#mcp-resources) — 20 `iso27001://` URIs, formats, example prompts
 - [Architecture](docs/REFERENCE.md#architecture) — 7-step security pipeline, database schema, seed data
 - [Modes](docs/REFERENCE.md#modes) — local / CI / team / hosted with SSE endpoint reference
-- [Sample Outputs](docs/REFERENCE.md#sample-outputs) — 9 auditor-ready example files for Acme Financial Services Ltd
+- [Sample Outputs](docs/REFERENCE.md#sample-outputs) — 9 audit-pack-ready example files for Acme Financial Services Ltd
 - [Integrations](docs/REFERENCE.md#integrations) — Jira and GitHub issue linking
 - [Development](docs/REFERENCE.md#development) — build, test, typecheck, project structure
 - [Security](docs/REFERENCE.md#security) — API key storage, encryption, audit trail, production checklist

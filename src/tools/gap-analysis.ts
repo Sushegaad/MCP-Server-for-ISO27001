@@ -11,7 +11,7 @@ import { newId, now, toJson, fromJsonArray, withTransaction } from "../db/dal.js
 import type { AssessmentRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
-import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
+import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -109,12 +109,12 @@ export function handleUpdateControlStatus(args: Record<string, unknown>): ToolRe
   const {
     assessment_id, control_id, status,
     evidence_refs, notes, na_justification, assessed_by,
-    confirmed = false,
+    confirmed = false, proposal_id,
   } = args as {
     assessment_id: string; control_id: string; status: string;
     evidence_refs?: string[]; notes?: string;
     na_justification?: string; assessed_by?: string;
-    confirmed?: boolean;
+    confirmed?: boolean; proposal_id?: string;
   };
 
   const assessment = requireAssessment(assessment_id);
@@ -165,9 +165,12 @@ export function handleUpdateControlStatus(args: Record<string, unknown>): ToolRe
       if (assessed_by) rows.push({ field: "assessed_by", old: null, new: assessed_by });
       if (notes)       rows.push({ field: "notes",       old: null, new: notes });
     }
+    const proposal_id_token = createProposal("update_control_status");
     return ok({
       hitl_proposed: true,
       status:        "preview",
+      proposal_id:   proposal_id_token,
+      expires_in:    "10 minutes",
       assessment_id,
       control_id,
       ...(downgradeWarning ? { warning: downgradeWarning } : {}),
@@ -176,6 +179,7 @@ export function handleUpdateControlStatus(args: Record<string, unknown>): ToolRe
     });
   }
 
+  consumeProposal(proposal_id, "update_control_status");
   const ts = now();
 
   if (existing) {

@@ -50,6 +50,7 @@ import {
 } from "../../../src/tools/evidence-tracking.js";
 import { McpError } from "../../../src/types/errors.js";
 import { getEnv } from "../../../src/security/secrets.js";
+import { _testSeedProposal } from "../../../src/tools/hitl-utils.js";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -107,6 +108,9 @@ describe("handleRegisterEvidence", () => {
     const selectStmt = { run: vi.fn(), get: vi.fn(() => EVIDENCE_ROW), all: vi.fn(() => []) };
     mockDb.prepare.mockReturnValueOnce(insertStmt).mockReturnValueOnce(selectStmt);
 
+    const PROPOSAL_RE_1 = "eeeeeeee-eeee-4eee-aeee-eeeeeeeeeeee";
+    _testSeedProposal(PROPOSAL_RE_1, "register_evidence");
+
     const result = handleRegisterEvidence({
       control_id: "5.1",
       type: "policy",
@@ -116,6 +120,7 @@ describe("handleRegisterEvidence", () => {
       expiry_date: "2026-01-01",
       source_url: "https://example.com/policy.pdf",
       confirmed: true,
+      proposal_id: PROPOSAL_RE_1,
     });
 
     expect(result.isError).toBe(false);
@@ -133,6 +138,9 @@ describe("handleRegisterEvidence", () => {
     const selectStmt = { run: vi.fn(), get: vi.fn(() => expiredRow), all: vi.fn(() => []) };
     mockDb.prepare.mockReturnValueOnce(insertStmt).mockReturnValueOnce(selectStmt);
 
+    const PROPOSAL_RE_2 = "ffffffff-ffff-4fff-afff-ffffffffffff";
+    _testSeedProposal(PROPOSAL_RE_2, "register_evidence");
+
     const result = handleRegisterEvidence({
       control_id: "5.1",
       type: "policy",
@@ -141,6 +149,7 @@ describe("handleRegisterEvidence", () => {
       collected_date: "2020-01-01",
       expiry_date: "2020-01-01",
       confirmed: true,
+      proposal_id: PROPOSAL_RE_2,
     });
 
     const data = parseResult(result);
@@ -153,6 +162,9 @@ describe("handleRegisterEvidence", () => {
     const selectStmt = { run: vi.fn(), get: vi.fn(() => noExpiryRow), all: vi.fn(() => []) };
     mockDb.prepare.mockReturnValueOnce(insertStmt).mockReturnValueOnce(selectStmt);
 
+    const PROPOSAL_RE_3 = "cccccccc-cccc-4ccc-accc-cccccccccccc";
+    _testSeedProposal(PROPOSAL_RE_3, "register_evidence");
+
     const result = handleRegisterEvidence({
       control_id: "5.1",
       type: "policy",
@@ -160,6 +172,7 @@ describe("handleRegisterEvidence", () => {
       collected_by: "auditor",
       collected_date: "2025-01-01",
       confirmed: true,
+      proposal_id: PROPOSAL_RE_3,
     });
 
     const data = parseResult(result);

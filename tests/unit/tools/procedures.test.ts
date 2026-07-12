@@ -50,6 +50,7 @@ import {
 } from "../../../src/tools/procedures.js";
 import { loadOrgProfileDefaults } from "../../../src/tools/org-profile.js";
 import { McpError } from "../../../src/types/errors.js";
+import { _testSeedProposal } from "../../../src/tools/hitl-utils.js";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -394,6 +395,9 @@ describe("handleUpdateProcedure", () => {
       .mockReturnValueOnce(archiveStmt)
       .mockReturnValueOnce(updateStmt);
 
+    const PROPOSAL_UPROC_1 = "b8b8b8b8-b8b8-4b8b-ab8b-b8b8b8b8b8b8";
+    _testSeedProposal(PROPOSAL_UPROC_1, "update_procedure");
+
     const result = handleUpdateProcedure({
       procedure_id:   "proc-1",
       scope:          "Updated scope",
@@ -401,6 +405,7 @@ describe("handleUpdateProcedure", () => {
       reviewed_by:    "auditor@example.com",
       change_summary: "Scope revised",
       confirmed:      true,
+      proposal_id:    PROPOSAL_UPROC_1,
     });
 
     expect(result.isError).toBe(false);
@@ -451,11 +456,15 @@ describe("handleUpdateProcedure", () => {
       .mockReturnValueOnce(archiveStmt)
       .mockReturnValueOnce(updateStmt);
 
+    const PROPOSAL_UPROC_2 = "c9c9c9c9-c9c9-4c9c-ac9c-c9c9c9c9c9c9";
+    _testSeedProposal(PROPOSAL_UPROC_2, "update_procedure");
+
     const result = handleUpdateProcedure({
       procedure_id:   "proc-1",
       reviewed_by:    "auditor@example.com",
       change_summary: "Minor cleanup",
       confirmed:      true,
+      proposal_id:    PROPOSAL_UPROC_2,
     });
 
     expect(result.isError).toBe(false);

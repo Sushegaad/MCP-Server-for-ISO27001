@@ -251,13 +251,16 @@
     <div class="nav-item" onclick="showSection('evidence')">
       <span class="nav-icon">🗂️</span> Evidence
     </div>
+    <div class="nav-item" onclick="showSection('csv_import')">
+      <span class="nav-icon">📥</span> CSV Import
+    </div>
     <div class="sidebar-section">Info</div>
     <div class="nav-item" onclick="showSection('resources')">
       <span class="nav-icon">📦</span> Resources
     </div>
   </nav>
   <div class="sidebar-footer">
-    <p style="margin-bottom:4px">v0.9.73 · 50 tools · 14 groups</p>
+    <p style="margin-bottom:4px">v0.9.74 · 52 tools · 15 groups</p>
     <p>Real server: <a href="https://npmjs.com/package/iso27001-mcp" target="_blank">npm install -g iso27001-mcp</a></p>
   </div>
 </aside>
@@ -559,7 +562,7 @@
     <!-- ════════════════════════════════════════════════════════ -->
     <div id="section-tools" class="section">
       <div class="notice">
-        💡 All 50 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 18 tools), analyst (36 tools), admin (all 50 tools).
+        💡 All 52 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 18 tools), analyst (38 tools), admin (all 52 tools).
       </div>
 
       <div class="card">
@@ -873,7 +876,7 @@
         <div style="font-size:36px">✅</div>
         <div>
           <div style="font-size:15px;font-weight:600;color:var(--green)">Audit Closed Successfully</div>
-          <div style="font-size:13px;color:#065f46;margin-top:4px">All findings documented · CARs raised and verified · ISO 27001:2022 Clause 9.2 satisfied</div>
+          <div style="font-size:13px;color:#065f46;margin-top:4px">All findings documented · CARs raised and verified · ISO 27001:2022 passes Clause 9.2 workflow checks</div>
           <div style="font-size:12px;color:#065f46;margin-top:6px">
             Audit: <span class="font-mono" id="a-done-name"></span> ·
             Findings: <span id="a-done-findings"></span> ·
@@ -1196,7 +1199,60 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════════ -->
-    <!--  SECTION 9: RESOURCES                                    -->
+    <!--  SECTION 10: CSV IMPORT                                  -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-csv_import" class="section">
+      <div class="section-inner">
+        <div style="background:linear-gradient(135deg,#064e3b,#065f46);border-radius:12px;padding:28px 32px;color:white;margin-bottom:20px;">
+          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(52,211,153,0.2);border:1px solid rgba(52,211,153,0.4);color:#6ee7b7;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:12px;letter-spacing:.5px;">NEW IN v0.9.74 · GROUP 15</div>
+          <h2 style="font-size:24px;font-weight:800;margin-bottom:8px;">📥 CSV Bulk Import</h2>
+          <p style="color:#a7f3d0;font-size:14px;line-height:1.65;max-width:640px;">Migrate your existing spreadsheet-based risk registers and control status trackers directly into the ISMS. Pass a CSV string, validate with <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">dry_run=true</code>, then commit.</p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px;font-family:monospace;">import_risks</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.55;">Bulk-register risks from a CSV string. Validates all rows before writing. Aborts on validation error unless <code>dry_run=true</code>.</div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">REQUIRED CSV HEADERS</div>
+            <div style="font-family:monospace;font-size:12px;background:var(--bg);border-radius:6px;padding:10px;color:var(--text);">asset, threat, vulnerability,<br>likelihood (1–5), impact (1–5)</div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin:10px 0 6px;">OPTIONAL HEADERS</div>
+            <div style="font-family:monospace;font-size:12px;background:var(--bg);border-radius:6px;padding:10px;color:var(--text);">owner, status, related_controls<br><span style="color:var(--text-muted)">(controls: semicolon-separated)</span></div>
+            <div style="margin-top:12px;font-size:11px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:6px;padding:8px 10px;color:#34d399;">✅ Min role: <strong>analyst</strong> · Supports <strong>dry_run</strong></div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px;font-family:monospace;">import_control_statuses</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.55;">Bulk-update control implementation statuses in a gap assessment. Validates every <code>control_id</code> exists in the assessment before writing.</div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">REQUIRED CSV HEADERS</div>
+            <div style="font-family:monospace;font-size:12px;background:var(--bg);border-radius:6px;padding:10px;color:var(--text);">control_id, status<br><span style="color:var(--text-muted)">(implemented | partial | not_implemented | na | not_started)</span></div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin:10px 0 6px;">OPTIONAL HEADERS</div>
+            <div style="font-family:monospace;font-size:12px;background:var(--bg);border-radius:6px;padding:10px;color:var(--text);">notes, na_justification<br><span style="color:var(--text-muted)">(na_justification required when status=na)</span></div>
+            <div style="margin-top:12px;font-size:11px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:6px;padding:8px 10px;color:#34d399;">✅ Min role: <strong>analyst</strong> · Supports <strong>dry_run</strong></div>
+          </div>
+        </div>
+
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Example Claude prompts</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="font-family:monospace;font-size:12px;background:var(--bg);border-radius:6px;padding:10px;color:var(--text);line-height:1.55;">"Import this CSV into the risk register — dry-run first to check for errors, then import if all rows pass:
+asset,threat,vulnerability,likelihood,impact,owner
+Customer DB,SQL injection,Unparameterised queries,4,5,Head of Eng
+AWS IAM,Privilege escalation,Overly broad roles,3,5,Cloud Lead"</div>
+            <div style="font-family:monospace;font-size:12px;background:var(--bg);border-radius:6px;padding:10px;color:var(--text);line-height:1.55;">"Update control statuses in assessment [ID] from this CSV:
+control_id,status,notes
+5.1,implemented,Approved by board 2026-01-15
+5.2,partial,Owner assigned — policy draft in progress
+8.1,not_implemented,"</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--text-muted);line-height:1.6;">
+          💡 <strong>Workflow tip:</strong> Always pass <code>dry_run: true</code> first. The response lists every row error with its row number and field. Fix errors in your spreadsheet, then call again without <code>dry_run</code> to commit. Both tools abort cleanly on validation failure — no partial imports.
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 11: RESOURCES                                   -->
     <!-- ════════════════════════════════════════════════════════ -->
     <div id="section-resources" class="section">
       <style>
@@ -1283,7 +1339,7 @@
             <div class="res-hero-stat-label">Templates</div>
           </div>
           <div class="res-hero-stat">
-            <div class="res-hero-stat-value" style="font-size:20px">v0.9.73</div>
+            <div class="res-hero-stat-value" style="font-size:20px">v0.9.74</div>
             <div class="res-hero-stat-label">Latest</div>
           </div>
         </div>
@@ -1350,7 +1406,7 @@
           <div class="res-step-num">3</div>
           <div class="res-step-body">
             <div class="res-step-title">Verify and connect</div>
-            <div class="res-step-desc">Run the health check, then restart Claude Desktop (quit fully and reopen). You should see <strong>50 tools</strong> in the tools panel.</div>
+            <div class="res-step-desc">Run the health check, then restart Claude Desktop (quit fully and reopen). You should see <strong>52 tools</strong> in the tools panel.</div>
             <div class="res-code"><span class="cmd">iso27001-mcp doctor</span>
 <span class="comment"># All 10 checks should show ✅</span>
 <span class="comment"># Then restart Claude Desktop</span></div>
@@ -1391,7 +1447,7 @@
           <div class="res-link-icon">📄</div>
           <div>
             <div class="res-link-title">Full Documentation</div>
-            <div class="res-link-desc">Complete tools reference with all 50 tools, parameter tables, architecture diagram, and security model.</div>
+            <div class="res-link-desc">Complete tools reference with all 52 tools, parameter tables, architecture diagram, and security model.</div>
             <div class="res-link-url">github.com/…/README.md</div>
           </div>
         </a>
@@ -1693,6 +1749,14 @@ const TOOLS = [
       params:[['template_type','—','enum','any template type'],['generated_by','—','string',''],['control_id','—','string',''],['limit','—','integer','default 20']],
       example:'{ "template_type": "access_review_attestation", "generated_by": "alice" }' },
   ]},
+  { group:'Group 15 — CSV Import', role:'analyst', tools:[
+    { name:'import_risks', desc:'Bulk-import risks from a CSV string. Validates all rows before writing. Supports dry_run=true for a validation preview without committing. Required headers: asset, threat, vulnerability, likelihood (1-5), impact (1-5). Optional: owner, status, related_controls (semicolon-separated).',
+      params:[['csv_content','required','string','CSV string including header row'],['default_status','—','enum','open | accepted | mitigated | transferred | closed (default: open)'],['dry_run','—','boolean','default false — set true to validate without writing']],
+      example:'{ "csv_content": "asset,threat,vulnerability,likelihood,impact,owner\\nCustomer DB,SQL injection,Unparameterised queries,4,5,Head of Engineering", "dry_run": true }' },
+    { name:'import_control_statuses', desc:'Bulk-update control implementation statuses in a gap assessment from a CSV string. Validates every control_id against the assessment. Required headers: control_id, status. Optional: notes, na_justification.',
+      params:[['assessment_id','required','string','UUID of the target gap assessment'],['csv_content','required','string','CSV string including header row'],['dry_run','—','boolean','default false — set true to validate without writing']],
+      example:'{ "assessment_id": "a1b2c3...", "csv_content": "control_id,status,notes\\n5.1,implemented,Policy approved", "dry_run": true }' },
+  ]},
 ];
 
 const POLICY_TEMPLATES = {
@@ -1884,12 +1948,13 @@ const SECTION_META = {
   gap:    { title:'Gap Assessment',    sub:'Acme Financial Services · ISO 27001:2022 · 24 controls shown' },
   risk:   { title:'Risk Register',     sub:'6 risks across all levels · click any risk to view treatment plan' },
   policy: { title:'Policy Generator',  sub:'12 ISO 27001-aligned policy templates · rendered with your org details' },
-  tools:  { title:'Tools Explorer',    sub:'50 MCP tools across 14 groups · all require a valid API key' },
+  tools:  { title:'Tools Explorer',    sub:'52 MCP tools across 15 groups · all require a valid API key' },
   procedures:      { title: 'Procedure Generator',   sub: '12 ISO 27001 operating procedures · rendered with Mustache partials' },
   'audit':         { title: 'Internal Audit',   sub: 'ISO 27001:2022 Clause 9.2 · Plan · Record findings (NC/OBS/OFI) · Raise CARs · Close' },
   'mgmt-review':   { title: 'Management Review',      sub: 'ISO 27001:2022 Clause 9.3 · 7 required inputs + at least 1 output · enforced business rule' },
   improvement:     { title: 'Improvement Plan',        sub: 'Clause 10.1 · forward-only status · health rating based on active backlog' },
   evidence:        { title: 'Evidence Templates',      sub: '6 evidence document types · dual-write to evidence + generated_evidence tables' },
+  csv_import:      { title: 'CSV Import',                sub: '2 tools · import_risks + import_control_statuses · dry-run preview supported' },
   resources:       { title: 'Resources',               sub: 'Installation · quick start · npm · GitHub · author' },
 };
 

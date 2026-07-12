@@ -10,7 +10,7 @@ import { newId, now, computeEvidenceStatus } from "../db/dal.js";
 import { notFound, integrationError } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { getEnv } from "../security/secrets.js";
-import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
+import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
 import { suggestedTypes } from "./evidence-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -77,12 +77,12 @@ export function handleRegisterEvidence(args: Record<string, unknown>): ToolResul
   const {
     control_id, type, description, source_url,
     collected_by, collected_date, expiry_date,
-    confirmed = false,
+    confirmed = false, proposal_id,
   } = args as {
     control_id: string; type: string; description: string;
     source_url?: string; collected_by: string;
     collected_date: string; expiry_date?: string;
-    confirmed?: boolean;
+    confirmed?: boolean; proposal_id?: string;
   };
 
   // ── HITL preview ──────────────────────────────────────────────
@@ -96,14 +96,18 @@ export function handleRegisterEvidence(args: Record<string, unknown>): ToolResul
       { field: "expiry_date",    old: null, new: expiry_date ?? "—" },
       { field: "source_url",     old: null, new: source_url ?? "—" },
     ];
+    const proposal_id_token = createProposal("register_evidence");
     return ok({
       hitl_proposed: true,
       status:        "preview",
+      proposal_id:   proposal_id_token,
+      expires_in:    "10 minutes",
       message:       "⏸ No data written. Pass \"confirmed\": true to register this evidence.",
       diff:          buildDiffTable(rows),
     });
   }
 
+  consumeProposal(proposal_id, "register_evidence");
   const id = newId();
   const ts = now();
 

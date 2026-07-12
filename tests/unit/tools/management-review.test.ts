@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { _testSeedProposal } from "../../../src/tools/hitl-utils.js";
 
 // ── Module-level mock stubs ───────────────────────────────────
 
@@ -206,10 +207,14 @@ describe("handleCompleteManagementReview", () => {
     });
     mockStmt.all.mockReturnValue(ALL_SEVEN_INPUTS);
 
+    const PROPOSAL_CMR = "d1d1d1d1-d1d1-4d1d-ad1d-d1d1d1d1d1d1";
+    _testSeedProposal(PROPOSAL_CMR, "complete_management_review");
+
     const result = handleCompleteManagementReview({
       review_id:    "review-1",
       completed_by: "CISO",
       confirmed:    true,
+      proposal_id:  PROPOSAL_CMR,
     });
 
     expect(result.isError).toBe(false);

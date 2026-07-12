@@ -39,6 +39,7 @@ import {
   handleGenerateRiskRegister,
 } from "../../../src/tools/risks.js";
 import { McpError } from "../../../src/types/errors.js";
+import { _testSeedProposal } from "../../../src/tools/hitl-utils.js";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────
 
@@ -198,7 +199,10 @@ describe("handleUpdateRisk", () => {
       .mockReturnValueOnce(updateStmt)   // UPDATE
       .mockReturnValueOnce(selectStmt);  // SELECT read-back
 
-    const result = handleUpdateRisk({ risk_id: "risk-uuid-1", status: "accepted", confirmed: true });
+    const PROPOSAL_UR_1 = "e1e1e1e1-e1e1-4e1e-ae1e-e1e1e1e1e1e1";
+    _testSeedProposal(PROPOSAL_UR_1, "update_risk");
+
+    const result = handleUpdateRisk({ risk_id: "risk-uuid-1", status: "accepted", confirmed: true, proposal_id: PROPOSAL_UR_1 });
 
     expect(result.isError).toBe(false);
     const data = JSON.parse(result.content[0].text);
@@ -435,10 +439,14 @@ describe("handleUpdateTreatmentStatus", () => {
       .mockReturnValueOnce(updateStmt)
       .mockReturnValueOnce(selectStmt);
 
+    const PROPOSAL_UTS_1 = "f1f1f1f1-f1f1-4f1f-af1f-f1f1f1f1f1f1";
+    _testSeedProposal(PROPOSAL_UTS_1, "update_treatment_status");
+
     const result = handleUpdateTreatmentStatus({
       treatment_id: "treat-uuid-1",
       status: "in_progress",
       confirmed: true,
+      proposal_id: PROPOSAL_UTS_1,
     });
 
     expect(result.isError).toBe(false);

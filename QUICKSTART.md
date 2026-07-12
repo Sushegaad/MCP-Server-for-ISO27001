@@ -1,6 +1,6 @@
 # iso27001-mcp — Guided First-Run Checklist
 
-This walkthrough takes you from a blank workspace to an auditor-ready ISMS deliverable set in a single Claude conversation. Follow the steps in order — each one builds on the last.
+This walkthrough takes you from a blank workspace to an audit-pack-ready ISMS deliverable set in a single Claude conversation. Follow the steps in order — each one builds on the last.
 
 > **Prerequisites:** `iso27001-mcp` installed and `iso27001-mcp doctor` showing all green. If not, see [Installation](docs/REFERENCE.md#installation).
 
@@ -151,4 +151,4 @@ This is the core evidence package for an ISO 27001 Stage 1 audit readiness revie
 
 ## Sample outputs
 
-The [`samples/`](samples/) directory contains pre-built auditor-ready examples for a fictitious organisation ("Acme Financial Services Ltd") covering the full workflow above. See [Sample Outputs](docs/REFERENCE.md#sample-outputs) for the index.
+The [`samples/`](samples/) directory contains pre-built audit-pack-ready examples for a fictitious organisation ("Acme Financial Services Ltd") covering the full workflow above. See [Sample Outputs](docs/REFERENCE.md#sample-outputs) for the index.

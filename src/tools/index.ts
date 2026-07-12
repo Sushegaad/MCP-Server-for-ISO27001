@@ -1,7 +1,7 @@
 /**
  * iso27001-mcp — Tool registry & execution pipeline
  *
- * registerAllTools(server) wires all 50 tools into the MCP server with the
+ * registerAllTools(server) wires all 52 tools into the MCP server with the
  * full security pipeline per §6 of the spec:
  *
  * Read-only lookups previously exposed as tools are now MCP Resources
@@ -103,6 +103,9 @@ import {
   handleGenerateEvidenceDocument,
   handleListEvidenceDocuments,
 } from "./evidence-templates.js";
+
+// ── Group 15: CSV Import ──────────────────────────────────────
+import { handleImportRisks, handleImportControlStatuses } from "./csv-import.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -295,6 +298,12 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
     "Render one of 6 Mustache evidence templates (access_review_attestation, training_acknowledgement, supplier_security_questionnaire, incident_post_mortem, bcp_test_report, risk_treatment_sign_off) with org-profile auto-injection. Returns rendered Markdown and simultaneously registers an evidence record.",
   list_evidence_documents:
     "List generated evidence documents with optional filters: template_type, generated_by, control_id, and pagination.",
+
+  // Group 15 — CSV Import (analyst+)
+  import_risks:
+    "Bulk-import risks from a CSV string. Supports dry_run=true for validation preview. Headers: asset, threat, vulnerability, likelihood (1–5), impact (1–5), owner, status, related_controls (semicolon-separated).",
+  import_control_statuses:
+    "Bulk-update control implementation statuses in a gap assessment from a CSV string. Supports dry_run=true for validation preview. Headers: control_id, status, notes, na_justification.",
 };
 
 // ── TOOL_HANDLERS ─────────────────────────────────────────────
@@ -420,12 +429,16 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   // ── Group 14: Evidence Templates ──────────────────────────────
   generate_evidence_document: handleGenerateEvidenceDocument,
   list_evidence_documents:    handleListEvidenceDocuments,
+
+  // ── Group 15: CSV Import ──────────────────────────────────────
+  import_risks:            handleImportRisks,
+  import_control_statuses: handleImportControlStatuses,
 };
 
 // ── registerAllTools ──────────────────────────────────────────
 
 /**
- * Register all 50 ISO 27001 MCP tools with the server.
+ * Register all 52 ISO 27001 MCP tools with the server.
  * Each tool callback runs the full security pipeline.
  * Read-only lookup tools have been retired to MCP Resources (iso27001:// URIs).
  */

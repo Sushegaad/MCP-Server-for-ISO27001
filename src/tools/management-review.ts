@@ -13,7 +13,7 @@ import { getDb }                from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
-import { buildDiffTable, type DiffRow } from "./hitl-utils.js";
+import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -210,10 +210,11 @@ export function handleRecordReviewOutput(args: Record<string, unknown>): ToolRes
 }
 
 export function handleCompleteManagementReview(args: Record<string, unknown>): ToolResult {
-  const { review_id, completed_by, confirmed = false } = args as {
+  const { review_id, completed_by, confirmed = false, proposal_id } = args as {
     review_id:    string;
     completed_by: string;
     confirmed?:   boolean;
+    proposal_id?: string;
   };
 
   const review = requireReview(review_id);
@@ -246,9 +247,12 @@ export function handleCompleteManagementReview(args: Record<string, unknown>): T
       { field: "completed_by",     old: "(not set)",             new: completed_by },
     ];
     const readyToComplete = missing.length === 0 && outputCount >= 1;
+    const proposal_id_token = createProposal("complete_management_review");
     return ok({
       hitl_proposed:    true,
       status:           "preview",
+      proposal_id:      proposal_id_token,
+      expires_in:       "10 minutes",
       review_id,
       title:            review.title,
       ready_to_complete: readyToComplete,
@@ -259,6 +263,7 @@ export function handleCompleteManagementReview(args: Record<string, unknown>): T
     });
   }
 
+  consumeProposal(proposal_id, "complete_management_review");
   // Enforce ISO 27001:2022 §9.3.2 — all 7 input categories must be recorded
   if (missing.length > 0) {
     throw businessRule(
