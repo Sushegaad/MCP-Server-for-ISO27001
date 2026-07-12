@@ -55,7 +55,7 @@ export function handleImportRisks(args: Record<string, unknown>): ToolResult {
   const previews: Record<string, unknown>[]         = [];
 
   for (let i = 0; i < rows.length; i++) {
-    const r   = rows[i]!;
+    const r   = rows[i] ?? {};
     const num = i + 2; // 1-indexed, row 1 is header
 
     const asset           = r["asset"]           ?? r["asset_name"]     ?? "";
@@ -180,7 +180,7 @@ export function handleImportControlStatuses(args: Record<string, unknown>): Tool
   const updates: { control_id: string; status: string; notes: string; na_justification: string }[] = [];
 
   for (let i = 0; i < rows.length; i++) {
-    const r   = rows[i]!;
+    const r   = rows[i] ?? {};
     const num = i + 2;
 
     const control_id       = r["control_id"]       ?? r["control"]  ?? "";
