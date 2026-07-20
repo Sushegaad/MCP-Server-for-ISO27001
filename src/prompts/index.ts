@@ -159,9 +159,9 @@ When all CARs are verified effective, call \`update_corrective_action\` with sta
     "Prepare and conduct an ISO 27001:2022 Clause 9.3 management review: schedule it, record all 7 mandatory input categories, record outputs, and complete.",
     {
       review_title: z.string().optional().describe("Review title, e.g. 'Q3 2026 ISMS Management Review'"),
-      chair:        z.string().optional().describe("Review chair, typically the CISO or senior management"),
+      reviewers:    z.string().optional().describe("Comma-separated reviewer names (at least one required by the tool)"),
     },
-    ({ review_title, chair }) => ({
+    ({ review_title, reviewers }) => ({
       messages: [{
         role: "user" as const,
         content: {
@@ -173,36 +173,31 @@ The server enforces these — \`complete_management_review\` will fail if any ar
 
 **Step 1 — Schedule the review**
 ${review_title ? `Title: ${review_title}` : "Ask: What is the review title?"}
-${chair ? `Chair: ${chair}` : "Ask: Who will chair the review?"}
-Ask: What is the review date? Who are the attendees?
-Call \`create_management_review\`.
+${reviewers ? `Reviewers: ${reviewers}` : "Ask: Who are the reviewers? (at least one required)"}
+Ask: What is the review date? Any scope notes?
+Call \`create_management_review\` with title, review_date, reviewers[] (and optional scope_notes).
 
 **Step 2 — Record all 7 mandatory inputs (ISO §9.3.2)**
-Call \`record_review_input\` for EACH of the following categories. Collect a summary and optional detail from the user for each:
+Call \`record_review_input\` for EACH of the following input_category values. Collect a summary (and optional details/trend) from the user for each:
 
-1. **audit_results** — results of internal audits, including NC status, CAR closure rate
-2. **risk_summary** — read \`iso27001://risks/summary\` and summarise risk posture
-3. **objective_performance** — ISMS objectives status, KPIs, monitoring results
-4. **nonconformities** — open and closed nonconformities; corrective action status
-5. **previous_actions** — status of actions from the last management review
-6. **changes** — changes relevant to the ISMS (org, legal, contractual, threat landscape)
-7. **resources** — adequacy of resources (budget, people, tools)
-
-Optional 8th category: **stakeholder_feedback** (interested parties, supplier feedback).
+1. **previous_action_status** — status of actions from previous management reviews
+2. **external_internal_issues** — changes in external and internal issues relevant to the ISMS
+3. **interested_party_needs** — changes in needs and expectations of interested parties
+4. **isms_performance** — ISMS performance: audit results, nonconformities, monitoring/KPIs, objectives
+5. **interested_party_feedback** — feedback from interested parties (customers, suppliers, regulators)
+6. **risk_assessment_results** — read \`iso27001://risks/summary\` and summarise risk assessment and treatment status
+7. **improvement_opportunities** — opportunities for continual improvement
 
 **Step 3 — Record outputs (ISO §9.3.3)**
-At least one output is required. Call \`record_review_output\` for each decision:
-- improvement_opportunity — new improvement action with owner and due date
-- resource_decision — budget/headcount/tooling decisions
-- policy_change — policies requiring update
-- objective_change — changes to ISMS objectives
+At least one output is required. Call \`record_review_output\` for each decision, with output_type:
+- **improvement_decision** — a continual-improvement decision (with owner and due date)
+- **isms_change_decision** — any decision on changes needed to the ISMS (scope, policy, objectives, resources)
 
 **Step 4 — Complete the review**
-Call \`complete_management_review\` (preview + confirm with proposal_id):
-- outcome_summary: concise record of decisions made
+Call \`complete_management_review\` with review_id and completed_by (preview + confirm with proposal_id). The server rejects completion until all 7 input categories and ≥1 output are recorded.
 
 **Step 5 — Follow up**
-- For each improvement_opportunity output, call \`create_improvement_opportunity\` to track it (Clause 10.1).
+- For each improvement_decision output, call \`create_improvement_opportunity\` to track it (Clause 10.1).
 - Read \`iso27001://management-review/{review_id}\` to generate the meeting minutes.`,
         },
       }],

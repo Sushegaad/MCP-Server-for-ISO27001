@@ -12,6 +12,12 @@ Items here are planned but not yet implemented. PRs and feature requests are wel
 
 Priority: **medium** — completes the CSV migration path.
 
+### Known issues (tracked)
+
+- **Risk register export/import round-trip mismatch** — `generate_risk_register` emits no `vulnerability` column (hard-required by `import_risks`) and uses `in_treatment` status (not in the importer's accepted set), so the server's own CSV export cannot be re-imported. Fix: add `vulnerability` and `related_controls` columns to the exporter and align the status vocabularies.
+- **CSV parser does not handle quoted fields** — `import_risks`/`import_control_statuses` split naively on commas, so values containing commas (e.g. `"Acme, Inc."`) break. Fix: quote-aware tokenizer (RFC 4180) or a small parsing dependency.
+- **Missing migration `.sql` sibling files** — migrations 0003, 0006, 0007 exist only as embedded strings in `src/db/migrations/index.ts`; the human-readable `.sql` copies were never created. Fix: restore the three files and add a lockstep test, or formally drop the `.sql` convention.
+
 ### Auditor validation note
 A lightweight "reviewed by" section to be added to documentation and template headers indicating which controls, clause mappings, and policy templates have been reviewed against the published ISO 27001:2022 Annex A and clause text by a qualified practitioner.
 

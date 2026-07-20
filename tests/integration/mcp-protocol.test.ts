@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { TOOL_SCHEMAS } from "../../src/security/validate.js";
+import { TOOL_SCHEMAS } from "../../src/tools/registry.js";
 import { TOTAL_TOOLS, toolsForRole } from "../../src/auth/rbac.js";
 
 describe("MCP protocol — tool registration", () => {

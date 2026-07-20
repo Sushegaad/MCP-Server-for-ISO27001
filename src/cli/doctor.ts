@@ -21,6 +21,7 @@ import { homedir }                  from "node:os";
 import { check, closePrompt } from "./prompt.js";
 import { findClaudeDesktopConfig }   from "./claude-config.js";
 import { openDb, closeDb }           from "../db/connection.js";
+import { MIGRATIONS }                from "../db/migrations/index.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -152,12 +153,13 @@ export function runDoctor(
       const rows = openDb(dbPath)
         .prepare("SELECT filename FROM _migrations ORDER BY id")
         .all() as { filename: string }[];
-      const passed = rows.length >= 7;
+      const expected = MIGRATIONS.length;
+      const passed = rows.length >= expected;
       check(
         "Migrations",
         passed,
         false,
-        `${rows.length}/7 applied${passed ? "" : " — DB may need re-initialisation"}`,
+        `${rows.length}/${expected} applied${passed ? "" : " — DB may need re-initialisation"}`,
       );
       record(passed);
     } catch {

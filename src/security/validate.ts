@@ -1,8 +1,10 @@
 /**
- * iso27001-mcp — Zod input schemas for all 63 tools
+ * iso27001-mcp — Zod input schemas (pure schema definitions)
  *
- * One named schema per tool. Used in the 11-step pipeline (step 7: Zod parse)
- * before sanitisation and business logic run.
+ * One named schema per tool. The tool-name → schema map (TOOL_SCHEMAS) is
+ * derived from the unified registry in src/tools/registry.ts, which imports
+ * these named schemas. The security pipeline runs schema.safeParse() on
+ * every call, so .refine() cross-field rules are enforced at runtime.
  *
  * Convention:
  *   - UUIDs: z.string().uuid()
@@ -668,99 +670,8 @@ export const ImportControlStatusesSchema = z.object({
   dry_run:       coerceBool.optional().default(false),
 });
 
-// ── Registry: tool name → schema ─────────────────────────────
-
-export const TOOL_SCHEMAS: Record<string, z.ZodTypeAny> = {
-  // Group 1 (get_control + get_clause_requirement → retired to resources)
-  list_controls:             ListControlsSchema,
-  search_controls:           SearchControlsSchema,
-  get_control_attributes:    GetControlAttributesSchema,
-  compare_versions:          CompareVersionsSchema,
-  list_clause_requirements:  ListClauseRequirementsSchema,
-  // Group 2 (get_gap_summary → retired to resource)
-  create_gap_assessment:        CreateGapAssessmentSchema,
-  update_control_status:        UpdateControlStatusSchema,
-  list_gap_assessments:         ListGapAssessmentsSchema,
-  export_gap_report:            ExportGapReportSchema,
-  generate_remediation_roadmap: GenerateRemediationRoadmapSchema,
-  archive_gap_assessment:       ArchiveGapAssessmentSchema,
-  // Group 3 (get_risk + get_risk_summary → retired to resources)
-  create_risk:            CreateRiskSchema,
-  update_risk:            UpdateRiskSchema,
-  list_risks:             ListRisksSchema,
-  create_treatment_plan:  CreateTreatmentPlanSchema,
-  update_treatment_status:UpdateTreatmentStatusSchema,
-  generate_risk_register: GenerateRiskRegisterSchema,
-  // Group 4 (get_policy → retired to resource)
-  create_policy: CreatePolicySchema,
-  update_policy: UpdatePolicySchema,
-  list_policies: ListPoliciesSchema,
-  // Group 5
-  generate_soa:    GenerateSoaSchema,
-  update_soa_entry:UpdateSoaEntrySchema,
-  export_soa:      ExportSoaSchema,
-  // Group 6
-  create_audit:             CreateAuditSchema,
-  record_finding:           RecordFindingSchema,
-  create_corrective_action: CreateCorrectiveActionSchema,
-  update_corrective_action: UpdateCorrectiveActionSchema,
-  generate_audit_report:    GenerateAuditReportSchema,
-  // Group 7 (get_evidence_gaps → retired to resource)
-  register_evidence: RegisterEvidenceSchema,
-  list_evidence:     ListEvidenceSchema,
-  link_jira_ticket:  LinkJiraTicketSchema,
-  link_github_issue: LinkGithubIssueSchema,
-  // Group 8 → retired to resource iso27001://server/info
-  // Group 9
-  query_audit_log: QueryAuditLogSchema,
-  list_api_keys:   ListApiKeysSchema,
-  revoke_api_key:  RevokeApiKeySchema,
-  // Group 10 (get_organization_profile → retired to resource)
-  set_organization_profile: SetOrganizationProfileSchema,
-  // Group 11 (get_procedure → retired to resource)
-  create_procedure: CreateProcedureSchema,
-  update_procedure: UpdateProcedureSchema,
-  list_procedures:  ListProceduresSchema,
-  export_procedure: ExportProcedureSchema,
-  // Group 12 (get_management_review → retired to resource)
-  create_management_review:  CreateManagementReviewSchema,
-  record_review_input:       RecordReviewInputSchema,
-  record_review_output:      RecordReviewOutputSchema,
-  complete_management_review:CompleteManagementReviewSchema,
-  list_management_reviews:   ListManagementReviewsSchema,
-  // Group 13 (get_improvement_opportunity → retired to resource)
-  create_improvement_opportunity: CreateImprovementOpportunitySchema,
-  update_improvement_opportunity: UpdateImprovementOpportunitySchema,
-  list_improvement_opportunities: ListImprovementOpportunitiesSchema,
-  // Group 14 (get_evidence_document → retired to resource)
-  generate_evidence_document: GenerateEvidenceDocumentSchema,
-  list_evidence_documents:    ListEvidenceDocumentsSchema,
-  // Group 15 — CSV Import
-  import_risks:             ImportRisksSchema,
-  import_control_statuses:  ImportControlStatusesSchema,
-};
-
-// ── validateToolInput ─────────────────────────────────────────
-
-/**
- * Parse and validate tool input against the tool's Zod schema.
- * Returns the parsed (coerced, defaulted) value on success.
- * Throws McpError(VALIDATION_ERROR) on the first failing field.
- */
-import { validationError } from "../types/errors.js";
-
-export function validateToolInput<T>(toolName: string, raw: unknown): T {
-  const schema = TOOL_SCHEMAS[toolName];
-  if (!schema) {
-    throw validationError("toolName", `No schema registered for tool '${toolName}'`);
-  }
-
-  const result = schema.safeParse(raw);
-  if (!result.success) {
-    const firstIssue = result.error.issues[0];
-    const field = firstIssue.path.join(".") || "input";
-    throw validationError(field, firstIssue.message);
-  }
-
-  return result.data as T;
-}
+// ── Registry ─────────────────────────────────────────────────
+// The tool-name → schema map (TOOL_SCHEMAS) lives in the unified registry:
+// import { TOOL_SCHEMAS } from "../tools/registry.js"
+// (kept out of this file so validate.ts stays a pure, dependency-free
+// schema module — it imports only zod).

@@ -13,7 +13,7 @@ import { getDb }                from "../db/connection.js";
 import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
-import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
+import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -247,20 +247,14 @@ export function handleCompleteManagementReview(args: Record<string, unknown>): T
       { field: "completed_by",     old: "(not set)",             new: completed_by },
     ];
     const readyToComplete = missing.length === 0 && outputCount >= 1;
-    const proposal_id_token = createProposal("complete_management_review");
-    return ok({
-      hitl_proposed:    true,
-      status:           "preview",
-      proposal_id:      proposal_id_token,
-      expires_in:       "10 minutes",
+    return ok(buildPreviewResponse("complete_management_review", readinessRows, {
       review_id,
-      title:            review.title,
+      title:             review.title,
       ready_to_complete: readyToComplete,
-      message:          readyToComplete
+      message:           readyToComplete
         ? "⏸ No data written. Review is ready to complete. Pass \"confirmed\": true to finalise."
         : "⏸ No data written. Review is NOT ready to complete — resolve the issues above first.",
-      diff:             buildDiffTable(readinessRows),
-    });
+    }));
   }
 
   consumeProposal(proposal_id, "complete_management_review");

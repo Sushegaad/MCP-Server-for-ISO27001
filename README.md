@@ -7,7 +7,7 @@
 [![CI](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml/badge.svg)](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![ISO 27001:2022](https://img.shields.io/badge/ISO%2027001-2022-blue.svg)](https://www.iso.org/standard/27001)
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.73)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.73)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.74)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.74)
 
 **[▶ Live Interactive Demo](https://sushegaad.github.io/MCP-Server-for-ISO27001/)** · **[Guided First-Run Checklist →](QUICKSTART.md)** · **[Roadmap →](ROADMAP.md)**
 
@@ -103,8 +103,10 @@ iso27001-mcp — health check
 ✅  Active API key         1 active key found
 ✅  Claude Desktop config  /Users/you/.../claude_desktop_config.json
 ✅  iso27001-mcp entry     present in mcpServers
+✅  Database writable      read-write test passed
+✅  Env vars in config     DB_ENCRYPTION_KEY, HMAC_SECRET, MCP_API_KEY all present
 ────────────────────────────────────────────────────────
-  All 10 checks passed. Restart Claude Desktop if you just ran init.
+  All 12 checks passed. Restart Claude Desktop if you just ran init.
 ```
 
 Then **restart Claude Desktop fully** and you should see 52 tools in the tools panel.
@@ -158,6 +160,19 @@ Common causes: wrong Node.js version loaded by Claude Desktop, missing `DB_ENCRY
 | **Improvement Plan** | 3 | analyst | Clause 10.1 improvement opportunities — track, link, and report |
 | **Evidence Templates** | 2 | analyst | Generate Mustache-rendered evidence documents; dual-write to evidence and generated_evidence tables |
 | **CSV Import** | 2 | analyst | Bulk-import risks and control statuses from a CSV string; supports `dry_run=true` validation preview before writing |
+
+### MCP Workflow Prompts
+
+Beyond individual tools, the server registers **4 MCP prompts** — guided workflows that sequence the right tool calls for you:
+
+| Prompt | Guides Claude through |
+|--------|----------------------|
+| `conduct_gap_assessment` | Org profile → assessment → control statuses → compliance summary → remediation roadmap → export |
+| `register_and_treat_risk` | Duplicate check → risk registration → risk landscape review → treatment plan |
+| `prepare_internal_audit` | Scope review → audit creation → findings (NC/OBS/OFI) → corrective actions → audit report |
+| `prepare_management_review` | Scheduling → all 7 Clause 9.3.2 inputs → outputs → completion |
+
+They appear in Claude's prompt picker when the server is connected.
 
 ---
 
@@ -228,6 +243,7 @@ For the full security profile — threat model, hardening guide, supply chain at
 ### Encryption and audit trail summary
 
 - **Database** — AES-256 encrypted SQLite via `better-sqlite3-multiple-ciphers`
+- **Secrets** — `HMAC_SECRET` and `DB_ENCRYPTION_KEY` must be exactly 64 hex chars; the server refuses to start on a missing or malformed value, so a placeholder can never become a live key
 - **API keys** — HMAC-SHA256 hashed; raw key printed once and never stored
 - **Audit log** — HMAC-SHA256 hash chain; every row linked to its predecessor — insertion, deletion, or reordering is detectable; `actor_type` (`ai` | `human` | `system`) and `model_id` are included in the hash so provenance claims are tamper-evident
 - **Prompt injection** — free-text fields sanitised before passing to any handler
@@ -353,7 +369,8 @@ The detailed documentation has been moved to keep this page scannable. Everythin
 - [Advanced / Manual Setup](docs/REFERENCE.md#advanced--manual-setup) — CI/CD, custom paths, full env var table
 - [Tools Reference](docs/REFERENCE.md#tools-reference) — all 52 tools across 15 groups with full parameter tables
 - [MCP Resources](docs/REFERENCE.md#mcp-resources) — 20 `iso27001://` URIs, formats, example prompts
-- [Architecture](docs/REFERENCE.md#architecture) — 7-step security pipeline, database schema, seed data
+- [MCP Prompts](docs/REFERENCE.md#mcp-prompts) — 4 guided workflow prompts (gap assessment, risk treatment, internal audit, management review)
+- [Architecture](docs/REFERENCE.md#architecture) — 8-step security pipeline, database schema, seed data
 - [Modes](docs/REFERENCE.md#modes) — local / CI / team / hosted with SSE endpoint reference
 - [Sample Outputs](docs/REFERENCE.md#sample-outputs) — 9 audit-pack-ready example files for Acme Financial Services Ltd
 - [Integrations](docs/REFERENCE.md#integrations) — Jira and GitHub issue linking

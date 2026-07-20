@@ -16,7 +16,7 @@ import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { loadTemplate, loadPartials, stripFrontmatter, markdownToHtml, renderHtmlDocument } from "./template-utils.js";
 import { loadOrgProfileDefaults } from "./org-profile.js";
-import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
+import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
 
 
 // ── create_procedure ──────────────────────────────────────────
@@ -291,17 +291,11 @@ export function handleUpdateProcedure(args: Record<string, unknown>): ToolResult
       rows.push({ field: "related_controls", old: fromJsonArray<string>(current.related_controls), new: related_controls });
     rows.push({ field: "reviewed_by", old: current.reviewed_by, new: reviewed_by });
     rows.push({ field: "change_summary", old: "(none)", new: change_summary });
-    const proposal_id_token = createProposal("update_procedure");
-    return ok({
-      hitl_proposed: true,
-      status:        "preview",
-      proposal_id:   proposal_id_token,
-      expires_in:    "10 minutes",
+    return ok(buildPreviewResponse("update_procedure", rows, {
       procedure_id,
       procedure_type: current.procedure_type,
-      message:       "⏸ No data written. The current version will be archived and a new version created. Pass \"confirmed\": true to apply this change.",
-      diff:          buildDiffTable(rows),
-    });
+      message: "⏸ No data written. The current version will be archived and a new version created. Pass \"confirmed\": true to apply this change.",
+    }));
   }
 
   consumeProposal(proposal_id, "update_procedure");

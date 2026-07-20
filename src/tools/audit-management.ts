@@ -11,7 +11,7 @@ import type { AuditRow, FindingRow, CorrectiveActionRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { markdownToHtml, renderHtmlDocument } from "./template-utils.js";
-import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
+import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
 
 
 function shapeAudit(r: AuditRow): Omit<AuditRow, "controls_in_scope" | "clauses_in_scope"> & { controls_in_scope: string[]; clauses_in_scope: string[] } {
@@ -67,15 +67,9 @@ export function handleCreateAudit(args: Record<string, unknown>): ToolResult {
       { field: "controls_in_scope", old: null, new: controls_in_scope ?? [] },
       { field: "clauses_in_scope",  old: null, new: clauses_in_scope ?? [] },
     ];
-    const proposal_id_token = createProposal("create_audit");
-    return ok({
-      hitl_proposed: true,
-      status:        "preview",
-      proposal_id:   proposal_id_token,
-      expires_in:    "10 minutes",
-      message:       "⏸ No data written. Pass \"confirmed\": true to create this audit.",
-      diff:          buildDiffTable(rows),
-    });
+    return ok(buildPreviewResponse("create_audit", rows, {
+      message: "⏸ No data written. Pass \"confirmed\": true to create this audit.",
+    }));
   }
 
   consumeProposal(proposal_id, "create_audit");
@@ -129,15 +123,9 @@ export function handleRecordFinding(args: Record<string, unknown>): ToolResult {
       { field: "description",        old: null, new: description },
       { field: "objective_evidence", old: null, new: objective_evidence },
     ];
-    const proposal_id_token = createProposal("record_finding");
-    return ok({
-      hitl_proposed: true,
-      status:        "preview",
-      proposal_id:   proposal_id_token,
-      expires_in:    "10 minutes",
-      message:       "⏸ No data written. Pass \"confirmed\": true to record this finding.",
-      diff:          buildDiffTable(rows),
-    });
+    return ok(buildPreviewResponse("record_finding", rows, {
+      message: "⏸ No data written. Pass \"confirmed\": true to record this finding.",
+    }));
   }
 
   consumeProposal(proposal_id, "record_finding");
@@ -182,15 +170,9 @@ export function handleCreateCorrectiveAction(args: Record<string, unknown>): Too
       { field: "status",       old: null, new: "open" },
       { field: "root_cause",   old: null, new: root_cause ?? "—" },
     ];
-    const proposal_id_token = createProposal("create_corrective_action");
-    return ok({
-      hitl_proposed: true,
-      status:        "preview",
-      proposal_id:   proposal_id_token,
-      expires_in:    "10 minutes",
-      message:       "⏸ No data written. Pass \"confirmed\": true to create this corrective action.",
-      diff:          buildDiffTable(rows),
-    });
+    return ok(buildPreviewResponse("create_corrective_action", rows, {
+      message: "⏸ No data written. Pass \"confirmed\": true to create this corrective action.",
+    }));
   }
 
   consumeProposal(proposal_id, "create_corrective_action");

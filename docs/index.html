@@ -287,7 +287,7 @@
     <div id="section-gap" class="section active">
 
       <div class="notice">
-        💡 This simulates the <strong>create_gap_assessment</strong>, <strong>update_control_status</strong>, and <strong>generate_remediation_roadmap</strong> tools. Click any control to cycle its status. Gap summaries are available as the <code>iso27001://assessments/{id}/gap-summary</code> resource.
+        💡 This simulates the <strong>create_gap_assessment</strong>, <strong>update_control_status</strong>, and <strong>generate_remediation_roadmap</strong> tools. Click any control to cycle its status. Gap summaries are available as the <code>iso27001://assessment/{assessment_id}/summary</code> resource.
       </div>
 
       <!-- Stat row -->
@@ -562,7 +562,7 @@
     <!-- ════════════════════════════════════════════════════════ -->
     <div id="section-tools" class="section">
       <div class="notice">
-        💡 All 52 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 18 tools), analyst (38 tools), admin (all 52 tools).
+        💡 All 52 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 18 tools), analyst (38 tools), admin (all 52 tools). 12 critical write tools are HITL-gated: they return a preview diff + single-use proposal_id, and commit only when called again with confirmed=true and that proposal_id.
       </div>
 
       <div class="card">
@@ -1323,11 +1323,11 @@ control_id,status,notes
         <p>A stateful MCP server that gives Claude a complete Information Security Management System. Run gap assessments, manage risks, generate ISO-aligned policies and procedures, track evidence, and schedule management reviews — all backed by an AES-256 encrypted SQLite database on your own machine.</p>
         <div class="res-hero-stats">
           <div class="res-hero-stat">
-            <div class="res-hero-stat-value">50</div>
+            <div class="res-hero-stat-value">52</div>
             <div class="res-hero-stat-label">MCP Tools</div>
           </div>
           <div class="res-hero-stat">
-            <div class="res-hero-stat-value">14</div>
+            <div class="res-hero-stat-value">15</div>
             <div class="res-hero-stat-label">Tool Groups</div>
           </div>
           <div class="res-hero-stat">
@@ -1365,7 +1365,7 @@ control_id,status,notes
         <div class="res-feature-card">
           <div class="res-feature-icon">🔗</div>
           <div class="res-feature-title">MCP Resources</div>
-          <div class="res-feature-desc">12 read-only <code>iso27001://</code> URIs expose every ISMS artefact as a browsable MCP Resource. Claude can reference them without a tool call.</div>
+          <div class="res-feature-desc">20 read-only <code>iso27001://</code> URIs expose every ISMS artefact as a browsable MCP Resource. Claude can reference them without a tool call.</div>
         </div>
         <div class="res-feature-card">
           <div class="res-feature-icon">🛡️</div>
@@ -1408,7 +1408,7 @@ control_id,status,notes
             <div class="res-step-title">Verify and connect</div>
             <div class="res-step-desc">Run the health check, then restart Claude Desktop (quit fully and reopen). You should see <strong>52 tools</strong> in the tools panel.</div>
             <div class="res-code"><span class="cmd">iso27001-mcp doctor</span>
-<span class="comment"># All 10 checks should show ✅</span>
+<span class="comment"># All 12 checks should show ✅</span>
 <span class="comment"># Then restart Claude Desktop</span></div>
           </div>
         </div>
@@ -1423,6 +1423,16 @@ control_id,status,notes
 <span class="val">"Register a new risk: our customer DB is exposed to SQL injection — likelihood 4, impact 5."</span></div>
           </div>
         </div>
+      </div>
+
+      <!-- Workflow Prompts -->
+      <div class="res-qs-card" style="margin-bottom: 20px;">
+        <div class="res-qs-title">💬 Workflow Prompts</div>
+        <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">The server registers 4 MCP prompts — each guides Claude step-by-step through a complete ISMS workflow, sequencing the right resources and tool calls.</div>
+        <div class="res-qs-item"><code>conduct_gap_assessment</code> — full gap assessment: create assessment, set control statuses, summary, remediation roadmap.</div>
+        <div class="res-qs-item"><code>register_and_treat_risk</code> — register a new risk and immediately create a treatment plan with linked controls.</div>
+        <div class="res-qs-item"><code>prepare_internal_audit</code> — plan and conduct an internal audit: findings (NC/OBS/OFI), CARs, effectiveness close-out.</div>
+        <div class="res-qs-item"><code>prepare_management_review</code> — Clause 9.3 review: schedule, record all 7 mandatory inputs, record outputs, complete.</div>
       </div>
 
       <!-- Links -->
@@ -1592,7 +1602,7 @@ const TOOLS = [
       params:[['name','✅','string','assessment name'],['scope','—','string',''],['isms_version','—','enum','2022 | 2013'],['themes_in_scope','—','array','']],
       example:'{ "name": "2026 Certification Audit", "isms_version": "2022", "scope": "Cloud infrastructure and development" }' },
     { name:'update_control_status',       desc:'Set a control\'s status within an assessment',
-      params:[['assessment_id','✅','uuid',''],['control_id','✅','string',''],['status','✅','enum','implemented | partial | not_implemented | na | not_started'],['notes','—','string','']],
+      params:[['assessment_id','✅','uuid',''],['control_id','✅','string',''],['status','✅','enum','implemented | partial | not_implemented | na | not_started'],['notes','—','string',''],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "assessment_id": "uuid", "control_id": "8.28", "status": "partial", "notes": "Secure coding standard drafted, not yet enforced" }' },
     { name:'list_gap_assessments',        desc:'List assessments filtered by active / archived / all',
       params:[['filter','—','enum','active | archived | all']],
@@ -1618,10 +1628,10 @@ const TOOLS = [
       params:[['risk_id','✅','uuid',''],['treatment_type','✅','enum','mitigate | accept | avoid | transfer'],['description','✅','string',''],['owner','✅','string',''],['due_date','✅','string','YYYY-MM-DD'],['controls','—','array','required for mitigate']],
       example:'{ "risk_id": "uuid", "treatment_type": "mitigate", "description": "Implement parameterised queries", "owner": "Head of Engineering", "due_date": "2026-09-30" }' },
     { name:'update_treatment_status',desc:'Update treatment status and link evidence',
-      params:[['treatment_id','✅','uuid',''],['status','✅','enum','planned | in_progress | implemented | verified | cancelled'],['evidence_ref','—','string','']],
+      params:[['treatment_id','✅','uuid',''],['status','✅','enum','planned | in_progress | implemented | verified | cancelled'],['evidence_ref','—','string',''],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "treatment_id": "uuid", "status": "implemented", "evidence_ref": "PR-4821-merged" }' },
     { name:'update_risk',           desc:'Update any mutable field; risk_score recomputes automatically',
-      params:[['risk_id','✅','uuid',''],['likelihood','—','integer','1–5'],['impact','—','integer','1–5'],['status','—','enum','']],
+      params:[['risk_id','✅','uuid',''],['likelihood','—','integer','1–5'],['impact','—','integer','1–5'],['status','—','enum',''],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "risk_id": "uuid", "status": "mitigated" }' },
     { name:'generate_risk_register',desc:'Export the full risk register in markdown, CSV, or JSON',
       params:[['format','✅','enum','markdown | csv | json'],['risk_level_filter','—','enum',''],['status_filter','—','enum','']],
@@ -1629,10 +1639,10 @@ const TOOLS = [
   ]},
   { group:'Group 4 — Policy Management', role:'analyst', tools:[
     { name:'create_policy', desc:'Render a policy from a Mustache template with org-specific variables',
-      params:[['type','✅','enum','information_security | access_control | risk_management | …'],['organisation_name','✅','string',''],['scope','✅','string',''],['owner','✅','string',''],['effective_date','✅','string','YYYY-MM-DD']],
+      params:[['type','✅','enum','information_security | access_control | risk_management | …'],['organisation_name','✅','string',''],['scope','✅','string',''],['owner','✅','string',''],['effective_date','✅','string','YYYY-MM-DD'],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "type": "information_security", "organisation_name": "Acme Ltd", "scope": "All cloud systems", "owner": "CISO", "effective_date": "2026-06-01" }' },
     { name:'update_policy', desc:'Archive the current version and create a new one (admin only)',
-      params:[['policy_id','✅','uuid',''],['reviewed_by','✅','string',''],['change_summary','✅','string',''],['scope','—','string','']],
+      params:[['policy_id','✅','uuid',''],['reviewed_by','✅','string',''],['change_summary','✅','string',''],['scope','—','string',''],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "policy_id": "uuid", "reviewed_by": "CISO", "change_summary": "Updated cloud scope to include GCP" }' },
     { name:'list_policies', desc:'List policies with filters including overdue_only for upcoming reviews',
       params:[['status','—','enum','draft | active | archived'],['overdue_only','—','boolean','default false'],['limit','—','integer','default 50']],
@@ -1643,7 +1653,7 @@ const TOOLS = [
       params:[['assessment_id','✅','uuid',''],['isms_version','—','enum','2022 | 2013']],
       example:'{ "assessment_id": "uuid", "isms_version": "2022" }' },
     { name:'update_soa_entry',desc:'Update inclusion, justification, status, and responsible party',
-      params:[['soa_id','✅','uuid',''],['control_id','✅','string',''],['included','✅','boolean',''],['justification','✅','string','']],
+      params:[['soa_id','✅','uuid',''],['control_id','✅','string',''],['included','✅','boolean',''],['justification','✅','string',''],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "soa_id": "uuid", "control_id": "8.1", "included": true, "justification": "All staff use managed endpoints" }' },
     { name:'export_soa',      desc:'Export the Statement of Applicability in markdown or CSV',
       params:[['soa_id','✅','uuid',''],['format','✅','enum','markdown | csv']],
@@ -1651,13 +1661,13 @@ const TOOLS = [
   ]},
   { group:'Group 6 — Audit Management', role:'admin', tools:[
     { name:'create_audit',            desc:'Create an internal audit with auditor, planned date, and scope',
-      params:[['name','✅','string',''],['scope','✅','string',''],['auditor','✅','string',''],['planned_date','✅','string','YYYY-MM-DD'],['controls_in_scope','—','array','']],
+      params:[['name','✅','string',''],['scope','✅','string',''],['auditor','✅','string',''],['planned_date','✅','string','YYYY-MM-DD'],['controls_in_scope','—','array',''],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "name": "Q2 Access Control Audit", "scope": "Access control and cryptography", "auditor": "Jane Smith", "planned_date": "2026-06-15" }' },
     { name:'record_finding',          desc:'Record a finding: NC (requires severity), observation, or OFI',
-      params:[['audit_id','✅','uuid',''],['type','✅','enum','nc | obs | ofi'],['clause_or_control','✅','string',''],['description','✅','string',''],['objective_evidence','✅','string',''],['severity','—','enum','major | minor — required for nc']],
+      params:[['audit_id','✅','uuid',''],['type','✅','enum','nc | obs | ofi'],['clause_or_control','✅','string',''],['description','✅','string',''],['objective_evidence','✅','string',''],['severity','—','enum','major | minor — required for nc'],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "audit_id": "uuid", "type": "nc", "clause_or_control": "9.1", "description": "No evidence of monitoring", "objective_evidence": "No KPI reports found for Q1-Q2", "severity": "major" }' },
     { name:'create_corrective_action',desc:'Raise a Corrective Action Request (CAR) linked to a finding',
-      params:[['finding_id','✅','uuid',''],['description','✅','string',''],['owner','✅','string',''],['due_date','✅','string','YYYY-MM-DD']],
+      params:[['finding_id','✅','uuid',''],['description','✅','string',''],['owner','✅','string',''],['due_date','✅','string','YYYY-MM-DD'],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "finding_id": "uuid", "description": "Establish quarterly security KPI dashboard", "owner": "Compliance Manager", "due_date": "2026-07-31" }' },
     { name:'update_corrective_action',desc:'Update CAR status. Closing requires effectiveness_verified: true (ISO Clause 10.1)',
       params:[['car_id','✅','uuid',''],['status','—','enum','open | in_progress | implemented | verified | closed'],['effectiveness_verified','—','boolean','must be true to close'],['evidence_ref','—','string','']],
@@ -1668,7 +1678,7 @@ const TOOLS = [
   ]},
   { group:'Group 7 — Evidence Tracking', role:'analyst', tools:[
     { name:'register_evidence', desc:'Register an evidence artefact for a control',
-      params:[['control_id','✅','string',''],['type','✅','enum','policy | procedure | log | screenshot | report | certificate | configuration | …'],['description','✅','string',''],['collected_by','✅','string',''],['collected_date','✅','string','YYYY-MM-DD'],['expiry_date','—','string','']],
+      params:[['control_id','✅','string',''],['type','✅','enum','policy | procedure | log | screenshot | report | certificate | configuration | …'],['description','✅','string',''],['collected_by','✅','string',''],['collected_date','✅','string','YYYY-MM-DD'],['expiry_date','—','string',''],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "control_id": "8.20", "type": "screenshot", "description": "Firewall config screenshot", "collected_by": "Ops team", "collected_date": "2026-05-07", "expiry_date": "2027-05-07" }' },
     { name:'list_evidence',     desc:'List evidence for a control, filtered by status: current, stale, expired',
       params:[['control_id','✅','string',''],['status','—','enum','current | stale | expired']],
@@ -1707,27 +1717,27 @@ const TOOLS = [
       params:[['procedure_type','—','enum','any type'],['status','—','enum','draft | active | archived'],['overdue_only','—','boolean',''],['limit','—','integer','default 50']],
       example:'{ "status": "active", "overdue_only": true }' },
     { name:'update_procedure', desc:'Archive current version, re-render with changes. Admin only.',
-      params:[['procedure_id','✅','uuid',''],['reviewed_by','✅','string',''],['change_summary','✅','string','']],
+      params:[['procedure_id','✅','uuid',''],['reviewed_by','✅','string',''],['change_summary','✅','string',''],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "procedure_id": "uuid", "reviewed_by": "CISO", "change_summary": "Updated scope" }' },
     { name:'export_procedure', desc:'Export procedure as Markdown or JSON.',
       params:[['procedure_id','✅','uuid',''],['format','✅','enum','markdown | json']],
       example:'{ "procedure_id": "uuid", "format": "markdown" }' },
   ]},
   { group:'Group 12 — Management Review (Clause 9.3)', role:'admin', tools:[
-    { name:'create_management_review', desc:'Schedule a management review meeting with chair, attendees, and agenda.',
-      params:[['title','✅','string',''],['review_date','✅','string','YYYY-MM-DD'],['chair','✅','string',''],['attendees','—','array','names'],['agenda','—','string','']],
-      example:'{ "title": "Q2 2026 ISMS Management Review", "review_date": "2026-06-30", "chair": "CISO" }' },
+    { name:'create_management_review', desc:'Schedule a Clause 9.3 management review with title, date, and reviewers.',
+      params:[['title','✅','string',''],['review_date','✅','string','YYYY-MM-DD'],['reviewers','✅','array','at least one reviewer name'],['scope_notes','—','string','']],
+      example:'{ "title": "Q2 2026 ISMS Management Review", "review_date": "2026-06-30", "reviewers": ["CISO", "CTO"] }' },
     { name:'record_review_input', desc:'Record a management review input item (audit results, risk summary, performance metrics, etc.).',
-      params:[['review_id','✅','uuid',''],['input_type','✅','enum','audit_results | risk_summary | objective_performance | nonconformities | previous_actions | changes | resources | stakeholder_feedback | other'],['summary','✅','string',''],['detail','—','string','']],
-      example:'{ "review_id": "uuid", "input_type": "audit_results", "summary": "3 minor NCs raised in Q1 audit, all CARs in progress" }' },
+      params:[['review_id','✅','uuid',''],['input_category','✅','enum','previous_action_status | external_internal_issues | interested_party_needs | isms_performance | interested_party_feedback | risk_assessment_results | improvement_opportunities'],['summary','✅','string',''],['details','—','string',''],['trend','—','enum','improving | stable | declining | insufficient_data']],
+      example:'{ "review_id": "uuid", "input_category": "risk_assessment_results", "summary": "3 minor NCs raised in Q1 audit, all CARs in progress" }' },
     { name:'record_review_output', desc:'Record a decision or action item from the review (improvement opportunity, resource decision, policy change).',
-      params:[['review_id','✅','uuid',''],['output_type','✅','enum','improvement_opportunity | resource_decision | policy_change | objective_change | other'],['description','✅','string',''],['owner','—','string',''],['due_date','—','string','YYYY-MM-DD']],
-      example:'{ "review_id": "uuid", "output_type": "improvement_opportunity", "description": "Automate evidence collection for control 8.15", "owner": "Head of Engineering" }' },
-    { name:'complete_management_review', desc:'Mark a management review as complete and record the outcome summary.',
-      params:[['review_id','✅','uuid',''],['outcome_summary','✅','string','']],
-      example:'{ "review_id": "uuid", "outcome_summary": "ISMS performing well. 2 improvement opportunities identified and assigned." }' },
+      params:[['review_id','✅','uuid',''],['output_type','✅','enum','improvement_decision | isms_change_decision'],['description','✅','string',''],['owner','—','string',''],['due_date','—','string','YYYY-MM-DD']],
+      example:'{ "review_id": "uuid", "output_type": "improvement_decision", "description": "Automate evidence collection for control 8.15", "owner": "Head of Engineering" }' },
+    { name:'complete_management_review', desc:'Mark a management review as complete. Enforces ISO 27001:2022 §9.3.2 — all 7 mandatory input categories must be recorded, plus at least 1 output (§9.3.3), before the review can complete.',
+      params:[['review_id','✅','uuid',''],['completed_by','✅','string',''],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
+      example:'{ "review_id": "uuid", "completed_by": "CISO" }' },
     { name:'list_management_reviews', desc:'List management reviews with optional status filter.',
-      params:[['status','—','enum','scheduled | in_progress | completed'],['limit','—','integer','default 20']],
+      params:[['status','—','enum','planned | in_progress | completed'],['limit','—','integer','default 20']],
       example:'{ "status": "completed", "limit": 10 }' },
   ]},
   { group:'Group 13 — Improvement Plan (Clause 10.1)', role:'analyst', tools:[

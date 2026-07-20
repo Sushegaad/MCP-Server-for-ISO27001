@@ -10,7 +10,7 @@ import { newId, now, toJson, fromJsonArray } from "../db/dal.js";
 import type { RiskRow, TreatmentRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
-import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
+import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
 
 
 function shapeRisk(r: RiskRow): Omit<RiskRow, "related_controls"> & { related_controls: string[] } {
@@ -117,16 +117,7 @@ export function handleUpdateRisk(args: Record<string, unknown>): ToolResult {
       rows.push({ field: "status", old: existing.status, new: status });
     if (related_controls !== undefined)
       rows.push({ field: "related_controls", old: fromJsonArray<string>(existing.related_controls), new: related_controls });
-    const proposal_id_token = createProposal("update_risk");
-    return ok({
-      hitl_proposed: true,
-      status:        "preview",
-      proposal_id:   proposal_id_token,
-      expires_in:    "10 minutes",
-      risk_id,
-      message:       "⏸ No data written. Pass \"confirmed\": true to apply this change.",
-      diff:          buildDiffTable(rows),
-    });
+    return ok(buildPreviewResponse("update_risk", rows, { risk_id }));
   }
 
   consumeProposal(proposal_id, "update_risk");
@@ -307,17 +298,10 @@ export function handleUpdateTreatmentStatus(args: Record<string, unknown>): Tool
       rows.push({ field: "residual_likelihood", old: current.residual_likelihood, new: residual_likelihood });
     if (residual_impact !== undefined && residual_impact !== current.residual_impact)
       rows.push({ field: "residual_impact", old: current.residual_impact, new: residual_impact });
-    const proposal_id_token = createProposal("update_treatment_status");
-    return ok({
-      hitl_proposed: true,
-      status:        "preview",
-      proposal_id:   proposal_id_token,
-      expires_in:    "10 minutes",
+    return ok(buildPreviewResponse("update_treatment_status", rows, {
       treatment_id,
-      risk_id:       current.risk_id,
-      message:       "⏸ No data written. Pass \"confirmed\": true to apply this change.",
-      diff:          buildDiffTable(rows),
-    });
+      risk_id: current.risk_id,
+    }));
   }
 
   consumeProposal(proposal_id, "update_treatment_status");

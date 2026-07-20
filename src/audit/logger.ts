@@ -132,36 +132,60 @@ export function writeAuditEvent(event: AuditEventInput): AuditEvent {
     .update(hashInput)
     .digest("hex");
 
-  db.prepare(`
-    INSERT INTO audit_log
-      (id, timestamp, tool, key_hash, role, params_json,
-       outcome, error_message, duration_ms, prev_hash, row_hash,
-       actor_type, model_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    id,
-    timestamp,
-    event.tool,
-    event.key_hash,
-    event.role,
-    event.params_json,
-    event.outcome,
-    event.error_message,
-    event.duration_ms,
-    prev_hash,
-    row_hash,
-    actor_type,
-    model_id,
-  );
+  // ── DB insert — must never convert a committed operation into an error ──
+  // The domain handler has already committed by the time this runs. If the
+  // audit INSERT fails we (a) log loudly to stderr, (b) still attempt the
+  // JSON-L append below with a `db_write_failed` marker so at least one
+  // durable record of the event exists, and (c) do NOT throw. The hash chain
+  // remains valid: the next successful row links to the last persisted row.
+  let dbWriteFailed = false;
+  try {
+    db.prepare(`
+      INSERT INTO audit_log
+        (id, timestamp, tool, key_hash, role, params_json,
+         outcome, error_message, duration_ms, prev_hash, row_hash,
+         actor_type, model_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      timestamp,
+      event.tool,
+      event.key_hash,
+      event.role,
+      event.params_json,
+      event.outcome,
+      event.error_message,
+      event.duration_ms,
+      prev_hash,
+      row_hash,
+      actor_type,
+      model_id,
+    );
+  } catch (err) {
+    dbWriteFailed = true;
+    console.error(
+      `[audit] CRITICAL: audit_log DB insert failed for tool '${event.tool}' ` +
+      `(outcome=${event.outcome}). Falling back to JSON-L file only.`,
+      err,
+    );
+  }
 
   const full: AuditEvent = { id, timestamp, prev_hash, row_hash, actor_type, model_id, ...event };
 
   // Append to flat JSON-L file — non-fatal if the write fails
   try {
     const logPath = resolveAuditLogPath(getEnv("AUDIT_LOG_PATH", "./audit.jsonl"));
-    appendFileSync(logPath, JSON.stringify(full) + "\n", "utf8");
+    const line = dbWriteFailed ? { ...full, db_write_failed: true } : full;
+    appendFileSync(logPath, JSON.stringify(line) + "\n", "utf8");
   } catch (err) {
     console.error("[audit] Warning: failed to write to AUDIT_LOG_PATH:", err);
+    if (dbWriteFailed) {
+      // Both sinks failed — this is the worst case; make it unmissable.
+      console.error(
+        "[audit] CRITICAL: event was not persisted to EITHER sink:",
+        JSON.stringify(full),
+      );
+    }
   }
 
   return full;

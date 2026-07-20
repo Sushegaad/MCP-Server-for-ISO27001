@@ -49,7 +49,7 @@ The wizard handles everything in one guided session — no `openssl` required:
 iso27001-mcp doctor
 ```
 
-Runs 10 health checks and prints `✅ / ❌ / --` for each. All green means Claude Desktop is ready.
+Runs 12 health checks and prints `✅ / ❌ / --` for each. All green means Claude Desktop is ready.
 
 ### Step 4 — Restart Claude Desktop
 
@@ -106,8 +106,8 @@ export DB_PATH=$HOME/.iso27001/isms.db
 ```bash
 # Generate additional keys for team members
 iso27001-mcp keygen --label "Alice" --role viewer       # read-only, 18 tools
-iso27001-mcp keygen --label "Bob"   --role analyst --expires 90d  # 36 tools
-iso27001-mcp keygen --label "CISO"  --role admin  --expires 1y    # all 50 tools
+iso27001-mcp keygen --label "Bob"   --role analyst --expires 90d  # 38 tools
+iso27001-mcp keygen --label "CISO"  --role admin  --expires 1y    # all 52 tools
 
 # List all keys
 iso27001-mcp keys list
@@ -153,8 +153,8 @@ iso27001-mcp keygen --label admin --role admin
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `DB_ENCRYPTION_KEY` | ✅ | — | 32-byte hex key for AES-256 SQLite encryption |
-| `HMAC_SECRET` | ✅ | — | 32-byte hex secret for HMAC-signing API keys |
+| `DB_ENCRYPTION_KEY` | ✅ | — | 32-byte hex key for AES-256 SQLite encryption — must be exactly 64 hex chars |
+| `HMAC_SECRET` | ✅ | — | 32-byte hex secret for HMAC-signing API keys — must be exactly 64 hex chars |
 | `DB_PATH` | | `./isms.db` | Path to the encrypted database file |
 | `AUDIT_LOG_PATH` | | `./audit.jsonl` | Path for the append-only JSON-L audit log (`.jsonl` or `.log` only) |
 | `RATE_LIMIT_RPM` | | `500` | Tool calls per minute per API key |
@@ -168,6 +168,8 @@ iso27001-mcp keygen --label admin --role admin
 | `JIRA_USER_EMAIL` | | — | Email address associated with the Jira API token |
 | `GITHUB_TOKEN` | | — | GitHub personal access token (scope: `issues:write`) |
 | `GITHUB_REPO` | | — | e.g. `your-org/your-repo` |
+
+> **Startup validation:** `HMAC_SECRET` and `DB_ENCRYPTION_KEY` must each be **exactly 64 hexadecimal characters** (32 bytes). `loadSecrets()` validates them at startup and the server refuses to start if either is missing or malformed.
 
 **Run from source** (for development or to get the latest unreleased changes):
 
@@ -183,7 +185,9 @@ npm run build
 
 ## Tools Reference
 
-The server exposes **50 tools** across 14 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
+The server exposes **52 tools** across 15 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
+
+> **Human-in-the-loop (HITL) confirmation:** 12 critical write tools (`update_control_status`, `update_risk`, `update_treatment_status`, `create_policy`, `update_policy`, `update_soa_entry`, `create_audit`, `record_finding`, `create_corrective_action`, `register_evidence`, `update_procedure`, `complete_management_review`) accept a `confirmed` parameter (default `false`). When `false` or omitted, the tool writes **nothing** — it returns a preview diff plus a server-issued single-use `proposal_id` (10-minute TTL). To commit, call the tool again with the same arguments plus `confirmed=true` and that `proposal_id`.
 
 ---
 
@@ -267,6 +271,8 @@ Set a control's implementation status within an assessment.
 | `notes` | — | string | Implementation notes |
 | `na_justification` | — | string | Required when `status=na` |
 | `assessed_by` | — | string | Assessor name |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `list_gap_assessments`
 List assessments with a status filter.
@@ -333,6 +339,8 @@ Update any mutable field; `risk_score` recomputes automatically.
 | `owner` | — | string | |
 | `status` | — | enum | `open` \| `accepted` \| `mitigated` \| `transferred` \| `closed` |
 | `related_controls` | — | array | Control IDs |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `list_risks`
 List risks with optional filters.
@@ -370,6 +378,8 @@ Update a treatment plan's status and link evidence.
 | `evidence_ref` | — | string | |
 | `residual_likelihood` | — | integer | 1–5 |
 | `residual_impact` | — | integer | 1–5 |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `generate_risk_register`
 Export the full risk register.
@@ -398,6 +408,8 @@ Render a policy from a Mustache template with org-specific variables.
 | `approver` | — | string | |
 | `review_cycle_months` | — | integer | 1–36, default: `12` |
 | `effective_date` | ✅ | string | `YYYY-MM-DD` |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `update_policy`
 Archive the current version and create a new one. Admin only.
@@ -410,6 +422,8 @@ Archive the current version and create a new one. Admin only.
 | `approver` | — | string | |
 | `reviewed_by` | ✅ | string | |
 | `change_summary` | ✅ | string | |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `list_policies`
 List policies with optional filters.
@@ -446,6 +460,8 @@ Update a single SoA entry's inclusion, justification, status, and responsible pa
 | `justification` | ✅ | string | |
 | `status` | — | enum | `implemented` \| `partial` \| `not_implemented` \| `na` \| `not_started` |
 | `responsible_party` | — | string | |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `export_soa`
 Export the Statement of Applicability.
@@ -470,6 +486,8 @@ Create an internal audit with auditor, planned date, and scope.
 | `planned_date` | ✅ | string | `YYYY-MM-DD` |
 | `controls_in_scope` | — | array | Control IDs |
 | `clauses_in_scope` | — | array | Clause IDs |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `record_finding`
 Record a finding. Non-conformities (`nc`) require a severity.
@@ -482,6 +500,8 @@ Record a finding. Non-conformities (`nc`) require a severity.
 | `description` | ✅ | string | |
 | `objective_evidence` | ✅ | string | |
 | `severity` | — | enum | `major` \| `minor` — required for `type=nc` |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `create_corrective_action`
 Raise a Corrective Action Request (CAR) linked to a finding.
@@ -493,6 +513,8 @@ Raise a Corrective Action Request (CAR) linked to a finding.
 | `owner` | ✅ | string | |
 | `due_date` | ✅ | string | `YYYY-MM-DD` |
 | `root_cause` | — | string | |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `update_corrective_action`
 Update CAR status. Closing (`status=closed`) requires `effectiveness_verified: true` (ISO 27001 Clause 10.1).
@@ -534,6 +556,8 @@ Register an evidence artefact for a control.
 | `collected_by` | ✅ | string | |
 | `collected_date` | ✅ | string | `YYYY-MM-DD` |
 | `expiry_date` | — | string | `YYYY-MM-DD` |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `list_evidence`
 List evidence for a control, optionally filtered by currency.
@@ -662,6 +686,8 @@ Archive the current version and re-render with updated fields. Admin only.
 | `owner` | — | string | |
 | `approver` | — | string | |
 | `related_controls` | — | array | Control IDs |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `export_procedure`
 Export a procedure as Markdown or JSON.
@@ -684,9 +710,8 @@ Schedule a management review meeting.
 |-----------|-----|------|----------------|
 | `title` | ✅ | string | Review title |
 | `review_date` | ✅ | string | `YYYY-MM-DD` |
-| `chair` | ✅ | string | Review chair / CISO name |
-| `attendees` | — | array | List of attendee names |
-| `agenda` | — | string | Meeting agenda |
+| `reviewers` | ✅ | array | Reviewer names (at least one required) |
+| `scope_notes` | — | string | Optional scope notes for the review |
 
 #### `record_review_input`
 Record an input item to a management review (e.g. audit results, risk summary, performance metrics).
@@ -694,9 +719,10 @@ Record an input item to a management review (e.g. audit results, risk summary, p
 | Parameter | Req | Type | Values / Notes |
 |-----------|-----|------|----------------|
 | `review_id` | ✅ | string (UUID) | |
-| `input_type` | ✅ | enum | `audit_results` \| `risk_summary` \| `objective_performance` \| `nonconformities` \| `previous_actions` \| `changes` \| `resources` \| `stakeholder_feedback` \| `other` |
+| `input_category` | ✅ | enum | `previous_action_status` \| `external_internal_issues` \| `interested_party_needs` \| `isms_performance` \| `interested_party_feedback` \| `risk_assessment_results` \| `improvement_opportunities` |
 | `summary` | ✅ | string | |
-| `detail` | — | string | Supporting detail |
+| `details` | — | string | Supporting detail |
+| `trend` | — | enum | `improving` \| `stable` \| `declining` \| `insufficient_data` |
 
 #### `record_review_output`
 Record a decision or action item from a management review.
@@ -704,25 +730,27 @@ Record a decision or action item from a management review.
 | Parameter | Req | Type | Values / Notes |
 |-----------|-----|------|----------------|
 | `review_id` | ✅ | string (UUID) | |
-| `output_type` | ✅ | enum | `improvement_opportunity` \| `resource_decision` \| `policy_change` \| `objective_change` \| `other` |
-| `description` | ✅ | string | |
+| `output_type` | ✅ | enum | `improvement_decision` \| `isms_change_decision` |
+| `decision` | ✅ | string | The decision or action item text |
 | `owner` | — | string | |
 | `due_date` | — | string | `YYYY-MM-DD` |
 
 #### `complete_management_review`
-Mark a management review as complete and record the outcome.
+Mark a management review as complete. Enforces ISO 27001:2022 §9.3.2 — all 7 mandatory input categories must be recorded, plus at least 1 output (§9.3.3), before the review can complete.
 
 | Parameter | Req | Type | Values / Notes |
 |-----------|-----|------|----------------|
 | `review_id` | ✅ | string (UUID) | |
-| `outcome_summary` | ✅ | string | |
+| `completed_by` | ✅ | string | |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `list_management_reviews`
 List management reviews with optional status filter.
 
 | Parameter | Req | Type | Values / Notes |
 |-----------|-----|------|----------------|
-| `status` | — | enum | `scheduled` \| `in_progress` \| `completed` |
+| `status` | — | enum | `planned` \| `in_progress` \| `completed` |
 | `limit` | — | integer | Default: `20`, max `100` |
 | `offset` | — | integer | Default: `0` |
 
@@ -799,6 +827,30 @@ List generated evidence documents with optional filters.
 
 ---
 
+### Group 15 — CSV Import *(minimum role: analyst)*
+
+Bulk-load ISMS data from CSV strings. Both tools validate **every** row before writing anything, and support `dry_run=true` for a validation-only preview that commits nothing.
+
+#### `import_risks`
+Bulk-import risks from a CSV string. Required headers: `asset`, `threat`, `vulnerability`, `likelihood` (1–5), `impact` (1–5). Optional headers: `owner`, `status`, `related_controls` (semicolon-separated control IDs).
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `csv_content` | ✅ | string | CSV string including the header row (max 500,000 chars) |
+| `default_status` | — | enum | `open` \| `accepted` \| `mitigated` \| `transferred` \| `closed` — default: `open`; applied to rows without a `status` column |
+| `dry_run` | — | boolean | Default `false` — set `true` to validate without writing |
+
+#### `import_control_statuses`
+Bulk-update control implementation statuses in a gap assessment from a CSV string. Every `control_id` is validated against the assessment. Required headers: `control_id`, `status` (`implemented` \| `partial` \| `not_implemented` \| `na` \| `not_started`). Optional headers: `notes`, `na_justification` (required when `status=na`).
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `assessment_id` | ✅ | string (UUID) | Target gap assessment |
+| `csv_content` | ✅ | string | CSV string including the header row (max 500,000 chars) |
+| `dry_run` | — | boolean | Default `false` — set `true` to validate without writing |
+
+---
+
 ## MCP Resources
 
 In addition to tools, the server exposes ISMS artefacts as browseable **MCP Resources** under the `iso27001://` URI scheme. Claude can reference these directly without a tool call — ideal for inline document review, cross-referencing controls, and long-context analysis.
@@ -864,6 +916,19 @@ Resources are read-only. Write operations always go through tools (which enforce
 
 ---
 
+## MCP Prompts
+
+The server registers **4 workflow prompts**. Each guides Claude step-by-step through a complete ISMS workflow — fetching the relevant resources, identifying what is missing, and sequencing the correct tool calls. All arguments are optional; Claude asks the user for anything not supplied.
+
+| Prompt | Description | Arguments |
+|--------|-------------|-----------|
+| `conduct_gap_assessment` | Run a full gap assessment: create assessment, set control statuses, generate summary, produce a remediation roadmap | `organisation_name`, `scope`, `isms_version` (`2022` \| `2013`), `timeline_weeks` (1–52, default 26) |
+| `register_and_treat_risk` | Register a new information security risk and immediately create a treatment plan with linked controls | `asset`, `threat`, `vulnerability` |
+| `prepare_internal_audit` | Plan and conduct an internal audit: create the audit, record findings (NC/OBS/OFI), raise CARs, close with effectiveness check | `audit_scope`, `auditor` |
+| `prepare_management_review` | Prepare a Clause 9.3 management review: schedule it, record all 7 mandatory input categories, record outputs, complete | `review_title`, `reviewers` |
+
+---
+
 ## Architecture
 
 ```
@@ -871,12 +936,12 @@ Resources are read-only. Write operations always go through tools (which enforce
 │                     Claude (LLM)                        │
 └──────────┬───────────────────────────────┬──────────────┘
            │  MCP Tools (read/write)        │  MCP Resources (read-only)
-           │  50 tools, RBAC enforced       │  20 iso27001:// URIs
+           │  52 tools, RBAC enforced       │  20 iso27001:// URIs
 ┌──────────▼───────────────────────────────▼──────────────┐
 │                   iso27001-mcp server                   │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐    │
-│  │             7-Step Security Pipeline            │    │
+│  │             8-Step Security Pipeline            │    │
 │  │                                                 │    │
 │  │  1. Extract credential (_meta.apiKey / env)     │    │
 │  │  2. Auth — session token OR validateKey()       │    │
@@ -884,8 +949,9 @@ Resources are read-only. Write operations always go through tools (which enforce
 │  │  3. checkRateLimit() sliding 60s window (RPM)   │    │
 │  │  4. assertPermission() RBAC check               │    │
 │  │  5. sanitiseParams() strip injection patterns   │    │
-│  │  6. Domain handler   business logic             │    │
-│  │  7. writeAuditEvent() HMAC chain + row_hash     │    │
+│  │  6. schema.safeParse() enforce .refine() rules  │    │
+│  │  7. Domain handler   business logic             │    │
+│  │  8. writeAuditEvent() HMAC chain + row_hash     │    │
 │  └─────────────────────────────────────────────────┘    │
 │                                                         │
 │  ┌─────────────┐  ┌──────────┐  ┌────────────────────┐  │
@@ -900,7 +966,7 @@ Resources are read-only. Write operations always go through tools (which enforce
 │  └─────────────┘  └──────────┘  └────────────────────┘  │
 │  ┌─────────────────────────────────────────────────┐    │
 │  │  Org Profile · Audit Log (HMAC-SHA256 chain)    │    │
-│  │  Session Token Store · API Key RBAC (50 tools)  │    │
+│  │  Session Token Store · API Key RBAC (52 tools)  │    │
 │  └─────────────────────────────────────────────────┘    │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐    │
@@ -933,7 +999,7 @@ On first startup, `seedAll()` inserts all ISO 27001 reference data and verifies 
 
 ### Security Pipeline
 
-Every tool call passes through the same 7-step pipeline before any business logic runs. SSE sessions use an opaque session token so the raw API key is never retained in server memory after the initial `/sse` handshake. Audit events are always written — including on authentication failure and RBAC denial — so the log is a complete record of all attempts, not just successful ones.
+Every tool call passes through the same 8-step pipeline before any business logic runs. Step 6 runs the **full Zod schema** (`schema.safeParse`) against the sanitised arguments — this enforces `.refine()` cross-field rules that the MCP SDK's extracted-shape validation cannot see, and the domain handler receives `parsed.data` with defaults applied and coercions run. SSE sessions use an opaque session token so the raw API key is never retained in server memory after the initial `/sse` handshake. Audit events are always written — including on authentication failure and RBAC denial — so the log is a complete record of all attempts, not just successful ones.
 
 ### Business Rules Enforced
 
@@ -947,6 +1013,7 @@ The server encodes ISO 27001 requirements as hard constraints, not just guidance
 | `mitigate` treatment requires control references | `create_treatment_plan` | `BUSINESS_RULE` error if `controls[]` is empty |
 | CAR closure requires effectiveness verified | `update_corrective_action` | Enforces Clause 10.1; `BUSINESS_RULE` error otherwise |
 | NC findings require severity | `record_finding` | `BUSINESS_RULE` error if `severity` absent for `type=nc` |
+| Review completion requires all 7 §9.3.2 inputs + ≥1 output | `complete_management_review` | `BUSINESS_RULE` error listing missing input categories |
 
 ### RBAC
 
@@ -955,8 +1022,8 @@ Three roles with strict hierarchy. A key can only call tools at or below its ass
 | Role | Tools available | Typical user |
 |------|----------------|--------------|
 | `viewer` | 18 (read-only tools) | Auditor, stakeholder |
-| `analyst` | 36 (18 viewer tools + gap/risk/policy/procedure/evidence/improvement writes) | ISMS practitioner, consultant |
-| `admin` | 50 (all tools, including org profile, audit management, audit log and key management) | CISO, ISMS owner |
+| `analyst` | 38 (18 viewer tools + gap/risk/policy/procedure/evidence/improvement/CSV-import writes) | ISMS practitioner, consultant |
+| `admin` | 52 (all tools, including org profile, audit management, audit log and key management) | CISO, ISMS owner |
 
 ---
 
@@ -1076,18 +1143,18 @@ src/
 ├── server.ts                 McpServer factory — registers tools + resources
 ├── cli/
 │   ├── init.ts               Interactive setup wizard (iso27001-mcp init)
-│   ├── doctor.ts             10-check health report (iso27001-mcp doctor)
+│   ├── doctor.ts             12-check health report (iso27001-mcp doctor)
 │   ├── prompt.ts             Lazy readline wrapper — ask, confirm, banner, check
 │   └── claude-config.ts      Claude Desktop config detection + entry builder
 ├── auth/
 │   ├── api-key.ts            Key generation, HMAC validation, expiry, revocation
-│   ├── rbac.ts               Permission matrix (50 tools × 3 roles)
+│   ├── rbac.ts               Permission matrix (52 tools × 3 roles)
 │   └── session-store.ts      SSE session token store (opaque token → keyHash + role)
 ├── security/
 │   ├── sanitise.ts           Prompt-injection stripping for free-text fields
 │   ├── rate-limiter.ts       Sliding-window RPM counter per key hash
 │   ├── secrets.ts            Env var validation (fail-fast on startup)
-│   └── validate.ts           Zod schemas for all 50 tool inputs
+│   └── validate.ts           Zod schemas for all 52 tool inputs
 ├── audit/
 │   └── logger.ts             Tamper-evident audit event writer
 ├── db/
@@ -1105,23 +1172,26 @@ src/
 │   ├── evidence-templates/   6 Mustache .md evidence document templates
 │   └── partials/             Shared Mustache partials (org_header, revision_block, approver_signature)
 ├── tools/
-│   ├── index.ts              Tool registry and security pipeline
-│   ├── controls.ts           Group 1: Control Registry (7 tools)
-│   ├── gap-analysis.ts       Group 2: Gap Analysis (7 tools)
-│   ├── risks.ts              Group 3: Risk Management (8 tools)
-│   ├── policies.ts           Group 4: Policy Management (4 tools)
+│   ├── index.ts              Security pipeline + registerAllTools
+│   ├── registry.ts           Unified tool registry (52 ToolDefinition entries; derives RBAC/schema/handler maps)
+│   ├── controls.ts           Group 1: Control Registry (5 tools)
+│   ├── gap-analysis.ts       Group 2: Gap Analysis (6 tools)
+│   ├── risks.ts              Group 3: Risk Management (6 tools)
+│   ├── policies.ts           Group 4: Policy Management (3 tools)
 │   ├── soa.ts                Group 5: Statement of Applicability (3 tools)
 │   ├── audit-management.ts   Group 6: Audit Management (5 tools)
-│   ├── evidence-tracking.ts  Group 7: Evidence Tracking (5 tools)
-│   ├── server-info.ts        Group 8: Server Info (1 tool)
-│   ├── org-profile.ts        Group 10: Organisation Profile (2 tools) + loadOrgProfileDefaults helper
-│   ├── procedures.ts         Group 11: Procedure Management (5 tools)
-│   ├── management-review.ts  Group 12: Management Review — Clause 9.3 (6 tools)
-│   ├── improvement-plan.ts   Group 13: Improvement Plan — Clause 10.1 (4 tools)
-│   ├── evidence-templates.ts Group 14: Evidence Templates (3 tools)
+│   ├── evidence-tracking.ts  Group 7: Evidence Tracking (4 tools)
+│   ├── admin.ts              Group 9: Admin & Key Management (3 tools) — Group 8 retired to iso27001://server/info
+│   ├── org-profile.ts        Group 10: Organisation Profile (1 tool) + loadOrgProfileDefaults helper
+│   ├── procedures.ts         Group 11: Procedure Management (4 tools)
+│   ├── management-review.ts  Group 12: Management Review — Clause 9.3 (5 tools)
+│   ├── improvement-plan.ts   Group 13: Improvement Plan — Clause 10.1 (3 tools)
+│   ├── evidence-templates.ts Group 14: Evidence Templates (2 tools)
+│   ├── csv-import.ts         Group 15: CSV Import (2 tools)
+│   ├── hitl-utils.ts         HITL proposal store — buildPreviewResponse / consumeProposal (10-min single-use tokens)
 │   └── template-utils.ts     Shared loadTemplate / stripFrontmatter / loadPartials / markdownToHtml / renderHtmlDocument helpers
 ├── resources/
-│   ├── index.ts              Registers all 12 MCP Resources
+│   ├── index.ts              Registers all 20 MCP Resources
 │   ├── resource-auth.ts      Slim auth helper for resource callbacks
 │   ├── controls.ts           iso27001-control, iso27001-control-versioned, iso27001-clause
 │   ├── org-profile.ts        iso27001-org-profile (static URI)

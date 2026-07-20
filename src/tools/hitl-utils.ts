@@ -116,6 +116,44 @@ export function consumeProposal(proposal_id: string | undefined, tool: string): 
   proposals.delete(proposal_id); // single-use
 }
 
+// ── buildPreviewResponse ──────────────────────────────────────
+
+const DEFAULT_PREVIEW_MESSAGE =
+  "⏸ No data written. Pass \"confirmed\": true to apply this change.";
+
+export interface PreviewExtras {
+  /** Override the default preview message (tool-specific wording). */
+  message?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Build the standard HITL preview response body. Creates a proposal token
+ * bound to `tool` and returns the canonical envelope:
+ *
+ *   { hitl_proposed, status: "preview", proposal_id, expires_in,
+ *     ...extras, message, diff }
+ *
+ * Handlers spread their identifying fields (e.g. risk_id) — and any
+ * tool-specific `message` override — via `extras`.
+ */
+export function buildPreviewResponse(
+  tool: string,
+  rows: DiffRow[],
+  extras: PreviewExtras = {},
+): Record<string, unknown> {
+  const { message, ...rest } = extras;
+  return {
+    hitl_proposed: true,
+    status:        "preview",
+    proposal_id:   createProposal(tool),
+    expires_in:    "10 minutes",
+    ...rest,
+    message:       message ?? DEFAULT_PREVIEW_MESSAGE,
+    diff:          buildDiffTable(rows),
+  };
+}
+
 /**
  * @internal Test-only helper — seeds a proposal token directly into the store,
  * bypassing the preview call. Allows unit tests to call commit branches without

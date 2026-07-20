@@ -16,7 +16,7 @@ import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { loadTemplate, loadPartials, stripFrontmatter } from "./template-utils.js";
 import { loadOrgProfileDefaults } from "./org-profile.js";
-import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
+import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
 
 
 // ── create_policy ─────────────────────────────────────────────
@@ -60,16 +60,10 @@ export function handleCreatePolicy(args: Record<string, unknown>): ToolResult {
       { field: "effective_date",    old: null, new: effective_date },
       { field: "next_review_date",  old: null, new: next_review },
     ];
-    const proposal_id_token = createProposal("create_policy");
-    return ok({
-      hitl_proposed: true,
-      status:        "preview",
-      proposal_id:   proposal_id_token,
-      expires_in:    "10 minutes",
-      policy_type:   type,
-      message:       "⏸ No data written. Pass \"confirmed\": true to generate and save this policy.",
-      diff:          buildDiffTable(rows),
-    });
+    return ok(buildPreviewResponse("create_policy", rows, {
+      policy_type: type,
+      message:     "⏸ No data written. Pass \"confirmed\": true to generate and save this policy.",
+    }));
   }
 
   consumeProposal(proposal_id, "create_policy");
@@ -177,17 +171,11 @@ export function handleUpdatePolicy(args: Record<string, unknown>): ToolResult {
       rows.push({ field: "approver", old: current.approver, new: approver });
     rows.push({ field: "reviewed_by", old: current.reviewed_by, new: reviewed_by });
     rows.push({ field: "change_summary", old: "(none)", new: change_summary });
-    const proposal_id_token = createProposal("update_policy");
-    return ok({
-      hitl_proposed: true,
-      status:        "preview",
-      proposal_id:   proposal_id_token,
-      expires_in:    "10 minutes",
+    return ok(buildPreviewResponse("update_policy", rows, {
       policy_id,
-      policy_type:   current.type,
-      message:       "⏸ No data written. The current version will be archived and a new version created. Pass \"confirmed\": true to apply this change.",
-      diff:          buildDiffTable(rows),
-    });
+      policy_type: current.type,
+      message:     "⏸ No data written. The current version will be archived and a new version created. Pass \"confirmed\": true to apply this change.",
+    }));
   }
 
   consumeProposal(proposal_id, "update_policy");

@@ -1,13 +1,30 @@
 /**
  * Unit tests for src/security/validate.ts
  *
- * Tests: validateToolInput
- * Exercises success path, unknown tool name, and validation failure.
+ * Exercises the per-tool Zod schemas (success path, unknown tool name, and
+ * validation failure) through the TOOL_SCHEMAS view derived from the unified
+ * registry. The local validateToolInput helper mirrors what the security
+ * pipeline in src/tools/index.ts does at runtime (schema.safeParse →
+ * McpError VALIDATION_ERROR).
  */
 
 import { describe, it, expect } from "vitest";
-import { validateToolInput } from "../../../src/security/validate.js";
-import { McpError } from "../../../src/types/errors.js";
+import { TOOL_SCHEMAS } from "../../../src/tools/registry.js";
+import { McpError, validationError } from "../../../src/types/errors.js";
+
+function validateToolInput<T>(toolName: string, raw: unknown): T {
+  const schema = TOOL_SCHEMAS[toolName];
+  if (!schema) {
+    throw validationError("toolName", `No schema registered for tool '${toolName}'`);
+  }
+  const result = schema.safeParse(raw);
+  if (!result.success) {
+    const firstIssue = result.error.issues[0];
+    const field = firstIssue.path.join(".") || "input";
+    throw validationError(field, firstIssue.message);
+  }
+  return result.data as T;
+}
 
 describe("validateToolInput", () => {
   it("returns parsed and defaulted input on success", () => {

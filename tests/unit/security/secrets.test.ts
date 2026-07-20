@@ -75,9 +75,12 @@ describe("loadSecrets", () => {
     }
   });
 
-  it("does not throw when all required vars are present", () => {
-    process.env["DB_ENCRYPTION_KEY"] = "enc-key-value";
-    process.env["HMAC_SECRET"]       = "hmac-key-value";
+  // 64 valid hex chars — the format required for both secrets
+  const VALID_HEX_64 = "a".repeat(64);
+
+  it("does not throw when all required vars are present and 64-hex", () => {
+    process.env["DB_ENCRYPTION_KEY"] = VALID_HEX_64;
+    process.env["HMAC_SECRET"]       = VALID_HEX_64;
     expect(() => loadSecrets()).not.toThrow();
   });
 
@@ -92,7 +95,7 @@ describe("loadSecrets", () => {
   });
 
   it("throws an Error listing ONLY the missing var when one is absent", () => {
-    process.env["DB_ENCRYPTION_KEY"] = "enc-key-value";
+    process.env["DB_ENCRYPTION_KEY"] = VALID_HEX_64;
     // HMAC_SECRET deliberately absent
     try {
       loadSecrets();
@@ -100,6 +103,51 @@ describe("loadSecrets", () => {
       const msg = (err as Error).message;
       expect(msg).toContain("HMAC_SECRET");
       expect(msg).not.toContain("DB_ENCRYPTION_KEY");
+    }
+  });
+
+  it("rejects a non-hex value (e.g. .env.example placeholder)", () => {
+    process.env["DB_ENCRYPTION_KEY"] = "replace_with_64_char_hex";
+    process.env["HMAC_SECRET"]       = VALID_HEX_64;
+    expect(() => loadSecrets()).toThrow(/64 hex characters/);
+    try {
+      loadSecrets();
+    } catch (err) {
+      const msg = (err as Error).message;
+      expect(msg).toContain("DB_ENCRYPTION_KEY");
+      expect(msg).not.toContain("• HMAC_SECRET");
+    }
+  });
+
+  it("rejects a too-short hex value", () => {
+    process.env["DB_ENCRYPTION_KEY"] = VALID_HEX_64;
+    process.env["HMAC_SECRET"]       = "abc123";
+    expect(() => loadSecrets()).toThrow(/64 hex characters/);
+  });
+
+  it("rejects a 64-char value containing non-hex characters", () => {
+    process.env["DB_ENCRYPTION_KEY"] = "z".repeat(64);
+    process.env["HMAC_SECRET"]       = VALID_HEX_64;
+    expect(() => loadSecrets()).toThrow(/64 hex characters/);
+  });
+
+  it("accepts uppercase hex", () => {
+    process.env["DB_ENCRYPTION_KEY"] = "A1B2C3D4".repeat(8);
+    process.env["HMAC_SECRET"]       = VALID_HEX_64.toUpperCase();
+    expect(() => loadSecrets()).not.toThrow();
+  });
+
+  it("reports missing and malformed vars together in one error", () => {
+    // DB_ENCRYPTION_KEY absent, HMAC_SECRET malformed
+    process.env["HMAC_SECRET"] = "not-hex";
+    try {
+      loadSecrets();
+      expect.unreachable("loadSecrets should have thrown");
+    } catch (err) {
+      const msg = (err as Error).message;
+      expect(msg).toContain("DB_ENCRYPTION_KEY");
+      expect(msg).toContain("HMAC_SECRET");
+      expect(msg).toContain("64 hex characters");
     }
   });
 });

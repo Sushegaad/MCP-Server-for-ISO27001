@@ -11,7 +11,7 @@ import { newId, now, toJson, fromJsonArray, withTransaction } from "../db/dal.js
 import type { AssessmentRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
-import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
+import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -165,18 +165,11 @@ export function handleUpdateControlStatus(args: Record<string, unknown>): ToolRe
       if (assessed_by) rows.push({ field: "assessed_by", old: null, new: assessed_by });
       if (notes)       rows.push({ field: "notes",       old: null, new: notes });
     }
-    const proposal_id_token = createProposal("update_control_status");
-    return ok({
-      hitl_proposed: true,
-      status:        "preview",
-      proposal_id:   proposal_id_token,
-      expires_in:    "10 minutes",
+    return ok(buildPreviewResponse("update_control_status", rows, {
       assessment_id,
       control_id,
       ...(downgradeWarning ? { warning: downgradeWarning } : {}),
-      message:       "⏸ No data written. Pass \"confirmed\": true to apply this change.",
-      diff:          buildDiffTable(rows),
-    });
+    }));
   }
 
   consumeProposal(proposal_id, "update_control_status");

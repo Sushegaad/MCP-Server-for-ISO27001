@@ -10,7 +10,7 @@ import { newId, now, computeEvidenceStatus } from "../db/dal.js";
 import { notFound, integrationError } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { getEnv } from "../security/secrets.js";
-import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
+import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
 import { suggestedTypes } from "./evidence-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -96,15 +96,9 @@ export function handleRegisterEvidence(args: Record<string, unknown>): ToolResul
       { field: "expiry_date",    old: null, new: expiry_date ?? "—" },
       { field: "source_url",     old: null, new: source_url ?? "—" },
     ];
-    const proposal_id_token = createProposal("register_evidence");
-    return ok({
-      hitl_proposed: true,
-      status:        "preview",
-      proposal_id:   proposal_id_token,
-      expires_in:    "10 minutes",
-      message:       "⏸ No data written. Pass \"confirmed\": true to register this evidence.",
-      diff:          buildDiffTable(rows),
-    });
+    return ok(buildPreviewResponse("register_evidence", rows, {
+      message: "⏸ No data written. Pass \"confirmed\": true to register this evidence.",
+    }));
   }
 
   consumeProposal(proposal_id, "register_evidence");

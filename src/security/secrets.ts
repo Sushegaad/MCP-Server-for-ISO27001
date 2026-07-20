@@ -10,6 +10,14 @@
 
 const REQUIRED_VARS = ["DB_ENCRYPTION_KEY", "HMAC_SECRET"] as const;
 
+/**
+ * Both secrets must be 64 hex chars (32 bytes). This is enforced at startup —
+ * not just in `doctor` — so a copied-but-unedited .env.example placeholder
+ * (e.g. "replace_with_32_byte_hex") or a trivially short value can never
+ * become a live HMAC or database encryption key.
+ */
+const HEX_64 = /^[0-9a-f]{64}$/i;
+
 // ── Optional env vars with defaults ──────────────────────────
 
 export const ENV_DEFAULTS = {
@@ -54,17 +62,33 @@ export function getEnv(name: string, defaultValue: string): string {
  */
 export function loadSecrets(): void {
   const missing: string[] = [];
+  const malformed: string[] = [];
 
   for (const name of REQUIRED_VARS) {
-    if (!process.env[name]) {
+    const value = process.env[name];
+    if (!value) {
       missing.push(name);
+    } else if (!HEX_64.test(value)) {
+      malformed.push(name);
     }
   }
 
-  if (missing.length > 0) {
-    const list = missing.map((n) => `  • ${n}`).join("\n");
+  if (missing.length > 0 || malformed.length > 0) {
+    const lines: string[] = [];
+    if (missing.length > 0) {
+      lines.push(
+        "missing required environment variables:",
+        ...missing.map((n) => `  • ${n}`),
+      );
+    }
+    if (malformed.length > 0) {
+      lines.push(
+        "environment variables that must be exactly 64 hex characters (generate with: openssl rand -hex 32):",
+        ...malformed.map((n) => `  • ${n}`),
+      );
+    }
     throw new Error(
-      `[secrets] Server cannot start — missing required environment variables:\n${list}\n\n` +
+      `[secrets] Server cannot start — ${lines.join("\n")}\n\n` +
       `Copy .env.example to .env and set all required variables.`,
     );
   }

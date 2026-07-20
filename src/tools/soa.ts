@@ -9,7 +9,7 @@ import { newId, now, fromJsonArray } from "../db/dal.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { renderHtmlDocument } from "./template-utils.js";
-import { buildDiffTable, type DiffRow, createProposal, consumeProposal } from "./hitl-utils.js";
+import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -169,17 +169,10 @@ export function handleUpdateSoaEntry(args: Record<string, unknown>): ToolResult 
       rows.push({ field: "status", old: entry.status, new: status });
     if (responsible_party !== undefined && responsible_party !== entry.responsible_party)
       rows.push({ field: "responsible_party", old: entry.responsible_party, new: responsible_party });
-    const proposal_id_token = createProposal("update_soa_entry");
-    return ok({
-      hitl_proposed: true,
-      status:        "preview",
-      proposal_id:   proposal_id_token,
-      expires_in:    "10 minutes",
+    return ok(buildPreviewResponse("update_soa_entry", rows, {
       soa_id,
       control_id,
-      message:       "⏸ No data written. Pass \"confirmed\": true to apply this change.",
-      diff:          buildDiffTable(rows),
-    });
+    }));
   }
 
   consumeProposal(proposal_id, "update_soa_entry");

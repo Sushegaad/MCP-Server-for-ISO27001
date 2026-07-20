@@ -13,9 +13,9 @@ jobs:
     name: Publish to registry.modelcontextprotocol.io
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Publish to MCP Registry
-        uses: modelcontextprotocol/registry/.github/actions/publish@main
+        uses: modelcontextprotocol/registry/.github/actions/publish@29e32c39dcb5e0e2b43974089d959fcc4794eb6d # main as of 2026-07-19
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
