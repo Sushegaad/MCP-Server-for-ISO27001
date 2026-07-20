@@ -1,3 +1,27 @@
+## What's new in v0.9.75
+
+### Security hardening
+
+- **Secrets validated at startup** — `loadSecrets()` now enforces `^[0-9a-f]{64}$` on both `HMAC_SECRET` and `DB_ENCRYPTION_KEY`. A copied-but-unedited `.env.example` placeholder or a trivially weak value can no longer become a live signing or encryption key; the server refuses to start with an actionable error.
+- **Audit write can no longer mask a committed operation** — if the tamper-evident `audit_log` DB insert fails after a handler has committed, the event now falls back to the JSON-L audit file with a `db_write_failed` marker and the operation's success response is preserved. If both sinks fail, the full event is dumped to stderr. The HMAC hash chain remains valid throughout.
+- **Supply chain: all GitHub Actions pinned to commit SHAs** — including the OIDC-privileged third-party MCP-registry publish action that was previously referenced by the mutable `@main` tag.
+
+### Unified tool registry (internal refactor — no API change)
+
+- `src/tools/registry.ts` is now the single source of truth for all 52 tools: `{ name, description, minRole, schema, handler }` per entry. The four maps other code consumes (`TOOL_MIN_ROLE`, `TOOL_SCHEMAS`, `TOOL_DESCRIPTIONS`, `TOOL_HANDLERS`) are derived views — registration drift is now structurally impossible, and a missing part is a TypeScript compile error instead of a silent runtime skip.
+- **Full-schema validation added to the security pipeline (now 8 steps)** — every tool call runs `schema.safeParse()` before dispatch, which restores enforcement of Zod `.refine()` cross-field rules (e.g. `compare_versions` requiring at least one control identifier) that were previously unenforced at runtime. Handlers receive parsed data with defaults and coercions applied.
+- The 12 HITL preview envelopes were consolidated into a shared `buildPreviewResponse()` helper — identical response format, one implementation.
+- `iso27001-mcp doctor` migrations check now derives its expected count from the migrations array instead of a hard-coded number.
+
+### Documentation accuracy pass
+
+- README, demo site, `docs/REFERENCE.md`, `CLAUDE.md`, and `samples/` fully reconciled with the v0.9.74+ feature set: 52 tools / 15 groups / 20 resources / 4 prompts everywhere, 8-step pipeline, `confirmed` + `proposal_id` documented on all 12 HITL tools, MCP Workflow Prompts documented in README and REFERENCE, CSV Import reference section added, doctor output updated to 12 checks.
+- Fixed `prepare_management_review` prompt and all management-review docs to match the actual schemas (`input_category` 7-value enum, `improvement_decision`/`isms_change_decision` output types, `reviewers[]` parameter).
+- `samples/statement-of-applicability.csv` re-exported in the exact current `export_soa` format (fixes a malformed row and casing drift); retired-tool references in samples replaced with their `iso27001://` resource URIs.
+- Known issues (risk-register export/import round-trip, quote-aware CSV parsing, missing migration `.sql` siblings) are now tracked in `ROADMAP.md`.
+
+---
+
 ## What's new in v0.9.74
 
 ### CSV bulk import (2 new tools — Group 15)
