@@ -66,6 +66,9 @@ export const FREE_TEXT_FIELDS = new Set([
   "root_cause",
   "exclude_justification",
   "archive_reason",
+  "rationale",
+  "escalation_rules",
+  "assertion",
 ]);
 
 // ── sanitise ──────────────────────────────────────────────────

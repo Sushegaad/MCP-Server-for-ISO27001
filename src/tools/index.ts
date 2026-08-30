@@ -34,6 +34,7 @@ import { writeAuditEvent, buildParamsJson } from "../audit/logger.js";
 import { McpError } from "../types/errors.js";
 import type { ToolResult } from "../types/result.js";
 import { TOOLS } from "./registry.js";
+import { callContext, hashArgs, type CallContext } from "./hitl-utils.js";
 
 // ── extractShape ─────────────────────────────────────────────
 // MCP SDK registerTool() expects a ZodRawShape, not a full ZodObject.
@@ -87,11 +88,19 @@ function extractShape(schema: z.ZodTypeAny): z.ZodRawShape {
  * Read-only lookup tools have been retired to MCP Resources (iso27001:// URIs).
  */
 export function registerAllTools(server: McpServer): void {
-  for (const { name: toolName, description, schema, handler } of TOOLS) {
+  for (const { name: toolName, description, schema, handler, annotations } of TOOLS) {
     const shape = extractShape(schema);
 
-    // Each tool gets the same pipeline wrapper
-    server.tool(toolName, description, shape, async (args, extra) => {
+    // Each tool gets the same pipeline wrapper. Registry annotations
+    // (readOnlyHint / destructiveHint / idempotentHint) are passed through
+    // to the SDK so clients receive machine-readable behaviour hints.
+    // The fallback never fires in practice (every registry entry carries
+    // annotations — enforced by tests/unit/tools/registry.test.ts) but
+    // keeps the optional field safe: an empty object would be mis-parsed
+    // by the SDK's overload resolution, so a conservative default is used.
+    const toolAnnotations = annotations ?? { readOnlyHint: false };
+
+    server.tool(toolName, description, shape, toolAnnotations, async (args, extra) => {
       const startMs = Date.now();
 
       // ── Step 1: extract credential + provenance from request meta ──
@@ -154,7 +163,17 @@ export function registerAllTools(server: McpServer): void {
         }
 
         // ── Step 7: call domain handler ───────────────────────
-        result = await handler(parsed.data as Record<string, unknown>);
+        // Run inside an AsyncLocalStorage context so HITL proposals are
+        // bound to the caller (keyHash) and the exact argument payload
+        // (argsHash). hashArgs is computed on parsed.data — the SAME
+        // object the handler receives — so preview and commit hash
+        // identically (Zod defaults applied consistently on both calls;
+        // confirmed/proposal_id stripped by hashArgs itself).
+        const ctx: CallContext = {
+          keyHash,
+          argsHash: hashArgs(parsed.data as Record<string, unknown>),
+        };
+        result = await callContext.run(ctx, () => handler(parsed.data as Record<string, unknown>));
 
         if (result.isError) {
           outcome = "error";

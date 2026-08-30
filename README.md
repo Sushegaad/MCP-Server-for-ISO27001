@@ -7,7 +7,7 @@
 [![CI](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml/badge.svg)](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![ISO 27001:2022](https://img.shields.io/badge/ISO%2027001-2022-blue.svg)](https://www.iso.org/standard/27001)
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.75)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.75)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.81)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.81)
 
 **[▶ Live Interactive Demo](https://sushegaad.github.io/MCP-Server-for-ISO27001/)** · **[Guided First-Run Checklist →](QUICKSTART.md)** · **[Roadmap →](ROADMAP.md)**
 
@@ -48,6 +48,7 @@ The difference from generating static documents: Claude can *query, reason, and 
 | **Remediation roadmap** | *"Generate a 26-week remediation roadmap grouped by risk level."* |
 | **Management review** | *"Prepare agenda items for our Clause 9.3 management review."* |
 | **CSV bulk import** | *"Import this CSV of 40 risks into the risk register — dry-run first to check for errors."* |
+| **Risk acceptance** | *"Record the risk owner's acceptance of residual risk for RISK-012."* |
 
 ---
 
@@ -98,7 +99,7 @@ iso27001-mcp — health check
 ✅  MCP_API_KEY            set (starts with iso27001_)
 ✅  Database file          /Users/you/.iso27001/isms.db
 ✅  Database accessible    opened and queried successfully
-✅  Migrations             9/9 applied
+✅  Migrations             11/11 applied
 ✅  Controls seeded        93 ISO 27001:2022 controls
 ✅  Active API key         1 active key found
 ✅  Claude Desktop config  /Users/you/.../claude_desktop_config.json
@@ -109,7 +110,7 @@ iso27001-mcp — health check
   All 12 checks passed. Restart Claude Desktop if you just ran init.
 ```
 
-Then **restart Claude Desktop fully** and you should see 52 tools in the tools panel.
+Then **restart Claude Desktop fully** and you should see 56 tools in the tools panel.
 
 > **macOS:** press **Cmd+Q** to quit (clicking the red dot only closes the window — the server won't reload).  
 > **Windows:** right-click the taskbar icon → **Quit**.
@@ -141,7 +142,7 @@ Common causes: wrong Node.js version loaded by Claude Desktop, missing `DB_ENCRY
 
 ## Tool Categories
 
-52 tools across 15 groups. All require an API key; minimum role is shown. Read-only lookups (single-record fetches, summaries) have been moved to MCP Resources (`iso27001://` URIs) — they appear in Claude's resource panel, not the tools list.
+56 tools across 16 groups. All require an API key; minimum role is shown. Read-only lookups (single-record fetches, summaries) have been moved to MCP Resources (`iso27001://` URIs) — they appear in Claude's resource panel, not the tools list.
 
 | Group | Tools | Min. role | What it does |
 |-------|-------|-----------|--------------|
@@ -151,7 +152,7 @@ Common causes: wrong Node.js version loaded by Claude Desktop, missing `DB_ENCRY
 | **Policy Management** | 3 | analyst / admin | Generate, version, and export policies from 12 Mustache templates |
 | **Statement of Applicability** | 3 | analyst | Build and export SoA from a gap assessment; all 93 controls with applicability decisions |
 | **Audit Management** | 5 | admin | Plan audits, record findings (NCs, OFIs), raise CARs, and close with effectiveness check |
-| **Evidence Tracking** | 4 | analyst | Register evidence artefacts, spot gaps, link to Jira / GitHub issues |
+| **Evidence Tracking** | 5 | viewer / analyst | Register evidence artefacts, record independent verification, spot gaps, link to Jira / GitHub issues |
 | **Server Info** | — | — | Retired to MCP Resource — access via `iso27001://server/info` |
 | **Admin & Key Management** | 3 | admin | Generate / revoke API keys, query the HMAC audit log |
 | **Organisation Profile** | 1 | admin | Set org name, scope, and defaults used by all templates |
@@ -160,6 +161,7 @@ Common causes: wrong Node.js version loaded by Claude Desktop, missing `DB_ENCRY
 | **Improvement Plan** | 3 | analyst | Clause 10.1 improvement opportunities — track, link, and report |
 | **Evidence Templates** | 2 | analyst | Generate Mustache-rendered evidence documents; dual-write to evidence and generated_evidence tables |
 | **CSV Import** | 2 | analyst | Bulk-import risks and control statuses from a CSV string; supports `dry_run=true` validation preview before writing |
+| **Risk Governance** | 3 | viewer / analyst / admin | §6.1.3 risk methodology (scales, bands, acceptance threshold) and formal risk-owner acceptance of residual risk |
 
 ### MCP Workflow Prompts
 
@@ -232,11 +234,13 @@ Three roles with strict hierarchy. A key can only call tools at or below its ass
 | View and query the audit log | — | — | ✅ |
 | Generate and revoke API keys | — | — | ✅ |
 
-**Tool counts:** Viewer — 18 tools · Analyst — 38 tools · Admin — 52 tools
+**Tool counts:** Viewer — 19 tools · Analyst — 41 tools · Admin — 56 tools
 
 ### What never leaves your machine
 
-In `local` mode (stdio, the default), no data leaves the machine. The encrypted SQLite database, the `.env` secrets file, and the append-only audit log are all stored locally. There is no telemetry, no cloud sync, and no outbound network calls — unless you explicitly configure the optional Jira or GitHub integrations.
+**Server egress:** `iso27001-mcp` itself does not transmit ISMS records to the package author, analytics services, or any AI provider. In local stdio mode the server opens no network listener and makes no outbound requests except explicitly configured integrations (Jira/GitHub). The encrypted SQLite database, the `.env` secrets file, and the append-only audit log are all stored locally. There is no telemetry and no cloud sync.
+
+**MCP client/model boundary:** your MCP client (e.g. Claude Desktop) may transmit prompts and tool outputs to its configured model provider as part of normal operation. That processing happens outside `iso27001-mcp`'s trust boundary and is governed by your client's and model provider's deployment and data-handling settings. Treat tool outputs containing sensitive risk, incident, or audit data accordingly.
 
 For the full security profile — threat model, hardening guide, supply chain attestation, and audit log integrity verification — see the **[Trust Center](https://github.com/Sushegaad/MCP-Server-for-ISO27001/tree/main/docs/security/)**.
 
@@ -247,7 +251,8 @@ For the full security profile — threat model, hardening guide, supply chain at
 - **API keys** — HMAC-SHA256 hashed; raw key printed once and never stored
 - **Audit log** — HMAC-SHA256 hash chain; every row linked to its predecessor — insertion, deletion, or reordering is detectable; `actor_type` (`ai` | `human` | `system`) and `model_id` are included in the hash so provenance claims are tamper-evident
 - **Prompt injection** — free-text fields sanitised before passing to any handler
-- **HITL confirmation gates** — 12 mutating tools require `confirmed: true` plus a server-issued `proposal_id` to commit; omitting either returns a preview diff and records `outcome: "proposed"` in the audit log. The `proposal_id` is a server-generated single-use UUID (10-minute TTL) — the model cannot self-confirm by calling the same tool twice with `confirmed: true`, because it must return a token it received from the preview response
+- **Verification and acceptance as first-class records** — evidence verification (independent reviewer, must differ from the collector) and risk-owner acceptance of residual risk are enforced, immutable objects in their own right — not free-text notes
+- **HITL confirmation gates** — 15 mutating tools require `confirmed: true` plus a server-issued `proposal_id` to commit; omitting either returns a preview diff and records `outcome: "proposed"` in the audit log. The `proposal_id` is a server-generated single-use UUID (10-minute TTL) — the model cannot self-confirm by calling the same tool twice with `confirmed: true`, because it must return a token it received from the preview response
 
 ---
 
@@ -367,7 +372,7 @@ The detailed documentation has been moved to keep this page scannable. Everythin
 - [Installation](docs/REFERENCE.md#installation) — prerequisites, `iso27001-mcp init`, `doctor`, Claude Desktop config
 - [Connecting to Claude](docs/REFERENCE.md#connecting-to-claude) — Claude Desktop JSON, Claude Code, API key management
 - [Advanced / Manual Setup](docs/REFERENCE.md#advanced--manual-setup) — CI/CD, custom paths, full env var table
-- [Tools Reference](docs/REFERENCE.md#tools-reference) — all 52 tools across 15 groups with full parameter tables
+- [Tools Reference](docs/REFERENCE.md#tools-reference) — all 56 tools across 16 groups with full parameter tables
 - [MCP Resources](docs/REFERENCE.md#mcp-resources) — 20 `iso27001://` URIs, formats, example prompts
 - [MCP Prompts](docs/REFERENCE.md#mcp-prompts) — 4 guided workflow prompts (gap assessment, risk treatment, internal audit, management review)
 - [Architecture](docs/REFERENCE.md#architecture) — 8-step security pipeline, database schema, seed data

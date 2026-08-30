@@ -1,6 +1,8 @@
 # Data Flow — What Data Leaves the Machine?
 
-> **Short answer:** In stdio mode — nothing. In SSE mode — only the tool inputs and outputs you explicitly send to it over the network you control. No telemetry. No analytics. No third-party calls unless you configure an integration.
+> **Server egress:** `iso27001-mcp` itself does not transmit ISMS records to the package author, analytics services, or any AI provider. In local stdio mode the server opens no network listener and makes no outbound requests except explicitly configured integrations (Jira/GitHub). The encrypted SQLite database, the `.env` secrets file, and the append-only audit log are all stored locally. There is no telemetry and no cloud sync.
+>
+> **MCP client/model boundary:** your MCP client (e.g. Claude Desktop) may transmit prompts and tool outputs to its configured model provider as part of normal operation. That processing happens outside `iso27001-mcp`'s trust boundary and is governed by your client's and model provider's deployment and data-handling settings. Treat tool outputs containing sensitive risk, incident, or audit data accordingly.
 
 ## Data at Rest
 
@@ -68,7 +70,9 @@ This can be verified by inspecting the 4 runtime dependencies (`@modelcontextpro
 
 ## Auditor Statement
 
-> iso27001-mcp does not collect, transmit, or store personal data on behalf of any third party. All ISMS data remains on infrastructure controlled by the operator. The server contains no telemetry, no analytics, no third-party tracking, and no automatic update mechanism. Tool inputs and outputs remain within the trust boundary defined by the operator's deployment (local process in stdio mode; operator's network in SSE mode). No data is sent to the package author or to Anthropic as a result of running this server.
+> iso27001-mcp does not collect, transmit, or store personal data on behalf of any third party. All ISMS data managed by the server remains on infrastructure controlled by the operator. The server contains no telemetry, no analytics, no third-party tracking, and no automatic update mechanism. The server itself sends no data to the package author, to analytics services, or to any AI provider.
+>
+> The MCP client connected to this server (e.g. Claude Desktop) is a separate system outside this server's trust boundary: it may transmit prompts and tool outputs to its configured model provider as part of normal operation, governed by the client's and provider's own deployment and data-handling settings. Operators should account for that client-side flow when classifying ISMS data returned by tool calls.
 
 This statement can be verified by auditing the published npm package against the source code using the provenance attestation: `npm audit signatures iso27001-mcp`.
 

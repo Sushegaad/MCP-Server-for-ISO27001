@@ -254,10 +254,11 @@ export function handleCompleteManagementReview(args: Record<string, unknown>): T
       message:           readyToComplete
         ? "⏸ No data written. Review is ready to complete. Pass \"confirmed\": true to finalise."
         : "⏸ No data written. Review is NOT ready to complete — resolve the issues above first.",
-    }));
+    }, { resource_id: review_id, resource_version: String(review.updated_at) }));
   }
 
-  consumeProposal(proposal_id, "complete_management_review");
+  consumeProposal(proposal_id, "complete_management_review",
+    { resource_version: String(review.updated_at) });
   // Enforce ISO 27001:2022 §9.3.2 — all 7 input categories must be recorded
   if (missing.length > 0) {
     throw businessRule(

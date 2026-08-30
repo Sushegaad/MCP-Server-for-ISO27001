@@ -175,10 +175,11 @@ export function handleUpdatePolicy(args: Record<string, unknown>): ToolResult {
       policy_id,
       policy_type: current.type,
       message:     "⏸ No data written. The current version will be archived and a new version created. Pass \"confirmed\": true to apply this change.",
-    }));
+    }, { resource_id: policy_id, resource_version: String(current.updated_at) }));
   }
 
-  consumeProposal(proposal_id, "update_policy");
+  consumeProposal(proposal_id, "update_policy",
+    { resource_version: String(current.updated_at) });
   const ts         = now();
   const newVersion = current.version + 1;
 

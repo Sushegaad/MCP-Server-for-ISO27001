@@ -1,6 +1,14 @@
 # Threat Model — iso27001-mcp
 
-> Last updated: 2026-05-24 | Version: 0.8.2 | Methodology: STRIDE
+> Last updated: 2026-08-30 | Version: 1.0.0 | Methodology: STRIDE
+
+## Mitigations added since last revision (0.8.2 → 1.0.0)
+
+- **Startup secret format enforcement** — `loadSecrets()` fails fast unless `HMAC_SECRET` and `DB_ENCRYPTION_KEY` each match `^[0-9a-f]{64}$`; copied-but-unedited `.env.example` placeholders are rejected before the server opens the database.
+- **Mutation-bound HITL proposal tokens** — preview/confirm proposals for the 15 HITL-gated write tools are single-use, expire after 10 minutes, and are bound to the authenticated caller (`key_hash`), a canonical SHA-256 hash of the arguments, and — for update-type tools — the target row's `updated_at` at preview time (TOCTOU check: a commit against a row that changed since the preview is rejected).
+- **Audit-write fallback** — if the SQLite audit write fails, a `db_write_failed` marker record is appended to the JSONL flat file so the failure itself is evidenced rather than silent.
+- **Pinned CI actions** — all GitHub Actions in CI/release workflows are pinned to full commit SHAs, closing the mutable-tag supply-chain window.
+- **RFC 4180 CSV parsing + formula-injection escaping** — CSV importers use a shared quote-aware tokenizer (quoted commas, escaped `""`, newlines-in-quotes, CRLF, UTF-8), and all CSV exporters prefix-escape cells starting with `=` `+` `-` `@` per OWASP guidance.
 
 ## 1. Scope and Methodology
 
@@ -220,3 +228,14 @@ Operator responsibilities:
 | Admin key with no expiry | Spoofing | Medium | ⚠️ Operator responsibility — `warnAdminExpiry()` warns at startup |
 | Audit log not offloaded | Tampering | High | ⚠️ Operator responsibility — configure SIEM/S3 offload |
 | TLS not terminated upstream | Info Disclosure | Critical | ⚠️ Operator responsibility — `BEHIND_TLS_PROXY=true` required |
+
+## 7. Release Checklist
+
+Before tagging any release:
+
+- [ ] Threat model reviewed and version bumped (this document)
+- [ ] `npx tsc --noEmit`, ESLint, and full test suite green with coverage thresholds held
+- [ ] `npm run verify-checksums` passes (seed data integrity)
+- [ ] Git tag matches `package.json` version (enforced by the `Verify tag matches package.json` step in `release.yml`)
+- [ ] `npm audit --audit-level=high` clean
+- [ ] Docs (README, REFERENCE, index.html, CLAUDE.md) reconciled with tool/group/role counts

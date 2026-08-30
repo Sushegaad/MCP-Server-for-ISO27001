@@ -6,8 +6,8 @@
  */
 
 import { getDb } from "../db/connection.js";
-import { newId, now, computeEvidenceStatus } from "../db/dal.js";
-import { notFound, integrationError } from "../types/errors.js";
+import { newId, now, today, computeEvidenceStatus } from "../db/dal.js";
+import { notFound, businessRule, integrationError } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { getEnv } from "../security/secrets.js";
 import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
@@ -28,6 +28,20 @@ interface EvidenceRow {
   jira_url: string | null;
   github_issue_url: string | null;
   github_issue_number: number | null;
+  // Integrity / provenance fields (migration 0011)
+  content_sha256: string | null;
+  source_system: string | null;
+  source_object_id: string | null;
+  source_revision: string | null;
+  captured_at: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  reviewer: string | null;
+  verification_status: string;      // unverified|verified|rejected
+  verification_date: string | null;
+  sufficiency: string | null;       // sufficient|partial|insufficient
+  assertion: string | null;
+  supersedes_evidence_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -77,13 +91,26 @@ export function handleRegisterEvidence(args: Record<string, unknown>): ToolResul
   const {
     control_id, type, description, source_url,
     collected_by, collected_date, expiry_date,
+    content_sha256, source_system, source_object_id, source_revision,
+    captured_at, period_start, period_end, assertion, supersedes_evidence_id,
     confirmed = false, proposal_id,
   } = args as {
     control_id: string; type: string; description: string;
     source_url?: string; collected_by: string;
     collected_date: string; expiry_date?: string;
+    content_sha256?: string; source_system?: string;
+    source_object_id?: string; source_revision?: string;
+    captured_at?: string; period_start?: string; period_end?: string;
+    assertion?: string; supersedes_evidence_id?: string;
     confirmed?: boolean; proposal_id?: string;
   };
+
+  // When superseding, the target must exist (checked in preview too, so the
+  // human sees an actionable error before approving anything).
+  let superseded: EvidenceRow | undefined;
+  if (supersedes_evidence_id !== undefined) {
+    superseded = requireEvidence(supersedes_evidence_id);
+  }
 
   // ── HITL preview ──────────────────────────────────────────────
   if (!confirmed) {
@@ -96,6 +123,20 @@ export function handleRegisterEvidence(args: Record<string, unknown>): ToolResul
       { field: "expiry_date",    old: null, new: expiry_date ?? "—" },
       { field: "source_url",     old: null, new: source_url ?? "—" },
     ];
+    const optionalFields: Array<[string, string | undefined]> = [
+      ["content_sha256",         content_sha256],
+      ["source_system",          source_system],
+      ["source_object_id",       source_object_id],
+      ["source_revision",        source_revision],
+      ["captured_at",            captured_at],
+      ["period_start",           period_start],
+      ["period_end",             period_end],
+      ["assertion",              assertion],
+      ["supersedes_evidence_id", supersedes_evidence_id],
+    ];
+    for (const [field, value] of optionalFields) {
+      if (value !== undefined) rows.push({ field, old: null, new: value });
+    }
     return ok(buildPreviewResponse("register_evidence", rows, {
       message: "⏸ No data written. Pass \"confirmed\": true to register this evidence.",
     }));
@@ -108,17 +149,116 @@ export function handleRegisterEvidence(args: Record<string, unknown>): ToolResul
   getDb().prepare(`
     INSERT INTO evidence
       (id, control_id, type, description, source_url,
-       collected_by, collected_date, expiry_date, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       collected_by, collected_date, expiry_date,
+       content_sha256, source_system, source_object_id, source_revision,
+       captured_at, period_start, period_end, assertion,
+       supersedes_evidence_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id, control_id, type, description, source_url ?? null,
-    collected_by, collected_date, expiry_date ?? null, ts, ts,
+    collected_by, collected_date, expiry_date ?? null,
+    content_sha256 ?? null, source_system ?? null,
+    source_object_id ?? null, source_revision ?? null,
+    captured_at ?? null, period_start ?? null, period_end ?? null,
+    assertion ?? null, supersedes_evidence_id ?? null, ts, ts,
   );
+
+  // Superseding auto-expires the replaced artefact so it drops out of
+  // 'current evidence' queries from today onward.
+  let supersededNote: string | undefined;
+  if (superseded) {
+    getDb().prepare(
+      "UPDATE evidence SET expiry_date = ?, updated_at = ? WHERE id = ?"
+    ).run(today(), ts, superseded.id);
+    supersededNote =
+      `Evidence ${superseded.id} has been superseded — its expiry_date was set to today.`;
+  }
 
   const created = getDb().prepare("SELECT * FROM evidence WHERE id = ?").get(id) as EvidenceRow;
   const status = computeEvidenceStatus(created.collected_date, created.expiry_date);
 
-  return ok({ ...created, status });
+  return ok(
+    supersededNote !== undefined
+      ? { ...created, status, superseded_note: supersededNote }
+      : { ...created, status },
+  );
+}
+
+// ── verify_evidence ───────────────────────────────────────────
+
+export function handleVerifyEvidence(args: Record<string, unknown>): ToolResult {
+  const {
+    evidence_id, reviewer, verification_status, sufficiency,
+    assertion, verification_date, confirmed = false, proposal_id,
+  } = args as {
+    evidence_id: string; reviewer: string; verification_status: string;
+    sufficiency?: string; assertion?: string; verification_date?: string;
+    confirmed?: boolean; proposal_id?: string;
+  };
+
+  const evidence = requireEvidence(evidence_id);
+
+  // Independence rule: verification must come from someone other than the
+  // collector — self-attestation is not independent review.
+  if (reviewer === evidence.collected_by) {
+    throw businessRule(
+      "reviewer",
+      "Evidence must be verified by someone other than its collector " +
+      `('${evidence.collected_by}' collected this artefact).`,
+    );
+  }
+
+  // Defense-in-depth for the schema .refine(): a 'verified' outcome must
+  // state how sufficient the artefact is for its assertion.
+  if (verification_status === "verified" && sufficiency === undefined) {
+    throw businessRule(
+      "sufficiency",
+      "sufficiency (sufficient | partial | insufficient) is required when verification_status is 'verified'.",
+    );
+  }
+
+  const effectiveDate = verification_date ?? today();
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [
+      { field: "verification_status", old: evidence.verification_status ?? "unverified", new: verification_status },
+      { field: "reviewer",            old: evidence.reviewer,            new: reviewer },
+      { field: "verification_date",   old: evidence.verification_date,   new: effectiveDate },
+    ];
+    if (sufficiency !== undefined && sufficiency !== evidence.sufficiency)
+      rows.push({ field: "sufficiency", old: evidence.sufficiency, new: sufficiency });
+    if (assertion !== undefined && assertion !== evidence.assertion)
+      rows.push({ field: "assertion", old: evidence.assertion, new: assertion });
+    return ok(buildPreviewResponse("verify_evidence", rows, {
+      evidence_id,
+      control_id: evidence.control_id,
+      message: `⏸ No data written. Pass "confirmed": true to record this verification (${verification_status}).`,
+    }, { resource_id: evidence_id, resource_version: String(evidence.updated_at) }));
+  }
+
+  consumeProposal(proposal_id, "verify_evidence",
+    { resource_version: String(evidence.updated_at) });
+  const ts = now();
+
+  getDb().prepare(`
+    UPDATE evidence SET
+      reviewer            = ?,
+      verification_status = ?,
+      verification_date   = ?,
+      sufficiency         = ?,
+      assertion           = COALESCE(?, assertion),
+      updated_at          = ?
+    WHERE id = ?
+  `).run(
+    reviewer, verification_status, effectiveDate,
+    sufficiency ?? null, assertion ?? null, ts, evidence_id,
+  );
+
+  const updated = getDb().prepare("SELECT * FROM evidence WHERE id = ?").get(evidence_id) as EvidenceRow;
+  const status = computeEvidenceStatus(updated.collected_date, updated.expiry_date);
+
+  return ok({ ...updated, status });
 }
 
 // ── list_evidence ─────────────────────────────────────────────

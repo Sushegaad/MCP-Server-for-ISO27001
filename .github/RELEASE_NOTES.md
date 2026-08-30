@@ -1,3 +1,52 @@
+## What's new in v0.9.81 — the road-to-1.0 trust release
+
+This release implements Phases 1–5 of the [v1.0.0 plan](../V1.0.0-PLAN.md): every change closes a gap between what the product implies and what the server enforces. Tool count: 52 → **56** (16 groups).
+
+### Phase 1 — Mutation-bound HITL proposals (security)
+
+A HITL proposal token previously proved only that "a human saw some preview for this tool." It now proves **"a human approved this exact mutation against this exact object in this exact state"**:
+
+- Each proposal is bound to the **authenticated caller** (key_hash), the **exact argument payload** (SHA-256 over canonical key-sorted JSON, excluding `confirmed`/`proposal_id`), the **target resource**, and the resource's **`updated_at` at preview time**
+- At commit the server re-derives the caller and args hash from the live request (via per-call `AsyncLocalStorage` context in the pipeline), compares the args hash in constant time, and rejects any parameter substitution, target substitution, credential swap, replay, or write against a row that changed since the preview (TOCTOU guard)
+- The invariant is locked in by tests: *no mutation can be committed using a proposal generated for different parameters, a different target object, a different identity, or an obsolete object version*
+
+### Phase 2 — Risk governance chain (Group 16, +3 tools)
+
+The ISO 27001 §6.1.3 requirements that were previously implicit are now first-class, enforced objects:
+
+- **`set_risk_methodology`** (admin, HITL) — org-level likelihood/impact scales, calculation method, risk-level bands, **acceptance threshold**, escalation rules, review frequency
+- **`record_risk_acceptance`** (analyst, HITL) — a real risk-owner decision object capturing inherent/residual scores and the threshold at decision time; requires residual likelihood/impact on the treatment plan first; accepting **above-threshold** residual risk demands a substantive rationale
+- **`list_risk_acceptances`** (viewer)
+- **Enforced lifecycle rule:** a treatment plan can no longer reach its terminal `verified` state until the risk owner has recorded an `accepted` residual-risk decision
+- **SoA traceability:** entries now carry `driver_type` (risk/legal/regulatory/contractual/business/best_practice/custom) and `source_ids`; `generate_soa` auto-links risk-driven controls to their source risks — "A.8.28 — Applicable — mitigates RISK-012" instead of "required for security"
+
+### Phase 3 — Evidence integrity (+1 tool)
+
+Evidence now distinguishes *exists* → *is current* → *has been independently verified*:
+
+- 13 new evidence fields: `content_sha256`, source system/object/revision, capture timestamp, coverage `period_start`/`period_end`, reviewer, `verification_status`, `sufficiency`, `assertion`, `supersedes_evidence_id`
+- **`verify_evidence`** (analyst, HITL) — records an independent review; the reviewer **must differ from the collector** (enforced)
+- Superseding evidence auto-expires the replaced artefact; the evidence-gaps resource now reports a per-assessment `verification_summary`
+
+### Phase 4 — Data-integrity gate
+
+- **RFC 4180 CSV parsing** — both importers now handle quoted commas, escaped quotes, and newlines inside quoted fields via a proper state-machine tokenizer
+- **Export/import round-trip** — the risk-register CSV export gained `vulnerability` and `related_controls` columns and full RFC quoting; property tests prove export → import → semantically equivalent records across every status value, embedded commas/quotes, multiline text, UTF-8, and empty optionals
+- **CSV-injection hardening** — all CSV exports prefix-escape formula triggers (`=`, `+`, `-`, `@`) per OWASP guidance
+- **Fixed a real import bug**: `import_risks` previously INSERTed into `risk_score`/`risk_level`, which are SQLite *generated columns* — the insert would have failed on a real database
+- The orphaned migration `.sql` sibling files were removed; the embedded strings in `src/db/migrations/index.ts` are now the single, canonical source
+
+### Phase 5 — Trust boundaries & release engineering
+
+- **MCP tool annotations** — all 56 tools now declare `readOnlyHint`/`destructiveHint`/`idempotentHint`, giving MCP clients machine-readable semantics (22 read-only, 15 HITL-gated writes, 2 destructive)
+- **Accurate privacy boundary** — README and the data-flow doc now separate *server egress* (no telemetry, no outbound calls, no network listener in stdio mode) from the *MCP client/model boundary* (your client may send tool outputs to its model provider — outside this server's trust boundary)
+- **Threat model** refreshed to v1.0.0 with a mitigations changelog and a release checklist
+- **Release guard** — CI now fails fast if the git tag doesn't match `package.json` (the cause of the v0.9.75 publish failure)
+
+**Migrations:** 11 total (adds `0010` risk governance, `0011` evidence integrity). **Tests:** 788 passing. **Role counts:** viewer 19 · analyst 41 · admin 56.
+
+---
+
 ## What's new in v0.9.75
 
 ### Security hardening

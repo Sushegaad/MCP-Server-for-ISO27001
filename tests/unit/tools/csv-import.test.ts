@@ -134,13 +134,12 @@ describe("handleImportRisks", () => {
     ].join("\n");
     mockDb.transaction.mockImplementation((fn: (rows: unknown[]) => string[]) => fn);
     handleImportRisks({ csv_content: csv, default_status: "accepted" });
-    // The insert.run should have been called with "accepted" as status
+    // The insert.run should have been called with "accepted" as status.
+    // risk_score/risk_level are GENERATED columns — never in the INSERT.
     expect(mockStmt.run).toHaveBeenCalledWith(
       expect.any(String),
       "Asset", "Threat", "Vuln",
       2, 3,
-      6, // risk_score = 2*3
-      "Medium",
       null, // owner empty → null
       "accepted",
       expect.any(String), // toJson([])
@@ -158,7 +157,7 @@ describe("handleImportRisks", () => {
     expect(mockStmt.run).toHaveBeenCalledWith(
       expect.any(String),
       "Asset", "Threat", "Vuln",
-      2, 3, 6, "Medium",
+      2, 3,
       null, "mitigated",
       expect.any(String), expect.any(String), expect.any(String),
     );

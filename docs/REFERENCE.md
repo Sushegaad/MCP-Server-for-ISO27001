@@ -105,9 +105,9 @@ export DB_PATH=$HOME/.iso27001/isms.db
 
 ```bash
 # Generate additional keys for team members
-iso27001-mcp keygen --label "Alice" --role viewer       # read-only, 18 tools
-iso27001-mcp keygen --label "Bob"   --role analyst --expires 90d  # 38 tools
-iso27001-mcp keygen --label "CISO"  --role admin  --expires 1y    # all 52 tools
+iso27001-mcp keygen --label "Alice" --role viewer       # read-only, 19 tools
+iso27001-mcp keygen --label "Bob"   --role analyst --expires 90d  # 41 tools
+iso27001-mcp keygen --label "CISO"  --role admin  --expires 1y    # all 56 tools
 
 # List all keys
 iso27001-mcp keys list
@@ -185,9 +185,9 @@ npm run build
 
 ## Tools Reference
 
-The server exposes **52 tools** across 15 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
+The server exposes **56 tools** across 16 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
 
-> **Human-in-the-loop (HITL) confirmation:** 12 critical write tools (`update_control_status`, `update_risk`, `update_treatment_status`, `create_policy`, `update_policy`, `update_soa_entry`, `create_audit`, `record_finding`, `create_corrective_action`, `register_evidence`, `update_procedure`, `complete_management_review`) accept a `confirmed` parameter (default `false`). When `false` or omitted, the tool writes **nothing** — it returns a preview diff plus a server-issued single-use `proposal_id` (10-minute TTL). To commit, call the tool again with the same arguments plus `confirmed=true` and that `proposal_id`.
+> **Human-in-the-loop (HITL) confirmation:** 15 critical write tools (`update_control_status`, `update_risk`, `update_treatment_status`, `create_policy`, `update_policy`, `update_soa_entry`, `create_audit`, `record_finding`, `create_corrective_action`, `register_evidence`, `verify_evidence`, `update_procedure`, `complete_management_review`, `set_risk_methodology`, `record_risk_acceptance`) accept a `confirmed` parameter (default `false`). When `false` or omitted, the tool writes **nothing** — it returns a preview diff plus a server-issued single-use `proposal_id` (10-minute TTL). To commit, call the tool again with the same arguments plus `confirmed=true` and that `proposal_id`. Each proposal is **mutation-bound**: it is tied to the authenticated caller (key hash), a canonical SHA-256 hash of the arguments, and — for update-type tools — the target row's version at preview time, so a commit is rejected if the caller, the arguments, or the underlying row changed since the preview (TOCTOU check).
 
 ---
 
@@ -540,7 +540,7 @@ Export a full audit report (executive summary, findings, CARs).
 
 ---
 
-### Group 7 — Evidence Tracking *(minimum role: analyst)*
+### Group 7 — Evidence Tracking *(reads: viewer+, writes: analyst+)*
 
 > **Read gaps via MCP Resources:** `iso27001://assessment/{assessment_id}/evidence-gaps` replaces `get_evidence_gaps`.
 
@@ -556,6 +556,15 @@ Register an evidence artefact for a control.
 | `collected_by` | ✅ | string | |
 | `collected_date` | ✅ | string | `YYYY-MM-DD` |
 | `expiry_date` | — | string | `YYYY-MM-DD` |
+| `content_sha256` | — | string | SHA-256 of the artefact content — 64 lowercase hex chars; pins the record to an exact artefact version |
+| `source_system` | — | string | System the artefact was captured from (e.g. `AWS IAM`, `Okta`) |
+| `source_object_id` | — | string | Identifier of the object in the source system |
+| `source_revision` | — | string | Revision/version identifier in the source system |
+| `captured_at` | — | string | `YYYY-MM-DD` — when the artefact was captured from the source |
+| `period_start` | — | string | `YYYY-MM-DD` — start of the period the evidence covers |
+| `period_end` | — | string | `YYYY-MM-DD` — end of the period the evidence covers |
+| `assertion` | — | string | What this evidence is claimed to demonstrate |
+| `supersedes_evidence_id` | — | string (UUID) | Marks an earlier evidence record as superseded by this one |
 | `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
 | `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
@@ -566,6 +575,22 @@ List evidence for a control, optionally filtered by currency.
 |-----------|-----|------|----------------|
 | `control_id` | ✅ | string | |
 | `status` | — | enum | `current` \| `stale` \| `expired` |
+
+#### `verify_evidence`
+Record an independent verification of an evidence artefact.
+
+> **Independence rule (enforced):** the `reviewer` must differ from the evidence record's `collected_by` — self-verification is rejected as a business-rule violation. `sufficiency` is required when `verification_status` is `verified`.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `evidence_id` | ✅ | string (UUID) | |
+| `reviewer` | ✅ | string | Must differ from the evidence collector (`collected_by`) |
+| `verification_status` | ✅ | enum | `verified` \| `rejected` |
+| `sufficiency` | — | enum | `sufficient` \| `partial` \| `insufficient` — required when `verification_status=verified` |
+| `assertion` | — | string | What the reviewer confirms the evidence demonstrates |
+| `verification_date` | — | string | `YYYY-MM-DD` — defaults to today |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `link_jira_ticket`
 Link evidence to an existing Jira issue (`jira_key`) or create a new one (`summary`). Provide at least one.
@@ -851,6 +876,51 @@ Bulk-update control implementation statuses in a gap assessment from a CSV strin
 
 ---
 
+### Group 16 — Risk Governance *(reads: viewer+, acceptance: analyst+, methodology: admin)* — §6.1.3
+
+Formalises the risk assessment methodology and the risk owner's acceptance of residual risk, as required by ISO 27001:2022 §6.1.3.
+
+#### `set_risk_methodology` *(admin)*
+Upsert the organisation's singleton risk methodology: scales, calculation method, level bands, acceptance threshold, escalation rules, and review frequency.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `likelihood_scale` | ✅ | array | 2–10 scale points, each `{ value: 1–10, label: string }` |
+| `impact_scale` | ✅ | array | 2–10 scale points, each `{ value: 1–10, label: string }` |
+| `calculation_method` | — | enum | `multiplication` \| `addition` \| `matrix` — default `multiplication` |
+| `risk_level_bands` | ✅ | array | 1–10 bands, each `{ min: 1–100, max: 1–100, level: string }` |
+| `acceptance_threshold` | — | integer | 1–25 — default `6`; scores at or below are acceptable without escalation |
+| `escalation_rules` | — | string | Free-text escalation rules for above-threshold risks |
+| `review_frequency` | — | enum | `quarterly` \| `biannual` \| `annual` — default `annual` |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
+
+#### `record_risk_acceptance` *(analyst+)*
+Record a risk owner's decision to accept or reject residual risk, freezing inherent/residual scores and the acceptance threshold at decision time. When a `treatment_plan_id` is referenced, the plan must carry residual scores; accepting an above-threshold residual requires a substantive rationale.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `risk_id` | ✅ | string (UUID) | |
+| `treatment_plan_id` | — | string (UUID) | Treatment plan the decision refers to — must have residual scores recorded |
+| `risk_owner` | ✅ | string | The accountable person making the decision |
+| `decision` | ✅ | enum | `accepted` \| `rejected` |
+| `rationale` | ✅ | string | Why the residual risk is (or is not) acceptable |
+| `review_due_at` | — | string | `YYYY-MM-DD` — when the acceptance should be revisited |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
+
+#### `list_risk_acceptances` *(viewer+)*
+List recorded risk acceptance decisions.
+
+| Parameter | Req | Type | Values / Notes |
+|-----------|-----|------|----------------|
+| `risk_id` | — | string (UUID) | Filter by risk |
+| `decision` | — | enum | `accepted` \| `rejected` |
+| `limit` | — | integer | Pagination limit |
+| `offset` | — | integer | Pagination offset |
+
+---
+
 ## MCP Resources
 
 In addition to tools, the server exposes ISMS artefacts as browseable **MCP Resources** under the `iso27001://` URI scheme. Claude can reference these directly without a tool call — ideal for inline document review, cross-referencing controls, and long-context analysis.
@@ -936,7 +1006,7 @@ The server registers **4 workflow prompts**. Each guides Claude step-by-step thr
 │                     Claude (LLM)                        │
 └──────────┬───────────────────────────────┬──────────────┘
            │  MCP Tools (read/write)        │  MCP Resources (read-only)
-           │  52 tools, RBAC enforced       │  20 iso27001:// URIs
+           │  56 tools, RBAC enforced       │  20 iso27001:// URIs
 ┌──────────▼───────────────────────────────▼──────────────┐
 │                   iso27001-mcp server                   │
 │                                                         │
@@ -966,7 +1036,7 @@ The server registers **4 workflow prompts**. Each guides Claude step-by-step thr
 │  └─────────────┘  └──────────┘  └────────────────────┘  │
 │  ┌─────────────────────────────────────────────────┐    │
 │  │  Org Profile · Audit Log (HMAC-SHA256 chain)    │    │
-│  │  Session Token Store · API Key RBAC (52 tools)  │    │
+│  │  Session Token Store · API Key RBAC (56 tools)  │    │
 │  └─────────────────────────────────────────────────┘    │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐    │
@@ -979,7 +1049,7 @@ The server registers **4 workflow prompts**. Each guides Claude step-by-step thr
 
 ### Database
 
-All data is stored in a single encrypted SQLite file (`isms.db`) using AES-256 via `better-sqlite3-multiple-ciphers`. The schema is managed by six SQL migrations applied automatically on first startup:
+All data is stored in a single encrypted SQLite file (`isms.db`) using AES-256 via `better-sqlite3-multiple-ciphers`. The schema is managed by eleven migrations applied automatically on first startup:
 
 - `0001_initial.sql` — 17 tables covering every ISMS domain (controls, gap assessments, risks, policies, audits, evidence, API keys, audit log, and more)
 - `0002_fts_index.sql` — FTS5 full-text search index on controls, plus 12 performance indexes
@@ -987,6 +1057,11 @@ All data is stored in a single encrypted SQLite file (`isms.db`) using AES-256 v
 - `0004_management_review_improvement.sql` — `management_reviews`, `review_inputs`, `review_outputs`, and `improvement_opportunities` tables (Clauses 9.3 and 10.1)
 - `0005_evidence_documents.sql` — `generated_evidence` table for Mustache-rendered evidence documents with dual-write to `evidence`
 - `0006_audit_log_hmac.sql` — adds `prev_hash` column to `audit_log` for HMAC chain integrity
+- `0007_org_profile_branding.sql` — branding fields (logo, colours) on the organisation profile
+- `0008_audit_provenance.sql` — `actor_type` and `model_id` provenance columns on `audit_log`, included in the row HMAC
+- `0009_audit_log_outcome_proposed.sql` — widens the `audit_log` outcome CHECK to include `'proposed'` (HITL previews)
+- `0010_risk_governance.sql` — `risk_methodology` singleton and `risk_acceptances` tables (§6.1.3)
+- `0011_evidence_integrity.sql` — evidence integrity/provenance fields (`content_sha256`, source system/object/revision, coverage period, assertion, verification, supersession)
 
 ### Seed Data
 
@@ -1014,6 +1089,8 @@ The server encodes ISO 27001 requirements as hard constraints, not just guidance
 | CAR closure requires effectiveness verified | `update_corrective_action` | Enforces Clause 10.1; `BUSINESS_RULE` error otherwise |
 | NC findings require severity | `record_finding` | `BUSINESS_RULE` error if `severity` absent for `type=nc` |
 | Review completion requires all 7 §9.3.2 inputs + ≥1 output | `complete_management_review` | `BUSINESS_RULE` error listing missing input categories |
+| Treatment completion requires accepted residual risk | `update_treatment_status` | A plan cannot reach `verified` (completed) without residual scores **and** an `accepted` risk-acceptance record from the risk owner |
+| Evidence verification must be independent | `verify_evidence` | `BUSINESS_RULE` error if `reviewer` equals the evidence collector; `sufficiency` required when `verified` |
 
 ### RBAC
 
@@ -1021,9 +1098,9 @@ Three roles with strict hierarchy. A key can only call tools at or below its ass
 
 | Role | Tools available | Typical user |
 |------|----------------|--------------|
-| `viewer` | 18 (read-only tools) | Auditor, stakeholder |
-| `analyst` | 38 (18 viewer tools + gap/risk/policy/procedure/evidence/improvement/CSV-import writes) | ISMS practitioner, consultant |
-| `admin` | 52 (all tools, including org profile, audit management, audit log and key management) | CISO, ISMS owner |
+| `viewer` | 19 (read-only tools) | Auditor, stakeholder |
+| `analyst` | 41 (19 viewer tools + gap/risk/policy/procedure/evidence/improvement/CSV-import/risk-acceptance writes) | ISMS practitioner, consultant |
+| `admin` | 56 (all tools, including org profile, risk methodology, audit management, audit log and key management) | CISO, ISMS owner |
 
 ---
 
@@ -1148,19 +1225,19 @@ src/
 │   └── claude-config.ts      Claude Desktop config detection + entry builder
 ├── auth/
 │   ├── api-key.ts            Key generation, HMAC validation, expiry, revocation
-│   ├── rbac.ts               Permission matrix (52 tools × 3 roles)
+│   ├── rbac.ts               Permission matrix (56 tools × 3 roles)
 │   └── session-store.ts      SSE session token store (opaque token → keyHash + role)
 ├── security/
 │   ├── sanitise.ts           Prompt-injection stripping for free-text fields
 │   ├── rate-limiter.ts       Sliding-window RPM counter per key hash
 │   ├── secrets.ts            Env var validation (fail-fast on startup)
-│   └── validate.ts           Zod schemas for all 52 tool inputs
+│   └── validate.ts           Zod schemas for all 56 tool inputs
 ├── audit/
 │   └── logger.ts             Tamper-evident audit event writer
 ├── db/
 │   ├── connection.ts         Encrypted SQLite open/close/migrate
 │   ├── dal.ts                Shared helpers: newId, now, toJson, fromJsonArray, computeEvidenceStatus
-│   └── migrations/           0001_initial.sql through 0007_org_profile_branding.sql
+│   └── migrations/           0001_initial through 0011_evidence_integrity (embedded SQL, canonical)
 ├── seed/
 │   ├── seeder.ts             Idempotent seed runner with checksum verification
 │   ├── controls-2022.json    93 ISO 27001:2022 Annex A controls
@@ -1173,14 +1250,14 @@ src/
 │   └── partials/             Shared Mustache partials (org_header, revision_block, approver_signature)
 ├── tools/
 │   ├── index.ts              Security pipeline + registerAllTools
-│   ├── registry.ts           Unified tool registry (52 ToolDefinition entries; derives RBAC/schema/handler maps)
+│   ├── registry.ts           Unified tool registry (56 ToolDefinition entries with MCP annotations; derives RBAC/schema/handler maps)
 │   ├── controls.ts           Group 1: Control Registry (5 tools)
 │   ├── gap-analysis.ts       Group 2: Gap Analysis (6 tools)
 │   ├── risks.ts              Group 3: Risk Management (6 tools)
 │   ├── policies.ts           Group 4: Policy Management (3 tools)
 │   ├── soa.ts                Group 5: Statement of Applicability (3 tools)
 │   ├── audit-management.ts   Group 6: Audit Management (5 tools)
-│   ├── evidence-tracking.ts  Group 7: Evidence Tracking (4 tools)
+│   ├── evidence-tracking.ts  Group 7: Evidence Tracking (5 tools)
 │   ├── admin.ts              Group 9: Admin & Key Management (3 tools) — Group 8 retired to iso27001://server/info
 │   ├── org-profile.ts        Group 10: Organisation Profile (1 tool) + loadOrgProfileDefaults helper
 │   ├── procedures.ts         Group 11: Procedure Management (4 tools)
@@ -1188,7 +1265,9 @@ src/
 │   ├── improvement-plan.ts   Group 13: Improvement Plan — Clause 10.1 (3 tools)
 │   ├── evidence-templates.ts Group 14: Evidence Templates (2 tools)
 │   ├── csv-import.ts         Group 15: CSV Import (2 tools)
-│   ├── hitl-utils.ts         HITL proposal store — buildPreviewResponse / consumeProposal (10-min single-use tokens)
+│   ├── governance.ts         Group 16: Risk Governance — §6.1.3 (3 tools)
+│   ├── csv-utils.ts          Shared RFC 4180 CSV tokenizer + formula-injection escaping
+│   ├── hitl-utils.ts         HITL proposal store — buildPreviewResponse / consumeProposal (10-min single-use tokens, bound to caller + args hash + resource version)
 │   └── template-utils.ts     Shared loadTemplate / stripFrontmatter / loadPartials / markdownToHtml / renderHtmlDocument helpers
 ├── resources/
 │   ├── index.ts              Registers all 20 MCP Resources
@@ -1215,7 +1294,7 @@ tests/
 └── integration/
     ├── mcp-protocol.test.ts  Schema and registration validation
     ├── db-operations.test.ts Migrations, seed counts, FTS5 (macOS only)
-    └── business-rules.test.ts All 6 enforced business rules end-to-end
+    └── business-rules.test.ts All enforced business rules end-to-end
 ```
 
 ---

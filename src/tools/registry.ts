@@ -36,6 +36,8 @@ import {
   ListImprovementOpportunitiesSchema,
   GenerateEvidenceDocumentSchema, ListEvidenceDocumentsSchema,
   ImportRisksSchema, ImportControlStatusesSchema,
+  VerifyEvidenceSchema,
+  SetRiskMethodologySchema, RecordRiskAcceptanceSchema, ListRiskAcceptancesSchema,
 } from "../security/validate.js";
 
 // ── Handlers ──────────────────────────────────────────────────
@@ -67,6 +69,7 @@ import {
 import {
   handleRegisterEvidence, handleListEvidence,
   handleLinkJiraTicket, handleLinkGithubIssue,
+  handleVerifyEvidence,
 } from "./evidence-tracking.js";
 import {
   handleQueryAuditLog, handleListApiKeys, handleRevokeApiKey,
@@ -91,10 +94,26 @@ import {
   handleListEvidenceDocuments,
 } from "./evidence-templates.js";
 import { handleImportRisks, handleImportControlStatuses } from "./csv-import.js";
+import {
+  handleSetRiskMethodology, handleRecordRiskAcceptance,
+  handleListRiskAcceptances,
+} from "./governance.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
 export type Role = "viewer" | "analyst" | "admin";
+
+/**
+ * MCP tool annotations (behaviour hints per the MCP spec).
+ * Machine-readable metadata clients can use to scope, batch, or
+ * confirm tool use. Hints only — the security pipeline (RBAC, HITL
+ * confirmation gates, audit log) remains the enforcement layer.
+ */
+export interface ToolAnnotations {
+  readOnlyHint?:    boolean;
+  destructiveHint?: boolean;
+  idempotentHint?:  boolean;
+}
 
 export interface ToolDefinition {
   name:        string;
@@ -102,7 +121,20 @@ export interface ToolDefinition {
   minRole:     Role;
   schema:      z.ZodTypeAny;
   handler:     (args: Record<string, unknown>) => ToolResult | Promise<ToolResult>;
+  annotations?: ToolAnnotations;
 }
+
+// ── Annotation presets ────────────────────────────────────────
+// Every registry entry carries one of these four shapes:
+//   READ_ONLY   — pure lookups/exports; no DB writes, safe to repeat
+//   MUTATING    — creates or updates ISMS records (non-destructive)
+//   UPSERT      — idempotent write: same args ⇒ same end state
+//   DESTRUCTIVE — removes a record from active use (archive/revoke)
+
+const READ_ONLY:   ToolAnnotations = { readOnlyHint: true };
+const MUTATING:    ToolAnnotations = { readOnlyHint: false, destructiveHint: false };
+const UPSERT:      ToolAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: true };
+const DESTRUCTIVE: ToolAnnotations = { readOnlyHint: false, destructiveHint: true };
 
 // ── The registry ──────────────────────────────────────────────
 // 13 read-only lookup tools have been retired to MCP Resources
@@ -119,6 +151,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ListControlsSchema,
     handler:     handleListControls,
+    annotations: READ_ONLY,
   },
   {
     name:        "search_controls",
@@ -126,6 +159,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      SearchControlsSchema,
     handler:     handleSearchControls,
+    annotations: READ_ONLY,
   },
   {
     name:        "get_control_attributes",
@@ -133,6 +167,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      GetControlAttributesSchema,
     handler:     handleGetControlAttributes,
+    annotations: READ_ONLY,
   },
   {
     name:        "compare_versions",
@@ -140,6 +175,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      CompareVersionsSchema,
     handler:     handleCompareVersions,
+    annotations: READ_ONLY,
   },
   {
     name:        "list_clause_requirements",
@@ -147,6 +183,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ListClauseRequirementsSchema,
     handler:     handleListClauseRequirements,
+    annotations: READ_ONLY,
   },
 
   // ── Group 2: Gap Analysis (reads: viewer+, writes: analyst+) ──
@@ -157,6 +194,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      CreateGapAssessmentSchema,
     handler:     handleCreateGapAssessment,
+    annotations: MUTATING,
   },
   {
     name:        "update_control_status",
@@ -164,6 +202,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      UpdateControlStatusSchema,
     handler:     handleUpdateControlStatus,
+    annotations: MUTATING,
   },
   {
     name:        "list_gap_assessments",
@@ -171,6 +210,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ListGapAssessmentsSchema,
     handler:     handleListGapAssessments,
+    annotations: READ_ONLY,
   },
   {
     name:        "export_gap_report",
@@ -178,6 +218,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ExportGapReportSchema,
     handler:     handleExportGapReport,
+    annotations: READ_ONLY,
   },
   {
     name:        "generate_remediation_roadmap",
@@ -185,6 +226,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      GenerateRemediationRoadmapSchema,
     handler:     handleGenerateRemediationRoadmap,
+    annotations: READ_ONLY,
   },
   {
     name:        "archive_gap_assessment",
@@ -192,6 +234,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      ArchiveGapAssessmentSchema,
     handler:     handleArchiveGapAssessment,
+    annotations: DESTRUCTIVE,
   },
 
   // ── Group 3: Risk Management (reads: viewer+, writes: analyst+) ──
@@ -203,6 +246,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      CreateRiskSchema,
     handler:     handleCreateRisk,
+    annotations: MUTATING,
   },
   {
     name:        "update_risk",
@@ -210,6 +254,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      UpdateRiskSchema,
     handler:     handleUpdateRisk,
+    annotations: MUTATING,
   },
   {
     name:        "list_risks",
@@ -217,6 +262,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ListRisksSchema,
     handler:     handleListRisks,
+    annotations: READ_ONLY,
   },
   {
     name:        "create_treatment_plan",
@@ -224,6 +270,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      CreateTreatmentPlanSchema,
     handler:     handleCreateTreatmentPlan,
+    annotations: MUTATING,
   },
   {
     name:        "update_treatment_status",
@@ -231,6 +278,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      UpdateTreatmentStatusSchema,
     handler:     handleUpdateTreatmentStatus,
+    annotations: MUTATING,
   },
   {
     name:        "generate_risk_register",
@@ -238,6 +286,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      GenerateRiskRegisterSchema,
     handler:     handleGenerateRiskRegister,
+    annotations: READ_ONLY,
   },
 
   // ── Group 4: Policy Management (reads: viewer+, create: analyst+, update: admin) ──
@@ -248,6 +297,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      CreatePolicySchema,
     handler:     handleCreatePolicy,
+    annotations: MUTATING,
   },
   {
     name:        "update_policy",
@@ -255,6 +305,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      UpdatePolicySchema,
     handler:     handleUpdatePolicy,
+    annotations: MUTATING,
   },
   {
     name:        "list_policies",
@@ -262,6 +313,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ListPoliciesSchema,
     handler:     handleListPolicies,
+    annotations: READ_ONLY,
   },
 
   // ── Group 5: Statement of Applicability (analyst+) ────────
@@ -271,6 +323,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      GenerateSoaSchema,
     handler:     handleGenerateSoa,
+    annotations: MUTATING,
   },
   {
     name:        "update_soa_entry",
@@ -278,6 +331,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      UpdateSoaEntrySchema,
     handler:     handleUpdateSoaEntry,
+    annotations: MUTATING,
   },
   {
     name:        "export_soa",
@@ -285,6 +339,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ExportSoaSchema,
     handler:     handleExportSoa,
+    annotations: READ_ONLY,
   },
 
   // ── Group 6: Audit Management (reads: viewer+, writes: admin) ──
@@ -294,6 +349,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      CreateAuditSchema,
     handler:     handleCreateAudit,
+    annotations: MUTATING,
   },
   {
     name:        "record_finding",
@@ -301,6 +357,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      RecordFindingSchema,
     handler:     handleRecordFinding,
+    annotations: MUTATING,
   },
   {
     name:        "create_corrective_action",
@@ -308,6 +365,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      CreateCorrectiveActionSchema,
     handler:     handleCreateCorrectiveAction,
+    annotations: MUTATING,
   },
   {
     name:        "update_corrective_action",
@@ -315,6 +373,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      UpdateCorrectiveActionSchema,
     handler:     handleUpdateCorrectiveAction,
+    annotations: MUTATING,
   },
   {
     name:        "generate_audit_report",
@@ -322,6 +381,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      GenerateAuditReportSchema,
     handler:     handleGenerateAuditReport,
+    annotations: READ_ONLY,
   },
 
   // ── Group 7: Evidence Tracking (reads: viewer+, writes: analyst+) ──
@@ -332,6 +392,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      RegisterEvidenceSchema,
     handler:     handleRegisterEvidence,
+    annotations: MUTATING,
   },
   {
     name:        "list_evidence",
@@ -339,6 +400,15 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ListEvidenceSchema,
     handler:     handleListEvidence,
+    annotations: READ_ONLY,
+  },
+  {
+    name:        "verify_evidence",
+    description: "Record an independent verification of an evidence artefact: reviewer (must differ from the collector), verification_status (verified | rejected), sufficiency (required when verified), and an optional assertion. Omit confirmed or pass confirmed=false to preview without writing; pass confirmed=true to commit.",
+    minRole:     "analyst",
+    schema:      VerifyEvidenceSchema,
+    handler:     handleVerifyEvidence,
+    annotations: MUTATING,
   },
   {
     name:        "link_jira_ticket",
@@ -346,6 +416,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      LinkJiraTicketSchema,
     handler:     handleLinkJiraTicket,
+    annotations: MUTATING,
   },
   {
     name:        "link_github_issue",
@@ -353,6 +424,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      LinkGithubIssueSchema,
     handler:     handleLinkGithubIssue,
+    annotations: MUTATING,
   },
 
   // ── Group 8: Server Info → retired to resource iso27001://server/info ──
@@ -364,6 +436,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      QueryAuditLogSchema,
     handler:     handleQueryAuditLog,
+    annotations: READ_ONLY,
   },
   {
     name:        "list_api_keys",
@@ -371,6 +444,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      ListApiKeysSchema,
     handler:     handleListApiKeys,
+    annotations: READ_ONLY,
   },
   {
     name:        "revoke_api_key",
@@ -378,6 +452,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      RevokeApiKeySchema,
     handler:     handleRevokeApiKey,
+    annotations: DESTRUCTIVE,
   },
 
   // ── Group 10: Organization Profile (admin) ────────────────
@@ -388,6 +463,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      SetOrganizationProfileSchema,
     handler:     handleSetOrganizationProfile,
+    annotations: UPSERT,
   },
 
   // ── Group 11: Procedure Management (reads: viewer+, create: analyst+, update: admin) ──
@@ -398,6 +474,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      CreateProcedureSchema,
     handler:     handleCreateProcedure,
+    annotations: MUTATING,
   },
   {
     name:        "update_procedure",
@@ -405,6 +482,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      UpdateProcedureSchema,
     handler:     handleUpdateProcedure,
+    annotations: MUTATING,
   },
   {
     name:        "list_procedures",
@@ -412,6 +490,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ListProceduresSchema,
     handler:     handleListProcedures,
+    annotations: READ_ONLY,
   },
   {
     name:        "export_procedure",
@@ -419,6 +498,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      ExportProcedureSchema,
     handler:     handleExportProcedure,
+    annotations: READ_ONLY,
   },
 
   // ── Group 12: Management Review, Clause 9.3 (reads: viewer+, writes: admin) ──
@@ -429,6 +509,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      CreateManagementReviewSchema,
     handler:     handleCreateManagementReview,
+    annotations: MUTATING,
   },
   {
     name:        "record_review_input",
@@ -436,6 +517,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      RecordReviewInputSchema,
     handler:     handleRecordReviewInput,
+    annotations: UPSERT,
   },
   {
     name:        "record_review_output",
@@ -443,6 +525,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      RecordReviewOutputSchema,
     handler:     handleRecordReviewOutput,
+    annotations: MUTATING,
   },
   {
     name:        "complete_management_review",
@@ -450,6 +533,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "admin",
     schema:      CompleteManagementReviewSchema,
     handler:     handleCompleteManagementReview,
+    annotations: MUTATING,
   },
   {
     name:        "list_management_reviews",
@@ -457,6 +541,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ListManagementReviewsSchema,
     handler:     handleListManagementReviews,
+    annotations: READ_ONLY,
   },
 
   // ── Group 13: Improvement Plan, Clause 10.1 (reads: viewer+, writes: analyst+) ──
@@ -467,6 +552,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      CreateImprovementOpportunitySchema,
     handler:     handleCreateImprovementOpportunity,
+    annotations: MUTATING,
   },
   {
     name:        "update_improvement_opportunity",
@@ -474,6 +560,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      UpdateImprovementOpportunitySchema,
     handler:     handleUpdateImprovementOpportunity,
+    annotations: MUTATING,
   },
   {
     name:        "list_improvement_opportunities",
@@ -481,6 +568,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ListImprovementOpportunitiesSchema,
     handler:     handleListImprovementOpportunities,
+    annotations: READ_ONLY,
   },
 
   // ── Group 14: Evidence Templates (reads: viewer+, generate: analyst+) ──
@@ -491,6 +579,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      GenerateEvidenceDocumentSchema,
     handler:     handleGenerateEvidenceDocument,
+    annotations: MUTATING,
   },
   {
     name:        "list_evidence_documents",
@@ -498,6 +587,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "viewer",
     schema:      ListEvidenceDocumentsSchema,
     handler:     handleListEvidenceDocuments,
+    annotations: READ_ONLY,
   },
 
   // ── Group 15: CSV Import (analyst+) ───────────────────────
@@ -507,6 +597,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      ImportRisksSchema,
     handler:     handleImportRisks,
+    annotations: MUTATING,
   },
   {
     name:        "import_control_statuses",
@@ -514,6 +605,33 @@ export const TOOLS: readonly ToolDefinition[] = [
     minRole:     "analyst",
     schema:      ImportControlStatusesSchema,
     handler:     handleImportControlStatuses,
+    annotations: MUTATING,
+  },
+
+  // ── Group 16: Risk Governance, §6.1.3 (reads: viewer+, acceptance: analyst+, methodology: admin) ──
+  {
+    name:        "set_risk_methodology",
+    description: "Upsert the organisation's singleton risk methodology: likelihood/impact scales, calculation method, risk level bands, acceptance threshold, escalation rules, and review frequency. Omit confirmed or pass confirmed=false to preview the diff against the current methodology without writing; pass confirmed=true to commit.",
+    minRole:     "admin",
+    schema:      SetRiskMethodologySchema,
+    handler:     handleSetRiskMethodology,
+    annotations: UPSERT,
+  },
+  {
+    name:        "record_risk_acceptance",
+    description: "Record a risk owner's decision to accept or reject residual risk (ISO 27001:2022 §6.1.3), freezing inherent/residual scores and the acceptance threshold at decision time. Requires residual scores on the treatment plan when one is referenced; accepting an above-threshold residual demands a substantive rationale. Omit confirmed or pass confirmed=false to preview; pass confirmed=true to commit.",
+    minRole:     "analyst",
+    schema:      RecordRiskAcceptanceSchema,
+    handler:     handleRecordRiskAcceptance,
+    annotations: MUTATING,
+  },
+  {
+    name:        "list_risk_acceptances",
+    description: "List recorded risk acceptance decisions with optional filters (risk_id, decision) and pagination.",
+    minRole:     "viewer",
+    schema:      ListRiskAcceptancesSchema,
+    handler:     handleListRiskAcceptances,
+    annotations: READ_ONLY,
   },
 ];
 

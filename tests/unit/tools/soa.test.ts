@@ -569,3 +569,184 @@ describe("handleGenerateSoa — themes_in_scope branch", () => {
     expect(runSpy).toHaveBeenCalled();
   });
 });
+
+// ── SoA traceability: driver_type + source_ids ───────────────
+
+describe("SoA traceability (driver_type / source_ids)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDb.prepare.mockReturnValue(mockStmt);
+    mockDb.transaction.mockImplementation((fn: () => unknown) => () => fn());
+  });
+
+  it("generate_soa auto-populates driver_type='risk' + risk ids for treatment-linked controls", () => {
+    const assessStmt      = { get: vi.fn(() => ASSESSMENT_ROW), all: vi.fn(() => []), run: vi.fn() };
+    const existingStmt    = { get: vi.fn(() => undefined), all: vi.fn(() => []), run: vi.fn() };
+    const insertSoaStmt   = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1 })) };
+    const controlsStmt    = { get: vi.fn(), all: vi.fn(() => CONTROL_ROWS), run: vi.fn() };
+    const statusesStmt    = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn() };
+    const insertEntryStmt = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1 })) };
+    // Two treatment plans: one links 5.1 (risk r1), one links 5.1 again (risk r2)
+    const treatmentsStmt  = {
+      get: vi.fn(),
+      all: vi.fn(() => [
+        { risk_id: "r1", controls: '["5.1"]' },
+        { risk_id: "r2", controls: '["5.1","9.9"]' },
+      ]),
+      run: vi.fn(),
+    };
+
+    mockDb.prepare
+      .mockReturnValueOnce(assessStmt)
+      .mockReturnValueOnce(existingStmt)
+      .mockReturnValueOnce(insertSoaStmt)
+      .mockReturnValueOnce(controlsStmt)
+      .mockReturnValueOnce(statusesStmt)
+      .mockReturnValueOnce(insertEntryStmt)
+      .mockReturnValueOnce(treatmentsStmt);
+
+    const result = handleGenerateSoa({ assessment_id: "assess-1" });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.risk_driven_controls).toBe(1); // only 5.1 is in the control set
+
+    // Entry for 5.1 must carry driver_type='risk' and both risk ids
+    const calls = insertEntryStmt.run.mock.calls as unknown[][];
+    expect(calls).toHaveLength(2);
+    const entry51 = calls.find((c) => c[2] === "5.1");
+    const entry52 = calls.find((c) => c[2] === "5.2");
+    expect(entry51?.[6]).toBe("risk");
+    expect(JSON.parse(entry51?.[7] as string)).toEqual(["r1", "r2"]);
+    expect(entry52?.[6]).toBeNull();
+    expect(entry52?.[7]).toBeNull();
+  });
+
+  it("generate_soa does not mark excluded controls as risk-driven", () => {
+    const assessWithExclusion = { ...ASSESSMENT_ROW, exclude_controls: JSON.stringify(["5.1"]) };
+    const assessStmt      = { get: vi.fn(() => assessWithExclusion), all: vi.fn(() => []), run: vi.fn() };
+    const existingStmt    = { get: vi.fn(() => undefined), all: vi.fn(() => []), run: vi.fn() };
+    const insertSoaStmt   = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1 })) };
+    const controlsStmt    = { get: vi.fn(), all: vi.fn(() => CONTROL_ROWS), run: vi.fn() };
+    const statusesStmt    = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn() };
+    const insertEntryStmt = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1 })) };
+    const treatmentsStmt  = { get: vi.fn(), all: vi.fn(() => [{ risk_id: "r1", controls: '["5.1"]' }]), run: vi.fn() };
+
+    mockDb.prepare
+      .mockReturnValueOnce(assessStmt)
+      .mockReturnValueOnce(existingStmt)
+      .mockReturnValueOnce(insertSoaStmt)
+      .mockReturnValueOnce(controlsStmt)
+      .mockReturnValueOnce(statusesStmt)
+      .mockReturnValueOnce(insertEntryStmt)
+      .mockReturnValueOnce(treatmentsStmt);
+
+    const result = handleGenerateSoa({ assessment_id: "assess-1" });
+    const data = parseResult(result);
+
+    expect(data.risk_driven_controls).toBe(0);
+    const calls = insertEntryStmt.run.mock.calls as unknown[][];
+    const entry51 = calls.find((c) => c[2] === "5.1");
+    expect(entry51?.[6]).toBeNull();  // excluded → no driver
+  });
+
+  it("update_soa_entry previews and persists driver_type and source_ids", () => {
+    const ENTRY = {
+      ...SOA_ENTRY_ROW,
+      justification: "old", included: 1, status: null,
+      responsible_party: null, driver_type: null, source_ids: null,
+      updated_at: "2025-01-01T00:00:00Z",
+    };
+
+    // Preview first
+    const soaStmt   = { get: vi.fn(() => ({ id: "soa-1" })), all: vi.fn(() => []), run: vi.fn() };
+    const entryStmt = { get: vi.fn(() => ENTRY), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(soaStmt).mockReturnValueOnce(entryStmt);
+
+    const preview = handleUpdateSoaEntry({
+      soa_id: "soa-1",
+      control_id: "5.1",
+      included: true,
+      justification: "Mitigates RISK-012 under RTP-008",
+      driver_type: "risk",
+      source_ids: ["risk-012", "rtp-008"],
+    });
+    const previewData = parseResult(preview);
+    expect(previewData.hitl_proposed).toBe(true);
+    expect(previewData.diff).toContain("driver_type");
+    expect(previewData.diff).toContain("source_ids");
+
+    // Then commit
+    const soaStmt2      = { get: vi.fn(() => ({ id: "soa-1" })), all: vi.fn(() => []), run: vi.fn() };
+    const entryStmt2    = { get: vi.fn(() => ENTRY), all: vi.fn(() => []), run: vi.fn() };
+    const updateStmt    = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1 })) };
+    const updateSoaStmt = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1 })) };
+    mockDb.prepare
+      .mockReturnValueOnce(soaStmt2)
+      .mockReturnValueOnce(entryStmt2)
+      .mockReturnValueOnce(updateStmt)
+      .mockReturnValueOnce(updateSoaStmt);
+
+    const PROPOSAL = "ccccdddd-cccc-4ccc-8ccc-cccccccccccc";
+    _testSeedProposal(PROPOSAL, "update_soa_entry");
+
+    const commit = handleUpdateSoaEntry({
+      soa_id: "soa-1",
+      control_id: "5.1",
+      included: true,
+      justification: "Mitigates RISK-012 under RTP-008",
+      driver_type: "risk",
+      source_ids: ["risk-012", "rtp-008"],
+      confirmed: true,
+      proposal_id: PROPOSAL,
+    });
+
+    expect(commit.isError).toBe(false);
+    const data = parseResult(commit);
+    expect(data.driver_type).toBe("risk");
+    expect(data.source_ids).toEqual(["risk-012", "rtp-008"]);
+    // UPDATE persisted the JSON-serialised source_ids
+    const runArgs = updateStmt.run.mock.calls[0] as unknown[];
+    expect(runArgs[4]).toBe("risk");
+    expect(runArgs[5]).toBe(JSON.stringify(["risk-012", "rtp-008"]));
+  });
+
+  it("export_soa includes driver_type and source_ids in csv and markdown", () => {
+    const rows = [
+      {
+        id: "entry-1", soa_id: "soa-1", control_id: "5.1", included: 1,
+        justification: "Mitigates risk", status: "implemented",
+        evidence_count: 0, responsible_party: "CISO",
+        driver_type: "risk", source_ids: '["risk-012"]',
+        control_name: "Policies for IS", theme: "Organizational", description: "...",
+        created_at: "2025-01-01T00:00:00Z", updated_at: "2025-01-01T00:00:00Z",
+      },
+      {
+        id: "entry-2", soa_id: "soa-1", control_id: "5.2", included: 1,
+        justification: "In scope", status: null,
+        evidence_count: 0, responsible_party: null,
+        driver_type: null, source_ids: null,
+        control_name: "IS roles", theme: "Organizational", description: "...",
+        created_at: "2025-01-01T00:00:00Z", updated_at: "2025-01-01T00:00:00Z",
+      },
+    ];
+
+    const soaStmt     = { get: vi.fn(() => SOA_ROW), all: vi.fn(() => []), run: vi.fn() };
+    const entriesStmt = { get: vi.fn(), all: vi.fn(() => rows), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(soaStmt).mockReturnValueOnce(entriesStmt);
+
+    const csv = parseResult(handleExportSoa({ soa_id: "soa-1", format: "csv" }));
+    expect(csv.content).toContain("driver_type,source_ids");
+    expect(csv.content).toContain("risk");
+    expect(csv.content).toContain("risk-012");
+
+    const soaStmt2     = { get: vi.fn(() => SOA_ROW), all: vi.fn(() => []), run: vi.fn() };
+    const entriesStmt2 = { get: vi.fn(), all: vi.fn(() => rows), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(soaStmt2).mockReturnValueOnce(entriesStmt2);
+
+    const md = parseResult(handleExportSoa({ soa_id: "soa-1", format: "markdown" }));
+    expect(md.content).toContain("Driver");
+    expect(md.content).toContain("Source IDs");
+    expect(md.content).toContain("risk-012");
+  });
+});

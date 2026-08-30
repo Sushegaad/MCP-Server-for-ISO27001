@@ -260,7 +260,7 @@
     </div>
   </nav>
   <div class="sidebar-footer">
-    <p style="margin-bottom:4px">v0.9.75 · 52 tools · 15 groups</p>
+    <p style="margin-bottom:4px">v0.9.81 · 56 tools · 16 groups</p>
     <p>Real server: <a href="https://npmjs.com/package/iso27001-mcp" target="_blank">npm install -g iso27001-mcp</a></p>
   </div>
 </aside>
@@ -562,7 +562,7 @@
     <!-- ════════════════════════════════════════════════════════ -->
     <div id="section-tools" class="section">
       <div class="notice">
-        💡 All 52 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 18 tools), analyst (38 tools), admin (all 52 tools). 12 critical write tools are HITL-gated: they return a preview diff + single-use proposal_id, and commit only when called again with confirmed=true and that proposal_id.
+        💡 All 56 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 19 tools), analyst (41 tools), admin (all 56 tools). 15 critical write tools are HITL-gated: they return a preview diff + single-use proposal_id, and commit only when called again with confirmed=true and that proposal_id.
       </div>
 
       <div class="card">
@@ -1323,11 +1323,11 @@ control_id,status,notes
         <p>A stateful MCP server that gives Claude a complete Information Security Management System. Run gap assessments, manage risks, generate ISO-aligned policies and procedures, track evidence, and schedule management reviews — all backed by an AES-256 encrypted SQLite database on your own machine.</p>
         <div class="res-hero-stats">
           <div class="res-hero-stat">
-            <div class="res-hero-stat-value">52</div>
+            <div class="res-hero-stat-value">56</div>
             <div class="res-hero-stat-label">MCP Tools</div>
           </div>
           <div class="res-hero-stat">
-            <div class="res-hero-stat-value">15</div>
+            <div class="res-hero-stat-value">16</div>
             <div class="res-hero-stat-label">Tool Groups</div>
           </div>
           <div class="res-hero-stat">
@@ -1339,7 +1339,7 @@ control_id,status,notes
             <div class="res-hero-stat-label">Templates</div>
           </div>
           <div class="res-hero-stat">
-            <div class="res-hero-stat-value" style="font-size:20px">v0.9.75</div>
+            <div class="res-hero-stat-value" style="font-size:20px">v0.9.81</div>
             <div class="res-hero-stat-label">Latest</div>
           </div>
         </div>
@@ -1406,7 +1406,7 @@ control_id,status,notes
           <div class="res-step-num">3</div>
           <div class="res-step-body">
             <div class="res-step-title">Verify and connect</div>
-            <div class="res-step-desc">Run the health check, then restart Claude Desktop (quit fully and reopen). You should see <strong>52 tools</strong> in the tools panel.</div>
+            <div class="res-step-desc">Run the health check, then restart Claude Desktop (quit fully and reopen). You should see <strong>56 tools</strong> in the tools panel.</div>
             <div class="res-code"><span class="cmd">iso27001-mcp doctor</span>
 <span class="comment"># All 12 checks should show ✅</span>
 <span class="comment"># Then restart Claude Desktop</span></div>
@@ -1457,7 +1457,7 @@ control_id,status,notes
           <div class="res-link-icon">📄</div>
           <div>
             <div class="res-link-title">Full Documentation</div>
-            <div class="res-link-desc">Complete tools reference with all 52 tools, parameter tables, architecture diagram, and security model.</div>
+            <div class="res-link-desc">Complete tools reference with all 56 tools, parameter tables, architecture diagram, and security model.</div>
             <div class="res-link-url">github.com/…/README.md</div>
           </div>
         </a>
@@ -1678,11 +1678,14 @@ const TOOLS = [
   ]},
   { group:'Group 7 — Evidence Tracking', role:'analyst', tools:[
     { name:'register_evidence', desc:'Register an evidence artefact for a control',
-      params:[['control_id','✅','string',''],['type','✅','enum','policy | procedure | log | screenshot | report | certificate | configuration | …'],['description','✅','string',''],['collected_by','✅','string',''],['collected_date','✅','string','YYYY-MM-DD'],['expiry_date','—','string',''],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
+      params:[['control_id','✅','string',''],['type','✅','enum','policy | procedure | log | screenshot | report | certificate | configuration | …'],['description','✅','string',''],['collected_by','✅','string',''],['collected_date','✅','string','YYYY-MM-DD'],['expiry_date','—','string',''],['content_sha256','—','string','SHA-256 of the artefact content (64 hex chars) — pins the record to an exact version'],['period_start','—','string','YYYY-MM-DD — start of the period the evidence covers'],['period_end','—','string','YYYY-MM-DD — end of the period the evidence covers'],['supersedes_evidence_id','—','uuid','marks an earlier evidence record as superseded'],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "control_id": "8.20", "type": "screenshot", "description": "Firewall config screenshot", "collected_by": "Ops team", "collected_date": "2026-05-07", "expiry_date": "2027-05-07" }' },
     { name:'list_evidence',     desc:'List evidence for a control, filtered by status: current, stale, expired',
       params:[['control_id','✅','string',''],['status','—','enum','current | stale | expired']],
       example:'{ "control_id": "8.20", "status": "current" }' },
+    { name:'verify_evidence',   desc:'Record an independent verification of an evidence artefact. The reviewer must differ from the collector (enforced); sufficiency is required when verified.',
+      params:[['evidence_id','✅','uuid',''],['reviewer','✅','string','must differ from collected_by'],['verification_status','✅','enum','verified | rejected'],['sufficiency','—','enum','sufficient | partial | insufficient — required when verified'],['assertion','—','string','what the reviewer confirms the evidence demonstrates'],['verification_date','—','string','YYYY-MM-DD — defaults to today'],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
+      example:'{ "evidence_id": "uuid", "reviewer": "Bob", "verification_status": "verified", "sufficiency": "sufficient" }' },
     { name:'link_jira_ticket',  desc:'Link evidence to an existing Jira issue or create a new one',
       params:[['evidence_id','✅','uuid',''],['jira_key','—','string','links existing issue, e.g. ISMS-42'],['summary','—','string','creates new issue']],
       example:'{ "evidence_id": "uuid", "summary": "Firewall config screenshot — annual review" }' },
@@ -1766,6 +1769,17 @@ const TOOLS = [
     { name:'import_control_statuses', desc:'Bulk-update control implementation statuses in a gap assessment from a CSV string. Validates every control_id against the assessment. Required headers: control_id, status. Optional: notes, na_justification.',
       params:[['assessment_id','required','string','UUID of the target gap assessment'],['csv_content','required','string','CSV string including header row'],['dry_run','—','boolean','default false — set true to validate without writing']],
       example:'{ "assessment_id": "a1b2c3...", "csv_content": "control_id,status,notes\\n5.1,implemented,Policy approved", "dry_run": true }' },
+  ]},
+  { group:'Group 16 — Risk Governance (§6.1.3)', role:'analyst', tools:[
+    { name:'set_risk_methodology', desc:'Upsert the singleton risk methodology: likelihood/impact scales, calculation method, risk level bands, acceptance threshold, escalation rules, review frequency. Admin only.',
+      params:[['likelihood_scale','✅','array','2–10 points, each { value: 1–10, label }'],['impact_scale','✅','array','2–10 points, each { value: 1–10, label }'],['calculation_method','—','enum','multiplication | addition | matrix (default multiplication)'],['risk_level_bands','✅','array','1–10 bands, each { min, max, level }'],['acceptance_threshold','—','integer','1–25, default 6'],['escalation_rules','—','string',''],['review_frequency','—','enum','quarterly | biannual | annual (default annual)'],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
+      example:'{ "likelihood_scale": [{"value":1,"label":"Rare"},{"value":5,"label":"Almost certain"}], "impact_scale": [{"value":1,"label":"Negligible"},{"value":5,"label":"Severe"}], "risk_level_bands": [{"min":1,"max":6,"level":"Low"},{"min":7,"max":25,"level":"High"}] }' },
+    { name:'record_risk_acceptance', desc:'Record the risk owner\'s decision to accept or reject residual risk, freezing scores and the acceptance threshold at decision time. Referenced treatment plans must carry residual scores; above-threshold acceptance requires a substantive rationale.',
+      params:[['risk_id','✅','uuid',''],['treatment_plan_id','—','uuid','plan must have residual scores recorded'],['risk_owner','✅','string','the accountable decision-maker'],['decision','✅','enum','accepted | rejected'],['rationale','✅','string',''],['review_due_at','—','string','YYYY-MM-DD'],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
+      example:'{ "risk_id": "uuid", "risk_owner": "CISO", "decision": "accepted", "rationale": "Residual score 4 is below the acceptance threshold of 6" }' },
+    { name:'list_risk_acceptances', desc:'List recorded risk acceptance decisions with optional filters.',
+      params:[['risk_id','—','uuid',''],['decision','—','enum','accepted | rejected'],['limit','—','integer','default 50'],['offset','—','integer','default 0']],
+      example:'{ "decision": "accepted" }' },
   ]},
 ];
 
@@ -1958,7 +1972,7 @@ const SECTION_META = {
   gap:    { title:'Gap Assessment',    sub:'Acme Financial Services · ISO 27001:2022 · 24 controls shown' },
   risk:   { title:'Risk Register',     sub:'6 risks across all levels · click any risk to view treatment plan' },
   policy: { title:'Policy Generator',  sub:'12 ISO 27001-aligned policy templates · rendered with your org details' },
-  tools:  { title:'Tools Explorer',    sub:'52 MCP tools across 15 groups · all require a valid API key' },
+  tools:  { title:'Tools Explorer',    sub:'56 MCP tools across 16 groups · all require a valid API key' },
   procedures:      { title: 'Procedure Generator',   sub: '12 ISO 27001 operating procedures · rendered with Mustache partials' },
   'audit':         { title: 'Internal Audit',   sub: 'ISO 27001:2022 Clause 9.2 · Plan · Record findings (NC/OBS/OFI) · Raise CARs · Close' },
   'mgmt-review':   { title: 'Management Review',      sub: 'ISO 27001:2022 Clause 9.3 · 7 required inputs + at least 1 output · enforced business rule' },

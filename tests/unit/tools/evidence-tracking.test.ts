@@ -47,6 +47,7 @@ import {
   handleGetEvidenceGaps,
   handleLinkJiraTicket,
   handleLinkGithubIssue,
+  handleVerifyEvidence,
 } from "../../../src/tools/evidence-tracking.js";
 import { McpError } from "../../../src/types/errors.js";
 import { getEnv } from "../../../src/security/secrets.js";
@@ -71,6 +72,19 @@ const EVIDENCE_ROW = {
   jira_url: null,
   github_issue_url: null,
   github_issue_number: null,
+  content_sha256: null,
+  source_system: null,
+  source_object_id: null,
+  source_revision: null,
+  captured_at: null,
+  period_start: null,
+  period_end: null,
+  reviewer: null,
+  verification_status: "unverified",
+  verification_date: null,
+  sufficiency: null,
+  assertion: null,
+  supersedes_evidence_id: null,
   created_at: "2025-01-01T00:00:00Z",
   updated_at: "2025-01-01T00:00:00Z",
 };
@@ -636,5 +650,316 @@ describe("handleLinkGithubIssue — configured GitHub", () => {
       expect(err).toBeInstanceOf(McpError);
       expect((err as McpError).error_code).toBe("INTEGRATION_ERROR");
     }
+  });
+});
+
+// ── register_evidence — integrity fields & superseding (migration 0011) ──
+
+describe("handleRegisterEvidence — integrity fields and superseding", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDb.prepare.mockReturnValue(mockStmt);
+  });
+
+  it("preview includes provided integrity fields in the diff", () => {
+    const sha = "a".repeat(64);
+    const result = handleRegisterEvidence({
+      control_id: "5.1",
+      type: "log",
+      description: "Quarterly access review export",
+      collected_by: "auditor@example.com",
+      collected_date: "2025-01-01",
+      content_sha256: sha,
+      source_system: "okta",
+      period_start: "2025-01-01",
+      period_end: "2025-03-31",
+      assertion: "All admin access reviewed for Q1",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.diff).toContain("content_sha256");
+    expect(data.diff).toContain("source_system");
+    expect(data.diff).toContain("period_start");
+    expect(data.diff).toContain("assertion");
+    // No supersede target → no DB calls in the preview branch
+    expect(mockDb.prepare).not.toHaveBeenCalled();
+  });
+
+  it("commit persists the integrity fields", () => {
+    const shaRow = {
+      ...EVIDENCE_ROW,
+      content_sha256: "b".repeat(64),
+      source_system: "okta",
+      period_start: "2025-01-01",
+      period_end: "2025-03-31",
+    };
+    const insertStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
+    const selectStmt = { run: vi.fn(), get: vi.fn(() => shaRow), all: vi.fn(() => []) };
+    mockDb.prepare.mockReturnValueOnce(insertStmt).mockReturnValueOnce(selectStmt);
+
+    const PROPOSAL = "66666666-6666-4666-8666-666666666666";
+    _testSeedProposal(PROPOSAL, "register_evidence");
+
+    const result = handleRegisterEvidence({
+      control_id: "5.1",
+      type: "log",
+      description: "Quarterly access review export",
+      collected_by: "auditor@example.com",
+      collected_date: "2025-01-01",
+      content_sha256: "b".repeat(64),
+      source_system: "okta",
+      period_start: "2025-01-01",
+      period_end: "2025-03-31",
+      confirmed: true,
+      proposal_id: PROPOSAL,
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.content_sha256).toBe("b".repeat(64));
+    expect(data.source_system).toBe("okta");
+    const insertSql = (mockDb.prepare.mock.calls[0] as unknown[])[0] as string;
+    expect(insertSql).toContain("content_sha256");
+    expect(insertSql).toContain("supersedes_evidence_id");
+  });
+
+  it("throws NOT_FOUND when supersedes_evidence_id does not exist (even in preview)", () => {
+    const missingStmt = { get: vi.fn(() => undefined), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(missingStmt);
+
+    try {
+      handleRegisterEvidence({
+        control_id: "5.1",
+        type: "log",
+        description: "Replacement artefact",
+        collected_by: "auditor@example.com",
+        collected_date: "2025-01-01",
+        supersedes_evidence_id: "00000000-0000-4000-8000-00000000dead",
+      });
+      expect.fail("expected throw");
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("NOT_FOUND");
+    }
+  });
+
+  it("superseding an evidence record auto-expires the old one on commit", () => {
+    const oldRow = { ...EVIDENCE_ROW, id: "ev-old" };
+    const newRow = { ...EVIDENCE_ROW, id: "ev-new", supersedes_evidence_id: "ev-old" };
+    const targetStmt = { get: vi.fn(() => oldRow), all: vi.fn(() => []), run: vi.fn() };
+    const insertStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
+    const expireStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
+    const selectStmt = { run: vi.fn(), get: vi.fn(() => newRow), all: vi.fn(() => []) };
+
+    mockDb.prepare
+      .mockReturnValueOnce(targetStmt)  // requireEvidence(supersedes)
+      .mockReturnValueOnce(insertStmt)  // INSERT new evidence
+      .mockReturnValueOnce(expireStmt)  // UPDATE old evidence expiry
+      .mockReturnValueOnce(selectStmt); // SELECT back
+
+    const PROPOSAL = "77777777-7777-4777-8777-777777777777";
+    _testSeedProposal(PROPOSAL, "register_evidence");
+
+    const result = handleRegisterEvidence({
+      control_id: "5.1",
+      type: "log",
+      description: "Replacement artefact",
+      collected_by: "auditor@example.com",
+      collected_date: "2025-06-01",
+      supersedes_evidence_id: "ev-old",
+      confirmed: true,
+      proposal_id: PROPOSAL,
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.superseded_note).toContain("ev-old");
+    expect(data.superseded_note).toMatch(/expiry_date/);
+    // The expiry update targets the superseded row
+    const expireSql = (mockDb.prepare.mock.calls[2] as unknown[])[0] as string;
+    expect(expireSql).toContain("UPDATE evidence SET expiry_date");
+    expect(expireStmt.run).toHaveBeenCalled();
+    expect((expireStmt.run.mock.calls[0] as unknown[])[2]).toBe("ev-old");
+  });
+});
+
+// ── verify_evidence ───────────────────────────────────────────
+
+describe("handleVerifyEvidence", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDb.prepare.mockReturnValue(mockStmt);
+  });
+
+  it("throws NOT_FOUND when the evidence does not exist", () => {
+    const missingStmt = { get: vi.fn(() => undefined), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(missingStmt);
+
+    try {
+      handleVerifyEvidence({
+        evidence_id: "missing",
+        reviewer: "independent@example.com",
+        verification_status: "rejected",
+      });
+      expect.fail("expected throw");
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("NOT_FOUND");
+    }
+  });
+
+  it("enforces the independence rule: reviewer must differ from the collector", () => {
+    const evidenceStmt = { get: vi.fn(() => EVIDENCE_ROW), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(evidenceStmt);
+
+    try {
+      handleVerifyEvidence({
+        evidence_id: "ev-1",
+        reviewer: "auditor@example.com", // same as collected_by
+        verification_status: "verified",
+        sufficiency: "sufficient",
+      });
+      expect.fail("expected throw");
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("BUSINESS_RULE");
+      expect((err as McpError).field).toBe("reviewer");
+      expect((err as McpError).message).toMatch(/someone other than its collector/);
+    }
+  });
+
+  it("requires sufficiency when verification_status is 'verified'", () => {
+    const evidenceStmt = { get: vi.fn(() => EVIDENCE_ROW), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(evidenceStmt);
+
+    try {
+      handleVerifyEvidence({
+        evidence_id: "ev-1",
+        reviewer: "independent@example.com",
+        verification_status: "verified",
+        // sufficiency omitted
+      });
+      expect.fail("expected throw");
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("BUSINESS_RULE");
+      expect((err as McpError).field).toBe("sufficiency");
+    }
+  });
+
+  it("preview returns the verification diff without writing", () => {
+    const evidenceStmt = { get: vi.fn(() => EVIDENCE_ROW), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(evidenceStmt);
+
+    const result = handleVerifyEvidence({
+      evidence_id: "ev-1",
+      reviewer: "independent@example.com",
+      verification_status: "verified",
+      sufficiency: "sufficient",
+      assertion: "Demonstrates the IS policy is approved and current",
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.evidence_id).toBe("ev-1");
+    expect(data.diff).toContain("verification_status");
+    expect(data.diff).toContain("reviewer");
+    expect(data.diff).toContain("sufficiency");
+    expect(data.diff).toContain("assertion");
+    // Only the evidence lookup — no UPDATE in the preview branch
+    expect(mockDb.prepare).toHaveBeenCalledTimes(1);
+  });
+
+  it("commit updates the verification fields and returns the row", () => {
+    const verifiedRow = {
+      ...EVIDENCE_ROW,
+      reviewer: "independent@example.com",
+      verification_status: "verified",
+      verification_date: "2026-08-30",
+      sufficiency: "sufficient",
+    };
+    const evidenceStmt = { get: vi.fn(() => EVIDENCE_ROW), all: vi.fn(() => []), run: vi.fn() };
+    const updateStmt   = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1 })) };
+    const selectStmt   = { get: vi.fn(() => verifiedRow), all: vi.fn(() => []), run: vi.fn() };
+
+    mockDb.prepare
+      .mockReturnValueOnce(evidenceStmt)
+      .mockReturnValueOnce(updateStmt)
+      .mockReturnValueOnce(selectStmt);
+
+    const PROPOSAL = "88888888-8888-4888-8888-888888888888";
+    _testSeedProposal(PROPOSAL, "verify_evidence");
+
+    const result = handleVerifyEvidence({
+      evidence_id: "ev-1",
+      reviewer: "independent@example.com",
+      verification_status: "verified",
+      sufficiency: "sufficient",
+      verification_date: "2026-08-30",
+      confirmed: true,
+      proposal_id: PROPOSAL,
+    });
+
+    expect(result.isError).toBe(false);
+    const data = parseResult(result);
+    expect(data.verification_status).toBe("verified");
+    expect(data.reviewer).toBe("independent@example.com");
+    expect(data.sufficiency).toBe("sufficient");
+    expect(typeof data.status).toBe("string"); // evidence currency status retained
+    expect(updateStmt.run).toHaveBeenCalledWith(
+      "independent@example.com", "verified", "2026-08-30",
+      "sufficient", null, expect.any(String), "ev-1",
+    );
+  });
+
+  it("commit rejects a stale proposal when the evidence changed since preview (version binding)", () => {
+    const evidenceStmt = { get: vi.fn(() => ({ ...EVIDENCE_ROW, updated_at: "2026-01-01T00:00:00Z" })), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(evidenceStmt);
+
+    const PROPOSAL = "99999999-9999-4999-8999-999999999999";
+    _testSeedProposal(PROPOSAL, "verify_evidence", {
+      resource_version: "2025-01-01T00:00:00Z", // preview-time version
+    });
+
+    expect(() =>
+      handleVerifyEvidence({
+        evidence_id: "ev-1",
+        reviewer: "independent@example.com",
+        verification_status: "rejected",
+        confirmed: true,
+        proposal_id: PROPOSAL,
+      }),
+    ).toThrow(/version conflict/);
+  });
+
+  it("defaults verification_date to today when omitted (rejected outcome)", () => {
+    const rejectedRow = {
+      ...EVIDENCE_ROW,
+      reviewer: "independent@example.com",
+      verification_status: "rejected",
+    };
+    const evidenceStmt = { get: vi.fn(() => EVIDENCE_ROW), all: vi.fn(() => []), run: vi.fn() };
+    const updateStmt   = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1 })) };
+    const selectStmt   = { get: vi.fn(() => rejectedRow), all: vi.fn(() => []), run: vi.fn() };
+
+    mockDb.prepare
+      .mockReturnValueOnce(evidenceStmt)
+      .mockReturnValueOnce(updateStmt)
+      .mockReturnValueOnce(selectStmt);
+
+    const PROPOSAL = "aaaaaaaa-1111-4aaa-8aaa-aaaaaaaa1111";
+    _testSeedProposal(PROPOSAL, "verify_evidence");
+
+    const result = handleVerifyEvidence({
+      evidence_id: "ev-1",
+      reviewer: "independent@example.com",
+      verification_status: "rejected",
+      confirmed: true,
+      proposal_id: PROPOSAL,
+    });
+
+    expect(result.isError).toBe(false);
+    const todayStr = new Date().toISOString().split("T")[0];
+    expect((updateStmt.run.mock.calls[0] as unknown[])[2]).toBe(todayStr);
   });
 });

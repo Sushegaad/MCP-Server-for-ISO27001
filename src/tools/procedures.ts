@@ -295,10 +295,11 @@ export function handleUpdateProcedure(args: Record<string, unknown>): ToolResult
       procedure_id,
       procedure_type: current.procedure_type,
       message: "⏸ No data written. The current version will be archived and a new version created. Pass \"confirmed\": true to apply this change.",
-    }));
+    }, { resource_id: procedure_id, resource_version: String(current.updated_at) }));
   }
 
-  consumeProposal(proposal_id, "update_procedure");
+  consumeProposal(proposal_id, "update_procedure",
+    { resource_version: String(current.updated_at) });
   const ts         = now();
   const newVersion = current.version + 1;
 

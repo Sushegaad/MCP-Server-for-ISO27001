@@ -64,22 +64,22 @@ describe("assertPermission", () => {
 });
 
 describe("TOTAL_TOOLS", () => {
-  it("equals 52", () => {
-    expect(TOTAL_TOOLS).toBe(52);
+  it("equals 56", () => {
+    expect(TOTAL_TOOLS).toBe(56);
   });
 });
 
 describe("toolsForRole", () => {
-  it("viewer has access to 18 tools", () => {
-    expect(toolsForRole("viewer").length).toBe(18);
+  it("viewer has access to 19 tools", () => {
+    expect(toolsForRole("viewer").length).toBe(19);
   });
 
-  it("analyst has access to 38 tools", () => {
-    expect(toolsForRole("analyst").length).toBe(38);
+  it("analyst has access to 41 tools", () => {
+    expect(toolsForRole("analyst").length).toBe(41);
   });
 
-  it("admin has access to 52 tools", () => {
-    expect(toolsForRole("admin").length).toBe(52);
+  it("admin has access to 56 tools", () => {
+    expect(toolsForRole("admin").length).toBe(56);
   });
 
   it("viewer tools are a subset of analyst tools", () => {

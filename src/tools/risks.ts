@@ -11,6 +11,7 @@ import type { RiskRow, TreatmentRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
+import { csvCell } from "./csv-utils.js";
 
 
 function shapeRisk(r: RiskRow): Omit<RiskRow, "related_controls"> & { related_controls: string[] } {
@@ -117,10 +118,12 @@ export function handleUpdateRisk(args: Record<string, unknown>): ToolResult {
       rows.push({ field: "status", old: existing.status, new: status });
     if (related_controls !== undefined)
       rows.push({ field: "related_controls", old: fromJsonArray<string>(existing.related_controls), new: related_controls });
-    return ok(buildPreviewResponse("update_risk", rows, { risk_id }));
+    return ok(buildPreviewResponse("update_risk", rows, { risk_id },
+      { resource_id: risk_id, resource_version: String(existing.updated_at) }));
   }
 
-  consumeProposal(proposal_id, "update_risk");
+  consumeProposal(proposal_id, "update_risk",
+    { resource_version: String(existing.updated_at) });
   const ts = now();
 
   getDb().prepare(`
@@ -287,6 +290,30 @@ export function handleUpdateTreatmentStatus(args: Record<string, unknown>): Tool
     TreatmentRow | undefined;
   if (!current) throw notFound("risk_treatment", treatment_id);
 
+  // Business rule (ISO 27001:2022 §6.1.3): 'verified' is the completion
+  // state of a treatment plan. Reaching it requires (a) residual
+  // likelihood/impact recorded on the plan and (b) an 'accepted'
+  // risk_acceptance row for the plan's risk (record_risk_acceptance).
+  if (status === "verified") {
+    const effLikelihood = residual_likelihood ?? current.residual_likelihood;
+    const effImpact     = residual_impact     ?? current.residual_impact;
+    if (effLikelihood == null || effImpact == null) {
+      throw businessRule(
+        "status",
+        "Record residual_likelihood and residual_impact on the treatment plan before marking it verified (completed).",
+      );
+    }
+    const acceptance = db.prepare(
+      "SELECT id FROM risk_acceptances WHERE risk_id = ? AND decision = 'accepted' LIMIT 1"
+    ).get(current.risk_id) as { id: string } | undefined;
+    if (!acceptance) {
+      throw businessRule(
+        "status",
+        "A treatment plan cannot be completed until the risk owner has accepted the residual risk (record_risk_acceptance).",
+      );
+    }
+  }
+
   // ── HITL preview ──────────────────────────────────────────────
   if (!confirmed) {
     const rows: DiffRow[] = [];
@@ -301,10 +328,11 @@ export function handleUpdateTreatmentStatus(args: Record<string, unknown>): Tool
     return ok(buildPreviewResponse("update_treatment_status", rows, {
       treatment_id,
       risk_id: current.risk_id,
-    }));
+    }, { resource_id: treatment_id, resource_version: String(current.updated_at) }));
   }
 
-  consumeProposal(proposal_id, "update_treatment_status");
+  consumeProposal(proposal_id, "update_treatment_status",
+    { resource_version: String(current.updated_at) });
   const ts = now();
   db.prepare(`
     UPDATE risk_treatments SET
@@ -355,11 +383,12 @@ export function handleGenerateRiskRegister(args: Record<string, unknown>): ToolR
   }
 
   if (format === "csv") {
-    const header = "id,asset,threat,likelihood,impact,risk_score,risk_level,status,owner,treatment_types";
+    const header = "id,asset,threat,vulnerability,likelihood,impact,risk_score,risk_level,status,owner,treatment_types,related_controls";
     const rows   = risks.map((r) =>
-      [r.id, `"${r.asset}"`, `"${r.threat}"`, r.likelihood, r.impact,
+      [r.id, r.asset, r.threat, r.vulnerability, r.likelihood, r.impact,
        r.risk_score, r.risk_level, r.status,
-       r.owner ?? "", r.treatment_types ?? ""].join(",")
+       r.owner ?? "", r.treatment_types ?? "",
+       fromJsonArray<string>(r.related_controls).join(";")].map(csvCell).join(",")
     );
     return ok({ format: "csv", content: [header, ...rows].join("\n") });
   }

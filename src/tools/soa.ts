@@ -10,6 +10,7 @@ import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { renderHtmlDocument } from "./template-utils.js";
 import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
+import { csvCell } from "./csv-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -30,6 +31,8 @@ interface SoaEntryRow {
   status: string | null;
   evidence_count: number;
   responsible_party: string | null;
+  driver_type: string | null;   // risk|legal|regulatory|contractual|business|best_practice|custom
+  source_ids: string | null;    // JSON array of risk/treatment/requirement IDs
   created_at: string;
   updated_at: string;
 }
@@ -97,9 +100,25 @@ export function handleGenerateSoa(args: Record<string, unknown>): ToolResult {
   // Insert one SoA entry per control
   const insertEntry = db.prepare(`
     INSERT INTO soa_entries
-      (id, soa_id, control_id, included, justification, status, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (id, soa_id, control_id, included, justification, status,
+       driver_type, source_ids, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
+
+  // Traceability: controls referenced by any treatment plan are driven by
+  // the risks those plans treat — record driver_type='risk' + source risk IDs.
+  const treatmentRows = db.prepare(
+    "SELECT risk_id, controls FROM risk_treatments WHERE controls IS NOT NULL"
+  ).all() as { risk_id: string; controls: string | null }[];
+
+  const controlRisks = new Map<string, Set<string>>();
+  for (const t of treatmentRows) {
+    for (const cid of fromJsonArray<string>(t.controls)) {
+      const set = controlRisks.get(cid) ?? new Set<string>();
+      set.add(t.risk_id);
+      controlRisks.set(cid, set);
+    }
+  }
 
   const insertMany = db.transaction(() => {
     for (const ctrl of controls) {
@@ -109,10 +128,14 @@ export function handleGenerateSoa(args: Record<string, unknown>): ToolResult {
       const justification = isExcluded
         ? "Excluded from assessment scope."
         : (gapStatus === "na" ? "Not applicable to organisational scope." : "In scope per ISMS boundary.");
+      const riskIds     = controlRisks.get(ctrl.control_id);
 
       insertEntry.run(
         newId(), soaId, ctrl.control_id, included,
-        justification, gapStatus ?? null, ts, ts,
+        justification, gapStatus ?? null,
+        riskIds && !isExcluded ? "risk" : null,
+        riskIds && !isExcluded ? JSON.stringify([...riskIds].sort()) : null,
+        ts, ts,
       );
     }
   });
@@ -121,15 +144,19 @@ export function handleGenerateSoa(args: Record<string, unknown>): ToolResult {
 
   const entryCount = controls.length;
   const includedCount = controls.filter((c) => !excludedIds.includes(c.control_id)).length;
+  const riskDrivenCount = controls.filter((c) =>
+    controlRisks.has(c.control_id) && !excludedIds.includes(c.control_id)
+  ).length;
 
   return ok({
-    soa_id:          soaId,
+    soa_id:               soaId,
     assessment_id,
     isms_version,
-    total_controls:  entryCount,
-    included:        includedCount,
-    excluded:        entryCount - includedCount,
-    created_at:      ts,
+    total_controls:       entryCount,
+    included:             includedCount,
+    excluded:             entryCount - includedCount,
+    risk_driven_controls: riskDrivenCount,
+    created_at:           ts,
   });
 }
 
@@ -138,10 +165,12 @@ export function handleGenerateSoa(args: Record<string, unknown>): ToolResult {
 export function handleUpdateSoaEntry(args: Record<string, unknown>): ToolResult {
   const {
     soa_id, control_id, included, justification,
-    status, responsible_party, confirmed = false, proposal_id,
+    status, responsible_party, driver_type, source_ids,
+    confirmed = false, proposal_id,
   } = args as {
     soa_id: string; control_id: string; included: boolean;
     justification: string; status?: string; responsible_party?: string;
+    driver_type?: string; source_ids?: string[];
     confirmed?: boolean; proposal_id?: string;
   };
 
@@ -169,13 +198,18 @@ export function handleUpdateSoaEntry(args: Record<string, unknown>): ToolResult 
       rows.push({ field: "status", old: entry.status, new: status });
     if (responsible_party !== undefined && responsible_party !== entry.responsible_party)
       rows.push({ field: "responsible_party", old: entry.responsible_party, new: responsible_party });
+    if (driver_type !== undefined && driver_type !== entry.driver_type)
+      rows.push({ field: "driver_type", old: entry.driver_type, new: driver_type });
+    if (source_ids !== undefined && JSON.stringify(source_ids) !== (entry.source_ids ?? null))
+      rows.push({ field: "source_ids", old: fromJsonArray<string>(entry.source_ids), new: source_ids });
     return ok(buildPreviewResponse("update_soa_entry", rows, {
       soa_id,
       control_id,
-    }));
+    }, { resource_id: entry.id, resource_version: String(entry.updated_at) }));
   }
 
-  consumeProposal(proposal_id, "update_soa_entry");
+  consumeProposal(proposal_id, "update_soa_entry",
+    { resource_version: String(entry.updated_at) });
   const ts = now();
   db.prepare(`
     UPDATE soa_entries SET
@@ -183,11 +217,15 @@ export function handleUpdateSoaEntry(args: Record<string, unknown>): ToolResult 
       justification     = ?,
       status            = COALESCE(?, status),
       responsible_party = COALESCE(?, responsible_party),
+      driver_type       = COALESCE(?, driver_type),
+      source_ids        = COALESCE(?, source_ids),
       updated_at        = ?
     WHERE id = ?
   `).run(
     included ? 1 : 0, justification,
     status ?? null, responsible_party ?? null,
+    driver_type ?? null,
+    source_ids !== undefined ? JSON.stringify(source_ids) : null,
     ts, entry.id,
   );
 
@@ -201,6 +239,8 @@ export function handleUpdateSoaEntry(args: Record<string, unknown>): ToolResult 
     justification,
     status:            status ?? null,
     responsible_party: responsible_party ?? null,
+    driver_type:       driver_type ?? entry.driver_type ?? null,
+    source_ids:        source_ids ?? fromJsonArray<string>(entry.source_ids),
     updated_at:        ts,
   });
 }
@@ -244,6 +284,8 @@ export function handleExportSoa(args: Record<string, unknown>): ToolResult {
         <td>${e.justification}</td>
         <td>${e.status ?? "—"}</td>
         <td>${e.responsible_party ?? "—"}</td>
+        <td>${e.driver_type ?? "—"}</td>
+        <td>${fromJsonArray<string>(e.source_ids).join("; ") || "—"}</td>
       </tr>`;
     }).join("\n");
 
@@ -254,7 +296,7 @@ export function handleExportSoa(args: Record<string, unknown>): ToolResult {
          <strong>Excluded:</strong> ${excludedCount}</p>
       <table>
         <thead>
-          <tr><th>Control ID</th><th>Name</th><th>Theme</th><th>Included</th><th>Justification</th><th>Status</th><th>Responsible Party</th></tr>
+          <tr><th>Control ID</th><th>Name</th><th>Theme</th><th>Included</th><th>Justification</th><th>Status</th><th>Responsible Party</th><th>Driver</th><th>Source IDs</th></tr>
         </thead>
         <tbody>${tableRows}</tbody>
       </table>`;
@@ -271,17 +313,19 @@ export function handleExportSoa(args: Record<string, unknown>): ToolResult {
   }
 
   if (format === "csv") {
-    const header = "control_id,name,theme,included,justification,status,responsible_party";
+    const header = "control_id,name,theme,included,justification,status,responsible_party,driver_type,source_ids";
     const rows   = entries.map((e) =>
       [
         e.control_id,
-        `"${e.control_name ?? ""}"`,
+        e.control_name ?? "",
         e.theme ?? "",
         e.included === 1 ? "Yes" : "No",
-        `"${e.justification.replace(/"/g, '""')}"`,
+        e.justification,
         e.status ?? "",
         e.responsible_party ?? "",
-      ].join(",")
+        e.driver_type ?? "",
+        fromJsonArray<string>(e.source_ids).join("; "),
+      ].map(csvCell).join(",")
     );
     return ok({ format: "csv", content: [header, ...rows].join("\n") });
   }
@@ -300,10 +344,10 @@ export function handleExportSoa(args: Record<string, unknown>): ToolResult {
     ``,
     `## Included Controls (${includedCount})`,
     ``,
-    `| Control ID | Name | Theme | Status | Responsible Party | Justification |`,
-    `|------------|------|-------|--------|-------------------|---------------|`,
+    `| Control ID | Name | Theme | Status | Responsible Party | Driver | Source IDs | Justification |`,
+    `|------------|------|-------|--------|-------------------|--------|------------|---------------|`,
     ...includeRows.map((e) =>
-      `| ${e.control_id} | ${e.control_name ?? "—"} | ${e.theme ?? "—"} | ${e.status ?? "—"} | ${e.responsible_party ?? "—"} | ${e.justification} |`
+      `| ${e.control_id} | ${e.control_name ?? "—"} | ${e.theme ?? "—"} | ${e.status ?? "—"} | ${e.responsible_party ?? "—"} | ${e.driver_type ?? "—"} | ${fromJsonArray<string>(e.source_ids).join("; ") || "—"} | ${e.justification} |`
     ),
     ``,
     `## Excluded Controls (${excludedCount})`,

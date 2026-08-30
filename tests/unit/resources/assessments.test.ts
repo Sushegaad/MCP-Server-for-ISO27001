@@ -571,3 +571,86 @@ describe("iso27001-assessment-evidence-gaps read callback", () => {
     expect(data.gaps[0].suggested_evidence_types).toContain("procedure");
   });
 });
+
+// ── evidence-gaps: verification posture & summary (Phase 3) ───
+
+describe("iso27001-assessment-evidence-gaps verification posture", () => {
+  it("includes an all-zero verification_summary when no implemented/partial controls", async () => {
+    stmts.assessments.get.mockReturnValue({ id: "ga-1" });
+    stmts.control_stats.all.mockReturnValue([]);
+    const res = await getResource("iso27001-assessment-evidence-gaps").readFn(
+      new URL("iso27001://assessment/ga-1/evidence-gaps"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    ) as { contents: Array<{ text: string }> };
+    const data = JSON.parse(res.contents[0].text);
+    expect(data.verification_summary).toEqual({ unverified: 0, verified: 0, rejected: 0 });
+  });
+
+  it("counts current evidence by verification status in verification_summary", async () => {
+    stmts.assessments.get.mockReturnValue({ id: "ga-1" });
+    stmts.control_stats.all.mockReturnValue([
+      { control_id: "5.1", status: "implemented" },
+    ]);
+    // Evidence query (fallback stmt): three current rows with mixed statuses
+    stmts.assessments.all.mockReturnValue([
+      { control_id: "5.1", verification_status: "verified",   expiry_date: null },
+      { control_id: "5.1", verification_status: "rejected",   expiry_date: "2099-01-01" },
+      { control_id: "5.1", verification_status: "unverified", expiry_date: null },
+    ]);
+    const res = await getResource("iso27001-assessment-evidence-gaps").readFn(
+      new URL("iso27001://assessment/ga-1/evidence-gaps"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    ) as { contents: Array<{ text: string }> };
+    const data = JSON.parse(res.contents[0].text);
+    // Control has current evidence → no gaps, but the summary reflects posture
+    expect(data.total_gaps).toBe(0);
+    expect(data.verification_summary).toEqual({ unverified: 1, verified: 1, rejected: 1 });
+  });
+
+  it("marks gap controls with only expired evidence as verification_posture='expired_only'", async () => {
+    stmts.assessments.get.mockReturnValue({ id: "ga-1" });
+    stmts.control_stats.all.mockReturnValue([
+      { control_id: "8.8", status: "implemented" },
+    ]);
+    stmts.assessments.all
+      .mockReturnValueOnce([
+        // Expired evidence only → still a gap, but posture differs from no_evidence
+        { control_id: "8.8", verification_status: "verified", expiry_date: "2020-01-01" },
+      ])
+      .mockReturnValueOnce([
+        { control_id: "8.8", name: "Vulnerability management", theme: "Technological" },
+      ]);
+    const res = await getResource("iso27001-assessment-evidence-gaps").readFn(
+      new URL("iso27001://assessment/ga-1/evidence-gaps"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    ) as { contents: Array<{ text: string }> };
+    const data = JSON.parse(res.contents[0].text);
+    expect(data.total_gaps).toBe(1);
+    expect(data.gaps[0].verification_posture).toBe("expired_only");
+    // Expired rows do not count toward the current-period summary
+    expect(data.verification_summary).toEqual({ unverified: 0, verified: 0, rejected: 0 });
+  });
+
+  it("marks never-evidenced gap controls as verification_posture='no_evidence'", async () => {
+    stmts.assessments.get.mockReturnValue({ id: "ga-1" });
+    stmts.control_stats.all.mockReturnValue([
+      { control_id: "5.1", status: "partial" },
+    ]);
+    stmts.assessments.all
+      .mockReturnValueOnce([])   // no evidence rows at all
+      .mockReturnValueOnce([
+        { control_id: "5.1", name: "Policies for information security", theme: "Organizational" },
+      ]);
+    const res = await getResource("iso27001-assessment-evidence-gaps").readFn(
+      new URL("iso27001://assessment/ga-1/evidence-gaps"),
+      { assessment_id: "ga-1" },
+      MOCK_EXTRA,
+    ) as { contents: Array<{ text: string }> };
+    const data = JSON.parse(res.contents[0].text);
+    expect(data.total_gaps).toBe(1);
+    expect(data.gaps[0].verification_posture).toBe("no_evidence");
+  });
+});

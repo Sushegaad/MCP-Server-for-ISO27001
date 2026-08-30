@@ -1,8 +1,9 @@
 // ============================================================
 // iso27001-mcp — Migration Definitions
 // SQL is embedded here so tsup can bundle the server as a single
-// self-contained CJS file. The .sql files in this directory are
-// the canonical source — keep them in sync with the strings below.
+// self-contained CJS file. The embedded strings below are the ONLY
+// source of migration SQL — there are no sibling .sql files.
+// Never edit an applied migration; add a new numbered entry.
 // ============================================================
 
 export interface Migration {
@@ -693,6 +694,92 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_actor_type
   ON audit_log(actor_type, timestamp);
 `;
 
+const MIGRATION_0010 = `-- ============================================================
+-- iso27001-mcp  Migration 0010 — Risk Governance Chain
+-- ISO 27001:2022 §6.1.3 — risk-owner approval and residual-risk
+-- acceptance as first-class records, plus SoA traceability.
+--
+-- risk_methodology   — org-level singleton (id = 'default'), like
+--                      organization_profile. Documents the scales,
+--                      calculation method, level bands, and the
+--                      acceptance threshold used for escalation.
+-- risk_acceptances   — one row per risk-owner decision (accepted or
+--                      rejected) with the scores and threshold frozen
+--                      at decision time.
+-- soa_entries        — gains driver_type + source_ids so an entry can
+--                      say "mitigates RISK-012 under RTP-008" instead
+--                      of "required for security".
+-- !! Never edit this file after it has been applied !!
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS risk_methodology (
+  id                   TEXT PRIMARY KEY NOT NULL,   -- singleton: always 'default'
+  likelihood_scale     TEXT NOT NULL,               -- JSON: [{"value":1,"label":"Rare"},...]
+  impact_scale         TEXT NOT NULL,               -- JSON: [{"value":1,"label":"Negligible"},...]
+  calculation_method   TEXT NOT NULL DEFAULT 'multiplication'
+                         CHECK (calculation_method IN ('multiplication','addition','matrix')),
+  risk_level_bands     TEXT NOT NULL,               -- JSON: [{"min":1,"max":5,"level":"Low"},...]
+  acceptance_threshold INTEGER NOT NULL DEFAULT 6,
+  escalation_rules     TEXT,                        -- free text
+  review_frequency     TEXT NOT NULL DEFAULT 'annual'
+                         CHECK (review_frequency IN ('quarterly','biannual','annual')),
+  created_at           TEXT NOT NULL,
+  updated_at           TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS risk_acceptances (
+  id                               TEXT PRIMARY KEY NOT NULL,
+  risk_id                          TEXT NOT NULL REFERENCES risks(id),
+  treatment_plan_id                TEXT REFERENCES risk_treatments(id),
+  risk_owner                       TEXT NOT NULL,
+  decision                         TEXT NOT NULL CHECK (decision IN ('accepted','rejected')),
+  inherent_score                   INTEGER NOT NULL,
+  residual_score                   INTEGER,
+  acceptance_threshold_at_decision INTEGER,
+  rationale                        TEXT NOT NULL,
+  approved_at                      TEXT NOT NULL,
+  review_due_at                    TEXT,
+  created_at                       TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_risk_acceptances_risk
+  ON risk_acceptances(risk_id);
+
+ALTER TABLE soa_entries ADD COLUMN driver_type TEXT
+  CHECK (driver_type IN ('risk','legal','regulatory','contractual','business','best_practice','custom'));
+ALTER TABLE soa_entries ADD COLUMN source_ids TEXT;  -- JSON array of risk/treatment/requirement IDs
+`;
+
+const MIGRATION_0011 = `-- ============================================================
+-- iso27001-mcp  Migration 0011 — Evidence Integrity Model
+-- Extends evidence beyond existence/currency: provenance
+-- (content hash, source system/object/revision, capture time),
+-- coverage period, and independent verification (reviewer,
+-- status, sufficiency, assertion). supersedes_evidence_id links
+-- a replacement record to the artefact it retires.
+-- !! Never edit this file after it has been applied !!
+-- ============================================================
+
+ALTER TABLE evidence ADD COLUMN content_sha256 TEXT;
+ALTER TABLE evidence ADD COLUMN source_system TEXT;
+ALTER TABLE evidence ADD COLUMN source_object_id TEXT;
+ALTER TABLE evidence ADD COLUMN source_revision TEXT;
+ALTER TABLE evidence ADD COLUMN captured_at TEXT;
+ALTER TABLE evidence ADD COLUMN period_start TEXT;
+ALTER TABLE evidence ADD COLUMN period_end TEXT;
+ALTER TABLE evidence ADD COLUMN reviewer TEXT;
+ALTER TABLE evidence ADD COLUMN verification_status TEXT NOT NULL DEFAULT 'unverified'
+  CHECK (verification_status IN ('unverified','verified','rejected'));
+ALTER TABLE evidence ADD COLUMN verification_date TEXT;
+ALTER TABLE evidence ADD COLUMN sufficiency TEXT
+  CHECK (sufficiency IN ('sufficient','partial','insufficient'));
+ALTER TABLE evidence ADD COLUMN assertion TEXT;
+ALTER TABLE evidence ADD COLUMN supersedes_evidence_id TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_evidence_verification
+  ON evidence(verification_status, control_id);
+`;
+
 /**
  * All migrations in application order.
  * The runner applies them sequentially, skipping already-applied ones.
@@ -708,4 +795,6 @@ export const MIGRATIONS: Migration[] = [
   { filename: "0007_org_profile_branding.sql",             sql: MIGRATION_0007 },
   { filename: "0008_audit_provenance.sql",                 sql: MIGRATION_0008 },
   { filename: "0009_audit_log_outcome_proposed.sql",       sql: MIGRATION_0009 },
+  { filename: "0010_risk_governance.sql",                  sql: MIGRATION_0010 },
+  { filename: "0011_evidence_integrity.sql",               sql: MIGRATION_0011 },
 ];

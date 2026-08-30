@@ -12,28 +12,22 @@ import { getDb }    from "../db/connection.js";
 import { newId, now, toJson } from "../db/dal.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { businessRule } from "../types/errors.js";
+import { parseCsv } from "./csv-utils.js";
 import type { AssessmentRow } from "../db/types.js";
 
 // ── CSV helpers ───────────────────────────────────────────────
 
-function parseCSV(raw: string): string[][] {
-  return raw
-    .split(/\r?\n/)
-    .map(line => line.split(",").map(cell => cell.trim().replace(/^"|"$/g, "").trim()))
-    .filter(row => row.some(cell => cell.length > 0));
-}
-
 function normaliseHeader(h: string): string {
-  return h.toLowerCase().replace(/[^a-z0-9]/g, "_");
+  return h.trim().toLowerCase().replace(/[^a-z0-9]/g, "_");
 }
 
 function csvToObjects(raw: string): Record<string, string>[] {
-  const rows = parseCSV(raw);
+  const rows = parseCsv(raw);
   if (rows.length < 2) throw businessRule("csv_content", "CSV must have at least a header row and one data row.");
   const headers = (rows[0] ?? []).map(normaliseHeader);
   return rows.slice(1).map(row => {
     const obj: Record<string, string> = {};
-    headers.forEach((h, i) => { obj[h] = row[i] ?? ""; });
+    headers.forEach((h, i) => { obj[h] = (row[i] ?? "").trim(); });
     return obj;
   });
 }
@@ -122,10 +116,12 @@ export function handleImportRisks(args: Record<string, unknown>): ToolResult {
   const ts = now();
   const insert = db.prepare(`
     INSERT INTO risks
-      (id, asset, threat, vulnerability, likelihood, impact, risk_score, risk_level,
+      (id, asset, threat, vulnerability, likelihood, impact,
        owner, status, related_controls, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
+  // NOTE: risk_score and risk_level are GENERATED ALWAYS ... STORED columns
+  // (migration 0001) — SQLite computes them; they must NOT appear in the INSERT.
 
   const importMany = db.transaction((rows: typeof previews) => {
     const ids: string[] = [];
@@ -134,7 +130,7 @@ export function handleImportRisks(args: Record<string, unknown>): ToolResult {
       insert.run(
         id,
         row["asset"], row["threat"], row["vulnerability"],
-        row["likelihood"], row["impact"], row["risk_score"], row["risk_level"],
+        row["likelihood"], row["impact"],
         row["owner"] || null,
         row["status"],
         toJson(row["related_controls"] as string[]),

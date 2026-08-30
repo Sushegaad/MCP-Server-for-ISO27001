@@ -304,6 +304,10 @@ export const GenerateSoaSchema = z.object({
   isms_version:  versionEnum.optional().default("2022"),
 });
 
+const soaDriverTypeEnum = z.enum([
+  "risk", "legal", "regulatory", "contractual", "business", "best_practice", "custom",
+]);
+
 export const UpdateSoaEntrySchema = z.object({
   soa_id:            uuid,
   control_id:        z.string().min(1).max(20),
@@ -311,6 +315,8 @@ export const UpdateSoaEntrySchema = z.object({
   justification:     freeText(1000),
   status:            controlStatusEnum.optional(),
   responsible_party: shortText(200).optional(),
+  driver_type:       soaDriverTypeEnum.optional(),
+  source_ids:        z.array(z.string().min(1).max(100)).max(50).optional(),
   confirmed:         coerceBool.optional().default(false),
   proposal_id:       z.string().uuid().optional(),
 });
@@ -380,9 +386,33 @@ export const RegisterEvidenceSchema = z.object({
   collected_by:   shortText(200),
   collected_date: date,
   expiry_date:    date.optional(),
+  // Integrity / provenance fields (migration 0011) — all optional
+  content_sha256:         z.string().regex(/^[0-9a-f]{64}$/, "must be 64 lowercase hex chars (SHA-256)").optional(),
+  source_system:          shortText(200).optional(),
+  source_object_id:       shortText(200).optional(),
+  source_revision:        shortText(200).optional(),
+  captured_at:            date.optional(),
+  period_start:           date.optional(),
+  period_end:             date.optional(),
+  assertion:              freeText(2000).optional(),
+  supersedes_evidence_id: uuid.optional(),
   confirmed:      coerceBool.optional().default(false),
   proposal_id:    z.string().uuid().optional(),
 });
+
+export const VerifyEvidenceSchema = z.object({
+  evidence_id:         uuid,
+  reviewer:            shortText(200),
+  verification_status: z.enum(["verified", "rejected"]),
+  sufficiency:         z.enum(["sufficient", "partial", "insufficient"]).optional(),
+  assertion:           freeText(2000).optional(),
+  verification_date:   date.optional(),
+  confirmed:           coerceBool.optional().default(false),
+  proposal_id:         z.string().uuid().optional(),
+}).refine(
+  (d) => d.verification_status !== "verified" || d.sufficiency !== undefined,
+  { message: "sufficiency is required when verification_status is 'verified'" },
+);
 
 export const ListEvidenceSchema = z.object({
   control_id: z.string().min(1).max(20),
@@ -668,6 +698,51 @@ export const ImportControlStatusesSchema = z.object({
     "CSV string with headers: control_id, status (implemented|partial|not_implemented|na|not_started), notes (optional), na_justification (required when status=na)",
   ),
   dry_run:       coerceBool.optional().default(false),
+});
+
+// ── Group 16: Risk Governance ────────────────────────────────
+
+const scalePointSchema = z.object({
+  value: z.coerce.number().int().min(1).max(10),
+  label: shortText(100),
+});
+
+const riskLevelBandSchema = z.object({
+  min:   z.coerce.number().int().min(1).max(100),
+  max:   z.coerce.number().int().min(1).max(100),
+  level: shortText(50),
+});
+
+export const SetRiskMethodologySchema = z.object({
+  likelihood_scale:     z.array(scalePointSchema).min(2).max(10),
+  impact_scale:         z.array(scalePointSchema).min(2).max(10),
+  calculation_method:   z.enum(["multiplication", "addition", "matrix"]).optional().default("multiplication"),
+  risk_level_bands:     z.array(riskLevelBandSchema).min(1).max(10),
+  acceptance_threshold: z.coerce.number().int().min(1).max(25).optional().default(6),
+  escalation_rules:     freeText(2000).optional(),
+  review_frequency:     z.enum(["quarterly", "biannual", "annual"]).optional().default("annual"),
+  confirmed:            coerceBool.optional().default(false),
+  proposal_id:          z.string().uuid().optional(),
+});
+
+const acceptanceDecisionEnum = z.enum(["accepted", "rejected"]);
+
+export const RecordRiskAcceptanceSchema = z.object({
+  risk_id:           uuid,
+  treatment_plan_id: uuid.optional(),
+  risk_owner:        shortText(200),
+  decision:          acceptanceDecisionEnum,
+  rationale:         freeText(2000),
+  review_due_at:     date.optional(),
+  confirmed:         coerceBool.optional().default(false),
+  proposal_id:       z.string().uuid().optional(),
+});
+
+export const ListRiskAcceptancesSchema = z.object({
+  risk_id:  uuid.optional(),
+  decision: acceptanceDecisionEnum.optional(),
+  limit:    paginationLimit,
+  offset:   paginationOffset,
 });
 
 // ── Registry ─────────────────────────────────────────────────

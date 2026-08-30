@@ -2,7 +2,7 @@
  * iso27001-mcp — MCP Workflow Prompts
  *
  * Four high-level workflow prompts that guide the model through common ISMS
- * tasks without requiring it to discover the correct sequence of 52 tools.
+ * tasks without requiring it to discover the correct sequence of 56 tools.
  * Each prompt fetches relevant resources, identifies what's missing, and
  * sequences the correct tool calls.
  *

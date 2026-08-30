@@ -32,7 +32,7 @@ describe("TOOLS registry integrity", () => {
 
   it("has exactly TOTAL_TOOLS entries", () => {
     expect(TOOLS.length).toBe(TOTAL_TOOLS);
-    expect(TOOLS.length).toBe(52);
+    expect(TOOLS.length).toBe(56);
   });
 
   it("every entry has a non-empty description", () => {
@@ -58,6 +58,49 @@ describe("TOOLS registry integrity", () => {
     for (const t of TOOLS) {
       expect(typeof t.handler, `handler for ${t.name}`).toBe("function");
     }
+  });
+});
+
+describe("MCP tool annotations", () => {
+  // The 15 HITL-gated tools (preview/confirm via buildPreviewResponse).
+  const HITL_TOOLS = [
+    "update_control_status", "update_risk", "update_treatment_status",
+    "create_policy", "update_policy", "update_soa_entry",
+    "create_audit", "record_finding", "create_corrective_action",
+    "update_procedure", "complete_management_review", "register_evidence",
+    "verify_evidence", "set_risk_methodology", "record_risk_acceptance",
+  ];
+
+  it("every entry has annotations with readOnlyHint defined", () => {
+    for (const t of TOOLS) {
+      expect(t.annotations, `annotations for ${t.name}`).toBeDefined();
+      expect(typeof t.annotations?.readOnlyHint, `readOnlyHint for ${t.name}`).toBe("boolean");
+    }
+  });
+
+  it("no readOnlyHint:true tool is HITL-gated", () => {
+    for (const t of TOOLS) {
+      if (t.annotations?.readOnlyHint === true) {
+        expect(HITL_TOOLS, `${t.name} is read-only but HITL-gated`).not.toContain(t.name);
+      }
+    }
+  });
+
+  it("every HITL-gated tool exists and is marked as a write", () => {
+    const byName = new Map(TOOLS.map((t) => [t.name, t]));
+    for (const name of HITL_TOOLS) {
+      const t = byName.get(name);
+      expect(t, `HITL tool ${name} missing from registry`).toBeDefined();
+      expect(t?.annotations?.readOnlyHint, `readOnlyHint for ${name}`).toBe(false);
+    }
+  });
+
+  it("destructive hints are limited to genuinely destructive operations", () => {
+    const destructive = TOOLS
+      .filter((t) => t.annotations?.destructiveHint === true)
+      .map((t) => t.name)
+      .sort();
+    expect(destructive).toEqual(["archive_gap_assessment", "revoke_api_key"]);
   });
 });
 

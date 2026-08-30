@@ -405,7 +405,11 @@ export function registerAssessmentResources(server: McpServer): void {
       description:
         "Controls within a gap assessment that are marked implemented or partial but have no " +
         "current (non-expired) evidence records. Returns total_gaps and an array of gap objects " +
-        "with control_id, name, theme, current_status, and suggested_evidence_types.",
+        "with control_id, name, theme, current_status, verification_posture " +
+        "(no_evidence | expired_only), and suggested_evidence_types, plus a verification_summary " +
+        "counting current evidence records by verification status " +
+        "(unverified/verified/rejected) across the assessment's implemented/partial controls. " +
+        "Tiering: evidence exists → is current → is verified for its assertion and period.",
       mimeType: "application/json",
     },
     (uri, variables, extra): ReadResourceResult => {
@@ -425,6 +429,8 @@ export function registerAssessmentResources(server: McpServer): void {
         );
       }
 
+      const emptySummary = { unverified: 0, verified: 0, rejected: 0 };
+
       // Controls that need evidence (implemented or partial)
       const controlStatuses = db.prepare(`
         SELECT cs.control_id, cs.status
@@ -437,7 +443,10 @@ export function registerAssessmentResources(server: McpServer): void {
           contents: [{
             uri:      uri.toString(),
             mimeType: "application/json",
-            text:     JSON.stringify({ assessment_id, total_gaps: 0, gaps: [] }, null, 2),
+            text:     JSON.stringify(
+              { assessment_id, total_gaps: 0, gaps: [], verification_summary: emptySummary },
+              null, 2,
+            ),
           }],
         };
       }
@@ -445,14 +454,30 @@ export function registerAssessmentResources(server: McpServer): void {
       const controlIds   = controlStatuses.map((c) => c.control_id);
       const placeholders = controlIds.map(() => "?").join(",");
 
-      const evidencedControls = db.prepare(`
-        SELECT DISTINCT control_id
+      const evidenceRows = db.prepare(`
+        SELECT control_id, verification_status, expiry_date
         FROM evidence
         WHERE control_id IN (${placeholders})
-          AND (expiry_date IS NULL OR expiry_date > date('now'))
-      `).all(...controlIds) as { control_id: string }[];
+      `).all(...controlIds) as {
+        control_id: string; verification_status?: string | null; expiry_date?: string | null;
+      }[];
 
-      const evidencedSet  = new Set(evidencedControls.map((e) => e.control_id));
+      const todayStr  = new Date().toISOString().split("T")[0];
+      const isCurrent = (e: { expiry_date?: string | null }): boolean =>
+        !e.expiry_date || e.expiry_date > todayStr;
+
+      // Verification summary counts CURRENT evidence only — expired
+      // artefacts no longer verify anything for the current period.
+      const verificationSummary = { ...emptySummary };
+      for (const row of evidenceRows) {
+        if (!isCurrent(row)) continue;
+        if (row.verification_status === "verified")      verificationSummary.verified++;
+        else if (row.verification_status === "rejected") verificationSummary.rejected++;
+        else                                             verificationSummary.unverified++;
+      }
+
+      const evidencedSet  = new Set(evidenceRows.filter(isCurrent).map((e) => e.control_id));
+      const anyEvidenceSet = new Set(evidenceRows.map((e) => e.control_id));
       const gapControlIds = controlIds.filter((cid) => !evidencedSet.has(cid));
 
       if (gapControlIds.length === 0) {
@@ -460,7 +485,10 @@ export function registerAssessmentResources(server: McpServer): void {
           contents: [{
             uri:      uri.toString(),
             mimeType: "application/json",
-            text:     JSON.stringify({ assessment_id, total_gaps: 0, gaps: [] }, null, 2),
+            text:     JSON.stringify(
+              { assessment_id, total_gaps: 0, gaps: [], verification_summary: verificationSummary },
+              null, 2,
+            ),
           }],
         };
       }
@@ -480,6 +508,9 @@ export function registerAssessmentResources(server: McpServer): void {
           name:                     detail?.name ?? cid,
           theme,
           current_status:           controlStatuses.find((cs) => cs.control_id === cid)?.status ?? "unknown",
+          // Gap controls have no current evidence by definition; posture
+          // distinguishes "never evidenced" from "evidence exists but expired".
+          verification_posture:     anyEvidenceSet.has(cid) ? "expired_only" : "no_evidence",
           suggested_evidence_types: suggestedTypes(theme),
         };
       });
@@ -488,7 +519,10 @@ export function registerAssessmentResources(server: McpServer): void {
         contents: [{
           uri:      uri.toString(),
           mimeType: "application/json",
-          text:     JSON.stringify({ assessment_id, total_gaps: gaps.length, gaps }, null, 2),
+          text:     JSON.stringify(
+            { assessment_id, total_gaps: gaps.length, gaps, verification_summary: verificationSummary },
+            null, 2,
+          ),
         }],
       };
     },

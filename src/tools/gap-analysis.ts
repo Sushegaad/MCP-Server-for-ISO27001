@@ -12,6 +12,7 @@ import type { AssessmentRow } from "../db/types.js";
 import { notFound, businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
+import { csvCell } from "./csv-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -143,7 +144,7 @@ export function handleUpdateControlStatus(args: Record<string, unknown>): ToolRe
   ).get(assessment_id, control_id) as {
     id: string; status: string; notes: string | null;
     assessed_by: string | null; na_justification: string | null;
-    evidence_refs: string | null;
+    evidence_refs: string | null; updated_at: string;
   } | undefined;
 
   // ── HITL preview ──────────────────────────────────────────────
@@ -169,10 +170,13 @@ export function handleUpdateControlStatus(args: Record<string, unknown>): ToolRe
       assessment_id,
       control_id,
       ...(downgradeWarning ? { warning: downgradeWarning } : {}),
-    }));
+    }, existing
+      ? { resource_id: existing.id, resource_version: String(existing.updated_at) }
+      : undefined));
   }
 
-  consumeProposal(proposal_id, "update_control_status");
+  consumeProposal(proposal_id, "update_control_status",
+    existing ? { resource_version: String(existing.updated_at) } : undefined);
   const ts = now();
 
   if (existing) {
@@ -403,8 +407,8 @@ export function handleExportGapReport(args: Record<string, unknown>): ToolResult
   if (format === "csv") {
     const header  = "control_id,name,theme,status,assessed_by,assessed_at,notes";
     const rows    = statuses.map((s) =>
-      [s.control_id, `"${s.name ?? ""}"`, s.theme ?? "", s.status,
-       s.assessed_by ?? "", s.assessed_at ?? "", `"${(s.notes ?? "").replace(/"/g, '""')}"`].join(",")
+      [s.control_id, s.name ?? "", s.theme ?? "", s.status,
+       s.assessed_by ?? "", s.assessed_at ?? "", s.notes ?? ""].map(csvCell).join(",")
     );
     return ok({ format: "csv", content: [header, ...rows].join("\n") });
   }

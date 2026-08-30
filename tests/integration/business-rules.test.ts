@@ -35,8 +35,12 @@ vi.mock("../../src/db/connection.js", () => ({
 // ── Handler imports (after mock is registered) ────────────────
 
 import { handleUpdateControlStatus }   from "../../src/tools/gap-analysis.js";
-import { handleCreateTreatmentPlan }   from "../../src/tools/risks.js";
+import {
+  handleCreateTreatmentPlan,
+  handleUpdateTreatmentStatus,
+} from "../../src/tools/risks.js";
 import { handleUpdateCorrectiveAction } from "../../src/tools/audit-management.js";
+import { handleRecordRiskAcceptance }   from "../../src/tools/governance.js";
 import { _testSeedProposal } from "../../src/tools/hitl-utils.js";
 
 // ── Reset mocks between tests ─────────────────────────────────
@@ -365,5 +369,213 @@ describe("Business rule: archived assessment rejection", () => {
     });
 
     expect(result.isError).toBe(false);
+  });
+});
+
+// ── Business rule: treatment completion requires residual-risk acceptance ─
+
+describe("Business rule: treatment completion requires accepted residual risk (§6.1.3)", () => {
+  const TREATMENT_ROW = {
+    id: "t1", risk_id: "r1", treatment_type: "mitigate",
+    description: "Enforce MFA", owner: "Alice", due_date: "2026-12-31",
+    controls: '["8.5"]', status: "implemented",
+    residual_likelihood: 2, residual_impact: 2,
+    residual_risk_score: 4, residual_risk_level: "Low",
+    evidence_ref: null,
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+  };
+
+  it("status='verified' without residual scores throws BUSINESS_RULE", () => {
+    mockGet.mockReturnValueOnce({
+      ...TREATMENT_ROW, residual_likelihood: null, residual_impact: null,
+    });
+
+    let caught: McpError | null = null;
+    try {
+      handleUpdateTreatmentStatus({
+        treatment_id: "550e8400-e29b-41d4-a716-446655440010",
+        status: "verified",
+      });
+    } catch (e) {
+      caught = e as McpError;
+    }
+    expect(caught?.error_code).toBe("BUSINESS_RULE");
+    expect(caught?.message).toMatch(/residual_likelihood and residual_impact/);
+  });
+
+  it("status='verified' without an accepted risk_acceptance row throws BUSINESS_RULE", () => {
+    mockGet
+      .mockReturnValueOnce(TREATMENT_ROW)   // treatment lookup
+      .mockReturnValueOnce(undefined);      // acceptance lookup — none
+
+    let caught: McpError | null = null;
+    try {
+      handleUpdateTreatmentStatus({
+        treatment_id: "550e8400-e29b-41d4-a716-446655440010",
+        status: "verified",
+      });
+    } catch (e) {
+      caught = e as McpError;
+    }
+    expect(caught?.error_code).toBe("BUSINESS_RULE");
+    expect(caught?.message).toMatch(/risk owner has accepted the residual risk/);
+    expect(caught?.message).toMatch(/record_risk_acceptance/);
+  });
+
+  it("status='verified' WITH residuals and an accepted acceptance succeeds", () => {
+    const selectStmt = { get: vi.fn(() => TREATMENT_ROW), run: vi.fn(), all: vi.fn(() => []) };
+    const acceptStmt = { get: vi.fn(() => ({ id: "acc1" })), run: vi.fn(), all: vi.fn(() => []) };
+    const updateStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
+    const readBack   = { get: vi.fn(() => ({ ...TREATMENT_ROW, status: "verified" })), run: vi.fn(), all: vi.fn(() => []) };
+
+    mockDb.prepare
+      .mockReturnValueOnce(selectStmt)  // treatment lookup
+      .mockReturnValueOnce(acceptStmt)  // risk_acceptances lookup
+      .mockReturnValueOnce(updateStmt)  // UPDATE
+      .mockReturnValueOnce(readBack);   // SELECT back
+
+    const PROPOSAL = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    _testSeedProposal(PROPOSAL, "update_treatment_status");
+
+    const result = handleUpdateTreatmentStatus({
+      treatment_id: "550e8400-e29b-41d4-a716-446655440010",
+      status: "verified",
+      confirmed: true,
+      proposal_id: PROPOSAL,
+    });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text) as { status: string };
+    expect(data.status).toBe("verified");
+    // The acceptance query must filter on the plan's risk and decision='accepted'
+    const acceptSql = (mockDb.prepare.mock.calls[1] as unknown[])[0] as string;
+    expect(acceptSql).toContain("risk_acceptances");
+    expect(acceptSql).toContain("decision = 'accepted'");
+  });
+
+  it("non-completion transitions (in_progress) do not require an acceptance", () => {
+    const selectStmt = { get: vi.fn(() => ({ ...TREATMENT_ROW, residual_likelihood: null, residual_impact: null })), run: vi.fn(), all: vi.fn(() => []) };
+    const updateStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
+    const readBack   = { get: vi.fn(() => ({ ...TREATMENT_ROW, status: "in_progress" })), run: vi.fn(), all: vi.fn(() => []) };
+
+    mockDb.prepare
+      .mockReturnValueOnce(selectStmt)
+      .mockReturnValueOnce(updateStmt)
+      .mockReturnValueOnce(readBack);
+
+    const PROPOSAL = "eeeeeeee-dddd-4ddd-8ddd-eeeeeeeeeeee";
+    _testSeedProposal(PROPOSAL, "update_treatment_status");
+
+    const result = handleUpdateTreatmentStatus({
+      treatment_id: "550e8400-e29b-41d4-a716-446655440010",
+      status: "in_progress",
+      confirmed: true,
+      proposal_id: PROPOSAL,
+    });
+
+    expect(result.isError).toBe(false);
+  });
+});
+
+// ── Business rule: risk acceptance requires residual scores on the plan ──
+
+describe("Business rule: record_risk_acceptance requires residuals on the referenced plan", () => {
+  const RISK_ROW = {
+    id: "550e8400-e29b-41d4-a716-446655440000",
+    asset: "DB", threat: "Breach", vulnerability: "Weak auth",
+    likelihood: 4, impact: 5, risk_score: 20, risk_level: "Critical",
+    owner: "Alice", status: "open", related_controls: null,
+    created_at: "2026-01-01T00:00:00.000Z", updated_at: "2026-01-01T00:00:00.000Z",
+  };
+
+  it("throws BUSINESS_RULE when the plan lacks residual likelihood/impact", () => {
+    mockGet
+      .mockReturnValueOnce(RISK_ROW)  // risk lookup
+      .mockReturnValueOnce({          // plan lookup — no residuals
+        id: "550e8400-e29b-41d4-a716-446655440020",
+        risk_id: RISK_ROW.id,
+        residual_likelihood: null, residual_impact: null,
+      });
+
+    let caught: McpError | null = null;
+    try {
+      handleRecordRiskAcceptance({
+        risk_id: RISK_ROW.id,
+        treatment_plan_id: "550e8400-e29b-41d4-a716-446655440020",
+        risk_owner: "Alice",
+        decision: "accepted",
+        rationale: "Residual risk is acceptable to the business.",
+      });
+    } catch (e) {
+      caught = e as McpError;
+    }
+    expect(caught?.error_code).toBe("BUSINESS_RULE");
+    expect(caught?.message).toMatch(/Record residual likelihood\/impact/);
+  });
+
+  it("throws BUSINESS_RULE when accepting above-threshold residual with a thin rationale", () => {
+    mockGet
+      .mockReturnValueOnce(RISK_ROW)
+      .mockReturnValueOnce({
+        id: "550e8400-e29b-41d4-a716-446655440020",
+        risk_id: RISK_ROW.id,
+        residual_likelihood: 4, residual_impact: 3,   // 12 > threshold 6
+      })
+      .mockReturnValueOnce({ acceptance_threshold: 6 });
+
+    let caught: McpError | null = null;
+    try {
+      handleRecordRiskAcceptance({
+        risk_id: RISK_ROW.id,
+        treatment_plan_id: "550e8400-e29b-41d4-a716-446655440020",
+        risk_owner: "Alice",
+        decision: "accepted",
+        rationale: "OK.",
+      });
+    } catch (e) {
+      caught = e as McpError;
+    }
+    expect(caught?.error_code).toBe("BUSINESS_RULE");
+    expect(caught?.message).toMatch(/substantive rationale/);
+  });
+
+  it("succeeds when the plan has residuals and the residual is within threshold", () => {
+    const acceptanceRow = {
+      id: "acc1", risk_id: RISK_ROW.id,
+      treatment_plan_id: "550e8400-e29b-41d4-a716-446655440020",
+      risk_owner: "Alice", decision: "accepted",
+      inherent_score: 20, residual_score: 4,
+      acceptance_threshold_at_decision: 6,
+      rationale: "Residual risk is acceptable to the business.",
+      approved_at: "2026-01-01T00:00:00.000Z", review_due_at: null,
+      created_at: "2026-01-01T00:00:00.000Z",
+    };
+    mockGet
+      .mockReturnValueOnce(RISK_ROW)
+      .mockReturnValueOnce({
+        id: "550e8400-e29b-41d4-a716-446655440020",
+        risk_id: RISK_ROW.id,
+        residual_likelihood: 2, residual_impact: 2,
+      })
+      .mockReturnValueOnce({ acceptance_threshold: 6 })
+      .mockReturnValueOnce(acceptanceRow);  // SELECT back after INSERT
+
+    const PROPOSAL = "ffffffff-eeee-4fff-8fff-ffffffffeeee";
+    _testSeedProposal(PROPOSAL, "record_risk_acceptance");
+
+    const result = handleRecordRiskAcceptance({
+      risk_id: RISK_ROW.id,
+      treatment_plan_id: "550e8400-e29b-41d4-a716-446655440020",
+      risk_owner: "Alice",
+      decision: "accepted",
+      rationale: "Residual risk is acceptable to the business.",
+      confirmed: true,
+      proposal_id: PROPOSAL,
+    });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text) as { residual_score: number };
+    expect(data.residual_score).toBe(4);
   });
 });

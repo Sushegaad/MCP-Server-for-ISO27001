@@ -1,7 +1,7 @@
 /**
  * iso27001-mcp — MCP server factory
  *
- * createServer() returns a fully configured McpServer with all 52 tools,
+ * createServer() returns a fully configured McpServer with all 56 tools,
  * 12 MCP resources, and 4 workflow prompts registered. The caller is
  * responsible for connecting a transport and calling server.connect(transport).
  *
