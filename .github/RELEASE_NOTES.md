@@ -1,3 +1,29 @@
+## What's new in v0.9.82 — ARD discovery support
+
+`iso27001-mcp` is now discoverable through [Agentic Resource Discovery](https://agenticresourcediscovery.org/) (ARD v0.91) — ARD-implementing registries and agents can find it by semantic search ("run an ISO 27001 gap assessment") instead of prior installation.
+
+### Published artefacts
+
+- **`docs/ard.json`** — the ARD manifest: domain-anchored URN `urn:air:sushegaad.github.io:server:iso27001-mcp`, type `application/mcp-server-card+json`, 5 representative queries driving the semantic index, and 14 capability tokens covering the full ISMS lifecycle
+- **`docs/server-card.json`** — the artifact the entry points at: the MCP-registry manifest enriched with all 56 tools (name, description, minimum role, and MCP behaviour annotations)
+- Both are served by GitHub Pages with the HTTPS / `application/json` / CORS headers ARD requires
+
+### Discovery mechanisms (spec §5.1)
+
+- `<link rel="ard">` in the demo site's `<head>` — a mechanism ARD consumers MUST honour
+- The full entry embedded as in-page JSON-LD (`application/ld+json`) with the ARD base context, discoverable by ordinary web crawling
+- `wellknown-site/` ships ready-to-push files (`.well-known/ard.json` + `robots.txt` with an `Agentmap` directive) for an optional `Sushegaad/sushegaad.github.io` user-site repo serving the canonical well-known path
+
+### Drift-proof by construction
+
+- **`npm run generate-ard`** (new, runs automatically in `postbuild`) regenerates every artefact from the tool registry, `package.json`, and `server.json` — the server card can never disagree with the actual tools
+- **16 new tests** validate `docs/ard.json` against the vendored authoritative ARD entry schema (JSON Schema 2020-12 via ajv), enforce the spec's discovery constraints (URN format, value-or-reference rule, 2–5 representative queries), and lock versions/tool-lists to their sources of truth
+- The **release-tag guard** now also fails if `docs/ard.json`'s entry version doesn't match the git tag
+
+No server runtime changes — ARD is purely a publishing/description layer. Tests: **804 passing**.
+
+---
+
 ## What's new in v0.9.81 — the road-to-1.0 trust release
 
 This release implements Phases 1–5 of the [v1.0.0 plan](../V1.0.0-PLAN.md): every change closes a gap between what the product implies and what the server enforces. Tool count: 52 → **56** (16 groups).
