@@ -384,6 +384,16 @@ The detailed documentation has been moved to keep this page scannable. Everythin
 
 ---
 
+## Discovery (ARD)
+
+This server publishes an [Agentic Resource Discovery](https://agenticresourcediscovery.org/) entry so ARD-implementing registries and agents can find it by semantic search ("run an ISO 27001 gap assessment") without prior installation:
+
+- **Identifier:** `urn:air:sushegaad.github.io:server:iso27001-mcp`
+- **Manifest:** [`ard.json`](https://sushegaad.github.io/MCP-Server-for-ISO27001/ard.json) — advertised via `<link rel="ard">` and in-page JSON-LD on the [demo site](https://sushegaad.github.io/MCP-Server-for-ISO27001/)
+- **Server card:** [`server-card.json`](https://sushegaad.github.io/MCP-Server-for-ISO27001/server-card.json) — all 56 tools with descriptions, minimum roles, and MCP behaviour annotations, generated from the tool registry on every build
+
+---
+
 ## Community
 
 [Discussed on r/mcp](https://www.reddit.com/r/mcp/comments/1u2mid8/built_an_isms_iso_27001_mcp_server_looking_for/) · 15K views · 28 upvotes

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/ards-project/ard-spec/main/spec/schemas/ard-entry.schema.json",
+  "title": "ArdEntry",
+  "description": "JSON Schema for an ARD entry — vendored from ards-project/ard-spec@main (ARD v0.91). Refresh deliberately; do not hand-edit.",
+  "$ref": "#/$defs/ArdEntry",
+  "$defs": {
+    "EntryFields": {
+      "type": "object",
+      "properties": {
+        "@context": {
+          "oneOf": [
+            { "type": "string", "format": "uri" },
+            { "type": "object" },
+            { "type": "array" }
+          ]
+        },
+        "@id": { "type": "string" },
+        "identifier": {
+          "type": "string",
+          "pattern": "^urn:air:[a-zA-Z0-9.-]+(:[a-zA-Z0-9._-]+)+$"
+        },
+        "displayName": { "type": "string" },
+        "type": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "data": { "type": "object" },
+        "representativeQueries": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "description": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "version": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
+        },
+        "TrustManifest": { "$ref": "#/$defs/TrustManifest" }
+      },
+      "additionalProperties": true
+    },
+    "ArdEntry": {
+      "allOf": [{ "$ref": "#/$defs/EntryFields" }],
+      "required": ["identifier", "displayName", "type"],
+      "oneOf": [
+        { "required": ["url"], "not": { "required": ["data"] } },
+        { "required": ["data"], "not": { "required": ["url"] } }
+      ]
+    },
+    "ArdManifest": {
+      "type": "object",
+      "required": ["entries"],
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ArdEntry" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "TrustManifest": {
+      "type": "object",
+      "required": ["identity"],
+      "properties": {
+        "identity": { "type": "string" },
+        "identityType": { "type": "string" },
+        "trustSchema": {
+          "type": "object",
+          "properties": {
+            "identifier": { "type": "string" },
+            "version": { "type": "string" },
+            "governanceUri": { "type": "string", "format": "uri" },
+            "verificationMethods": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": true
+        },
+        "attestations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "uri"],
+            "properties": {
+              "type": { "type": "string" },
+              "uri": { "type": "string", "format": "uri" },
+              "mediaType": { "type": "string" },
+              "digest": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["relation", "sourceId"],
+            "properties": {
+              "relation": { "type": "string" },
+              "sourceId": { "type": "string" },
+              "sourceDigest": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "signature": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

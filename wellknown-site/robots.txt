@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Agentmap: https://sushegaad.github.io/MCP-Server-for-ISO27001/ard.json

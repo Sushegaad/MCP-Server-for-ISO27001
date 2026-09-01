@@ -64,12 +64,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify tag matches package.json
+      - name: Verify tag matches package.json and ARD manifest
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           PKG=$(node -p "require('./package.json').version")
+          ARD=$(node -p "require('./docs/ard.json').entries[0].version")
           if [ "$TAG" != "$PKG" ]; then
             echo "::error::Tag v$TAG does not match package.json version $PKG"
+            exit 1
+          fi
+          if [ "$TAG" != "$ARD" ]; then
+            echo "::error::Tag v$TAG does not match docs/ard.json entry version $ARD — run 'npm run generate-ard' and commit"
             exit 1
           fi
 

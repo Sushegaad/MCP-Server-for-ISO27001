@@ -51,7 +51,8 @@
   ],
   "scripts": {
     "build": "tsup",
-    "postbuild": "rm -rf dist/seed && mkdir -p dist/seed && cp -r src/seed/policy-templates dist/seed/policy-templates && cp -r src/seed/procedure-templates dist/seed/procedure-templates && cp -r src/seed/evidence-templates dist/seed/evidence-templates && cp -r src/seed/partials dist/seed/partials",
+    "postbuild": "rm -rf dist/seed && mkdir -p dist/seed && cp -r src/seed/policy-templates dist/seed/policy-templates && cp -r src/seed/procedure-templates dist/seed/procedure-templates && cp -r src/seed/evidence-templates dist/seed/evidence-templates && cp -r src/seed/partials dist/seed/partials && npm run generate-ard",
+    "generate-ard": "tsx scripts/generate-ard.ts",
     "prepack": "npm run build",
     "prepublishOnly": "npm run typecheck && npm test && npm run build",
     "typecheck": "tsc --noEmit",
@@ -85,6 +86,8 @@
     "@typescript-eslint/parser": "7.18.0",
     "@vitest/coverage-istanbul": "^4.1.8",
     "@vitest/coverage-v8": "^4.1.8",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "eslint": "8.57.1",
     "tsup": "8.5.1",
     "tsx": "4.22.4",
