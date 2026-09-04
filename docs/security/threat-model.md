@@ -237,6 +237,6 @@ Before tagging any release:
 - [ ] `npx tsc --noEmit`, ESLint, and full test suite green with coverage thresholds held
 - [ ] `npm run verify-checksums` passes (seed data integrity)
 - [ ] Git tag matches `package.json` version AND `docs/ard.json` entry version (enforced by the verify step in `release.yml`; run `npm run generate-ard` after a version bump)
-- [ ] If the `Sushegaad/sushegaad.github.io` user-site repo exists: copy the refreshed `wellknown-site/.well-known/ard.json` into it and push (ARD discovery sync)
+- [ ] ARD artefacts regenerated (`npm run generate-ard`, automatic in postbuild) — the well-known user-site path was deliberately not adopted; discovery is via `rel="ard"` + in-page JSON-LD on the demo site
 - [ ] `npm audit --audit-level=high` clean
 - [ ] Docs (README, REFERENCE, index.html, CLAUDE.md) reconciled with tool/group/role counts

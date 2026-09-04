@@ -12,10 +12,14 @@ Once pushed there, they serve:
 ```bash
 # Create the user-site repo on GitHub: Sushegaad/sushegaad.github.io (public)
 git clone https://github.com/Sushegaad/sushegaad.github.io.git
-cp -r wellknown-site/.well-known wellknown-site/robots.txt sushegaad.github.io/
+cp -r wellknown-site/.well-known wellknown-site/robots.txt wellknown-site/.nojekyll sushegaad.github.io/
 cd sushegaad.github.io
 git add -A && git commit -m "ARD discovery: .well-known/ard.json + Agentmap" && git push
 ```
+
+> **`.nojekyll` is required.** GitHub Pages runs Jekyll by default, and Jekyll excludes
+> dot-directories — without `.nojekyll` at the repo root, `.well-known/` is silently
+> dropped from the published site and the manifest 404s.
 
 GitHub Pages for a `<user>.github.io` repo deploys automatically from `main` — no settings needed. Verify with:
 
