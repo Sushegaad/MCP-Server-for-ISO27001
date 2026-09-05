@@ -14,6 +14,8 @@ Priority: **medium** — completes the CSV migration path.
 
 ### Known issues (tracked)
 
+- **Express 5 migration (SSE transport)** — express 4.x carries moderate `qs` advisories (GHSA-x5fp-wj9c-mxmx, GHSA-4mjr-xmp4-gh2g) that only clear with express@5, a breaking change. The SSE server (`src/transport/sse.ts`) parses query strings, so the exposure is real in team/hosted mode though moderate in severity. Migrate deliberately (route syntax and body-parser changes) rather than via `npm audit fix --force`; stdio mode is unaffected.
+
 - **Risk register export/import round-trip mismatch** — `generate_risk_register` emits no `vulnerability` column (hard-required by `import_risks`) and uses `in_treatment` status (not in the importer's accepted set), so the server's own CSV export cannot be re-imported. Fix: add `vulnerability` and `related_controls` columns to the exporter and align the status vocabularies.
 - **CSV parser does not handle quoted fields** — `import_risks`/`import_control_statuses` split naively on commas, so values containing commas (e.g. `"Acme, Inc."`) break. Fix: quote-aware tokenizer (RFC 4180) or a small parsing dependency.
 - **Missing migration `.sql` sibling files** — migrations 0003, 0006, 0007 exist only as embedded strings in `src/db/migrations/index.ts`; the human-readable `.sql` copies were never created. Fix: restore the three files and add a lockstep test, or formally drop the `.sql` convention.
