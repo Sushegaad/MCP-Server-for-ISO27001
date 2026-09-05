@@ -419,6 +419,10 @@ describe("handleRecordRiskAcceptance", () => {
 
     const result = handleRecordRiskAcceptance({
       ...BASE_ARGS,
+      // Inherent 20 >= default High threshold (12, no methodology) — a
+      // substantive rationale (>= 50 chars) is required to accept.
+      rationale:
+        "Compensating controls reviewed and accepted by the board; MFA rollout completes Q2 2026.",
       confirmed: true,
       proposal_id: PROPOSAL,
     });
@@ -432,6 +436,73 @@ describe("handleRecordRiskAcceptance", () => {
     expect(runArgs[6]).toBeNull();
     expect(runArgs[7]).toBeNull();
     expect(runArgs[5]).toBe(20); // inherent = 4 × 5
+  });
+
+  it("without a plan, the escalation rule uses the inherent score (no bypass by omitting the plan)", () => {
+    // Methodology configured (threshold 6); no plan → effective = inherent 20 > 6
+    mockDb.prepare
+      .mockReturnValueOnce(stmt(RISK_ROW))                        // risk lookup
+      .mockReturnValueOnce(stmt({ acceptance_threshold: 6 }));    // methodology
+
+    try {
+      handleRecordRiskAcceptance({ ...BASE_ARGS, rationale: "Fine." });
+      expect.fail("expected throw");
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("BUSINESS_RULE");
+      expect((err as McpError).field).toBe("rationale");
+      expect((err as McpError).message).toMatch(/Inherent score 20/);
+      expect((err as McpError).message).toMatch(/exceeds the acceptance threshold/);
+    }
+  });
+
+  it("with NO methodology configured, the default High threshold (12) applies", () => {
+    mockDb.prepare
+      .mockReturnValueOnce(stmt(RISK_ROW))       // risk lookup (inherent 20)
+      .mockReturnValueOnce(stmt(undefined));     // methodology — not configured
+
+    try {
+      handleRecordRiskAcceptance({ ...BASE_ARGS, rationale: "Fine." });
+      expect.fail("expected throw");
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("BUSINESS_RULE");
+      expect((err as McpError).message).toMatch(/no risk methodology configured/);
+      expect((err as McpError).message).toMatch(/default High-risk threshold \(12\) applies; set_risk_methodology to customize/);
+    }
+  });
+
+  it("rationale length is measured after trimming (padded whitespace does not count)", () => {
+    const padded = " ".repeat(40) + "Short reason." + " ".repeat(40); // > 50 raw, < 50 trimmed
+    mockDb.prepare
+      .mockReturnValueOnce(stmt(RISK_ROW))
+      .mockReturnValueOnce(stmt(undefined));
+
+    try {
+      handleRecordRiskAcceptance({ ...BASE_ARGS, rationale: padded });
+      expect.fail("expected throw");
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("BUSINESS_RULE");
+      expect((err as McpError).field).toBe("rationale");
+    }
+  });
+
+  it("commit rejects a stale proposal when the risk changed since preview (version binding)", () => {
+    const staleRisk = { ...RISK_ROW, likelihood: 1, impact: 2, updated_at: "2025-06-01 00:00:00Z" };
+    mockDb.prepare
+      .mockReturnValueOnce(stmt(staleRisk))     // risk lookup at commit
+      .mockReturnValueOnce(stmt(undefined));    // methodology — not configured (1×2=2 < 12)
+
+    const PROPOSAL = "66666666-6666-4666-8666-666666666666";
+    _testSeedProposal(PROPOSAL, "record_risk_acceptance", {
+      resource_version: "2025-01-01 00:00:00Z", // preview-time version
+    });
+
+    expect(() =>
+      handleRecordRiskAcceptance({
+        ...BASE_ARGS,
+        confirmed: true,
+        proposal_id: PROPOSAL,
+      }),
+    ).toThrow(/version conflict/);
   });
 });
 

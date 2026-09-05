@@ -9,7 +9,10 @@
 
 import { getDb } from "../db/connection.js";
 import { listKeys, revokeKey } from "../auth/api-key.js";
+import { removeSessionsByKeyHash } from "../auth/session-store.js";
+import { businessRule } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
+import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
 
 // ── query_audit_log ───────────────────────────────────────────
 
@@ -58,7 +61,42 @@ export function handleListApiKeys(_args: Record<string, unknown>): ToolResult {
 // ── revoke_api_key ────────────────────────────────────────────
 
 export function handleRevokeApiKey(args: Record<string, unknown>): ToolResult {
-  const { label } = args as { label: string };
+  const { label, confirmed = false, proposal_id } = args as {
+    label: string; confirmed?: boolean; proposal_id?: string;
+  };
+
+  // Look up the target key (api_keys has no updated_at column, so the
+  // proposal is bound to caller + args only — no resource_version).
+  const key = getDb().prepare(
+    "SELECT key_hash, label, role, last_used_at, revoked_at FROM api_keys WHERE label = ?"
+  ).get(label) as {
+    key_hash: string; label: string; role: string;
+    last_used_at: string | null; revoked_at: string | null;
+  } | undefined;
+  if (!key) {
+    throw businessRule("label", `API key with label '${label}' not found.`);
+  }
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [
+      { field: "label",     old: key.label, new: key.label },
+      { field: "role",      old: key.role,  new: key.role },
+      { field: "last_used", old: key.last_used_at, new: key.last_used_at },
+      { field: "status",    old: key.revoked_at ? "revoked" : "active", new: "revoked" },
+    ];
+    return ok(buildPreviewResponse("revoke_api_key", rows, {
+      label,
+      message: "⏸ No data written. Warning: revocation is permanent and evicts the key's live sessions. Pass \"confirmed\": true to revoke.",
+    }));
+  }
+
+  consumeProposal(proposal_id, "revoke_api_key");
   revokeKey(label);
-  return ok({ revoked: true, label });
+
+  // A revoked key's live SSE sessions must not survive revocation — evict
+  // every session token minted under this key's hash.
+  const sessionsEvicted = removeSessionsByKeyHash(key.key_hash);
+
+  return ok({ revoked: true, label, sessions_evicted: sessionsEvicted });
 }

@@ -10,7 +10,7 @@ import { newId, now, today, computeEvidenceStatus } from "../db/dal.js";
 import { notFound, businessRule, integrationError } from "../types/errors.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { getEnv } from "../security/secrets.js";
-import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
+import { type DiffRow, buildPreviewResponse, consumeProposal, normalizeActor } from "./hitl-utils.js";
 import { suggestedTypes } from "./evidence-utils.js";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -105,11 +105,29 @@ export function handleRegisterEvidence(args: Record<string, unknown>): ToolResul
     confirmed?: boolean; proposal_id?: string;
   };
 
-  // When superseding, the target must exist (checked in preview too, so the
-  // human sees an actionable error before approving anything).
+  // When superseding, the target must exist and be a valid supersede target
+  // (checked in preview too, so the human sees an actionable error before
+  // approving anything).
   let superseded: EvidenceRow | undefined;
   if (supersedes_evidence_id !== undefined) {
     superseded = requireEvidence(supersedes_evidence_id);
+    // Chain integrity: replacement evidence must cover the same control.
+    if (superseded.control_id !== control_id) {
+      throw businessRule(
+        "supersedes_evidence_id",
+        `Evidence ${supersedes_evidence_id} belongs to control ${superseded.control_id}, ` +
+        `not ${control_id} — superseding evidence must target the same control.`,
+      );
+    }
+    // A superseded artefact is marked by setting expiry_date to today; an
+    // already-expired/superseded target must not be superseded again.
+    if (superseded.expiry_date !== null && superseded.expiry_date <= today()) {
+      throw businessRule(
+        "supersedes_evidence_id",
+        `Evidence ${supersedes_evidence_id} is already expired/superseded ` +
+        `(expiry_date ${superseded.expiry_date}) and cannot be superseded again.`,
+      );
+    }
   }
 
   // ── HITL preview ──────────────────────────────────────────────
@@ -199,8 +217,9 @@ export function handleVerifyEvidence(args: Record<string, unknown>): ToolResult 
   const evidence = requireEvidence(evidence_id);
 
   // Independence rule: verification must come from someone other than the
-  // collector — self-attestation is not independent review.
-  if (reviewer === evidence.collected_by) {
+  // collector — self-attestation is not independent review. Names are
+  // normalized (case/whitespace) so trivial variants cannot defeat the rule.
+  if (normalizeActor(reviewer) === normalizeActor(evidence.collected_by)) {
     throw businessRule(
       "reviewer",
       "Evidence must be verified by someone other than its collector " +

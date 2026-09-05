@@ -16,9 +16,9 @@ Priority: **medium** — completes the CSV migration path.
 
 - **Express 5 migration (SSE transport)** — express 4.x carries moderate `qs` advisories (GHSA-x5fp-wj9c-mxmx, GHSA-4mjr-xmp4-gh2g) that only clear with express@5, a breaking change. The SSE server (`src/transport/sse.ts`) parses query strings, so the exposure is real in team/hosted mode though moderate in severity. Migrate deliberately (route syntax and body-parser changes) rather than via `npm audit fix --force`; stdio mode is unaffected.
 
-- **Risk register export/import round-trip mismatch** — `generate_risk_register` emits no `vulnerability` column (hard-required by `import_risks`) and uses `in_treatment` status (not in the importer's accepted set), so the server's own CSV export cannot be re-imported. Fix: add `vulnerability` and `related_controls` columns to the exporter and align the status vocabularies.
-- **CSV parser does not handle quoted fields** — `import_risks`/`import_control_statuses` split naively on commas, so values containing commas (e.g. `"Acme, Inc."`) break. Fix: quote-aware tokenizer (RFC 4180) or a small parsing dependency.
-- **Missing migration `.sql` sibling files** — migrations 0003, 0006, 0007 exist only as embedded strings in `src/db/migrations/index.ts`; the human-readable `.sql` copies were never created. Fix: restore the three files and add a lockstep test, or formally drop the `.sql` convention.
+> Migration `.sql` sibling files: decision made — the embedded SQL strings in
+> `src/db/migrations/index.ts` are the single canonical source (tsup bundles a
+> single CJS file); the `.sql` sibling convention is formally dropped.
 
 ### Auditor validation note
 A lightweight "reviewed by" section to be added to documentation and template headers indicating which controls, clause mappings, and policy templates have been reviewed against the published ISO 27001:2022 Annex A and clause text by a qualified practitioner.
@@ -74,11 +74,13 @@ Extend the control registry and SoA tooling to support additional frameworks alo
 
 | Feature | Version |
 |---------|---------|
+| RFC 4180 quote-aware CSV tokenizer (`parseCsv`) shared by importers and exporters | v0.9.81 |
+| Risk register export/import round-trip — `vulnerability`/`related_controls` columns and aligned status vocabulary | v0.9.81 |
 | CSV bulk import — `import_risks` + `import_control_statuses` with dry-run preview | v0.9.74 |
 | HITL proposal tokens — server-side single-use UUID prevents model self-confirmation | v0.9.74 |
 | 4 MCP Workflow Prompts — `conduct_gap_assessment`, `register_and_treat_risk`, `prepare_internal_audit`, `prepare_management_review` | v0.9.74 |
 | 13 tools retired to MCP Resources (20 resource URIs) | v0.9.7 |
-| HITL confirmation gates on all mutating tools | v0.9.7 |
+| HITL confirmation gates on critical write tools (now 19, registry-flagged) | v0.9.7 |
 | Shared DB types, constants, evidence utils (KISS/DRY refactor) | v0.9.7 |
 | Evidence document templates (6 types, dual-write) | v0.9.6 |
 | Management review — Clause 9.3 full lifecycle | v0.9.5 |

@@ -22,6 +22,10 @@ function getRpm(): number {
 // Map<key_hash, timestamps[] (ms since epoch)>
 const _windows = new Map<string, number[]>();
 
+// Call counter driving the periodic sweep of dead entries (keys whose
+// window has fully aged out) so the map cannot grow without bound.
+let _callCounter = 0;
+
 // ── checkRateLimit ────────────────────────────────────────────
 
 /**
@@ -33,6 +37,14 @@ export function checkRateLimit(keyHash: string): void {
   const rpm = getRpm();
   const now = Date.now();
   const windowMs = 60_000; // 60-second sliding window
+
+  // Every 1000th call, sweep entries whose newest timestamp is outside the
+  // window — those keys will never be trimmed by their own calls again.
+  if (++_callCounter % 1000 === 0) {
+    for (const [k, ts] of _windows) {
+      if (ts.length === 0 || (ts[ts.length - 1] ?? 0) < now - windowMs) _windows.delete(k);
+    }
+  }
 
   // Get or create the timestamp list for this key
   let timestamps = _windows.get(keyHash);
@@ -68,6 +80,14 @@ export function resetRateLimit(keyHash: string): void {
  */
 export function clearAllRateLimits(): void {
   _windows.clear();
+}
+
+/**
+ * Number of keys currently tracked in the window map (diagnostics/tests —
+ * lets the periodic sweep be observed).
+ */
+export function trackedKeyCount(): number {
+  return _windows.size;
 }
 
 /**

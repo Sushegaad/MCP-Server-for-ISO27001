@@ -1,11 +1,11 @@
-id,asset,threat,likelihood,impact,risk_score,risk_level,status,owner,treatment_types
-RISK-001,Payment processing API,SQL injection leading to unauthorised data access or manipulation,2,5,10,high,in_treatment,Marcus Webb,mitigate
-RISK-002,Staff email accounts,Credential theft via targeted phishing attack,3,4,12,high,in_treatment,L. Okonkwo,mitigate
-RISK-003,AWS S3 buckets containing customer data,Cloud misconfiguration resulting in public exposure of sensitive data,2,5,10,high,in_treatment,J. Patel,mitigate
-RISK-004,Third-party payment processor integration,Data breach at processor exposing Acme customer PAN data,2,5,10,high,open,Sarah Chen,transfer
-RISK-005,Software supply chain (npm/PyPI dependencies),Malicious package insertion leading to backdoor or data exfiltration,2,4,8,medium,in_treatment,Lead Engineer,mitigate
-RISK-006,Employee accounts with elevated privileges,Insider threat — intentional or accidental data exfiltration,2,4,8,medium,open,Sarah Chen,mitigate
-RISK-007,Payment gateway public endpoint,Sustained DDoS attack causing service unavailability exceeding SLA,2,3,6,medium,open,J. Patel,accept
-RISK-008,Cardholder data environment,PCI DSS scope creep from uncontrolled system connections,2,4,8,medium,in_treatment,Sarah Chen,mitigate
-RISK-009,Database encryption keys (AWS KMS),Loss or accidental deletion of encryption keys causing permanent data loss,1,5,5,medium,in_treatment,J. Patel,mitigate
-RISK-010,Legacy CI/CD runner (Ubuntu 18.04 EOL),Exploitation of unpatched OS vulnerability leading to build pipeline compromise,3,3,9,medium,in_treatment,Lead Engineer,mitigate
+id,asset,threat,vulnerability,likelihood,impact,risk_score,risk_level,status,owner,treatment_types,related_controls
+RISK-001,Payment processing API,SQL injection attack by an external actor,Unparameterised queries in legacy payment endpoints,2,5,10,Medium,mitigated,Marcus Webb,mitigate,8.28;8.26
+RISK-002,Staff email accounts,Credential theft via targeted phishing campaign,No phishing-resistant MFA enforced on email accounts,3,4,12,High,mitigated,L. Okonkwo,mitigate,5.17;8.5;6.3
+RISK-003,AWS S3 buckets containing customer data,External actor accesses publicly exposed bucket contents,"Cloud misconfiguration — bucket policies not enforced, no automated config drift detection",2,5,10,Medium,mitigated,J. Patel,mitigate,8.9;5.23
+RISK-004,Third-party payment processor integration,Data breach at the processor exposing Acme customer PAN data,Reliance on processor security controls without contractual audit rights,2,5,10,Medium,open,Sarah Chen,transfer,5.19;5.21;5.22
+RISK-005,Software supply chain (npm/PyPI dependencies),Malicious package inserted into the dependency chain,Unpinned dependencies and no integrity verification in CI builds,2,4,8,Medium,mitigated,Lead Engineer,mitigate,8.28;5.21;8.8
+RISK-006,Employee accounts with elevated privileges,Intentional or accidental data exfiltration by an insider,Excessive standing privileges with no periodic access review,2,4,8,Medium,open,Sarah Chen,mitigate,5.18;8.2;8.16
+RISK-007,Payment gateway public endpoint,Sustained DDoS attack causing service unavailability exceeding SLA,No upstream DDoS mitigation in front of the public endpoint,2,3,6,Medium,accepted,J. Patel,accept,8.20;8.6
+RISK-008,Cardholder data environment,Compromise via uncontrolled system connections into the CDE,Network segmentation not enforced between CDE and corporate systems,2,4,8,Medium,mitigated,Sarah Chen,mitigate,8.22;8.20
+RISK-009,Database encryption keys (AWS KMS),Loss or accidental deletion of encryption keys causing permanent data loss,No key backup procedure and no KMS deletion-window safeguard configured,1,5,5,Low,mitigated,J. Patel,mitigate,8.24;8.13
+RISK-010,Legacy CI/CD runner (Ubuntu 18.04 EOL),Exploitation of an unpatched OS vulnerability compromising the build pipeline,Runner OS past end-of-life — no security patches available,3,3,9,Medium,mitigated,Lead Engineer,mitigate,8.8;8.19;8.32

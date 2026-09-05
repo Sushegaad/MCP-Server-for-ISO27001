@@ -62,6 +62,27 @@ export function removeSessionToken(token: string): void {
 }
 
 /**
+ * Evict every live session created under a given key hash. Called by
+ * revoke_api_key so a revoked key's open SSE sessions cannot make further
+ * tool calls. This is the single enforcement point: every SSE tool call
+ * resolves its credential through lookupSessionToken(), so deleting the
+ * token here immediately turns subsequent calls into AUTH_INVALID —
+ * regardless of whether the underlying SSE connection is still open
+ * (the transport map in sse.ts holds no auth material).
+ * Returns the number of sessions evicted.
+ */
+export function removeSessionsByKeyHash(keyHash: string): number {
+  let evicted = 0;
+  for (const [token, auth] of store) {
+    if (auth.keyHash === keyHash) {
+      store.delete(token);
+      evicted++;
+    }
+  }
+  return evicted;
+}
+
+/**
  * Returns true if the value looks like a session token (prefix check only —
  * does not confirm the token exists in the store).
  */

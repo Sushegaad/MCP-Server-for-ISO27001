@@ -9,7 +9,7 @@ These files are representative outputs generated from a demo ISMS for a fictitio
 **Staff:** ~120
 **Scope:** Cloud infrastructure (AWS eu-west-1), payment processing systems, software development function
 **Standard:** ISO 27001:2022
-**Status:** Preparing for certification audit (Q1 2025)
+**Status:** Preparing for certification audit (Q1 2027)
 
 ## File Index
 
@@ -23,7 +23,8 @@ These files are representative outputs generated from a demo ISMS for a fictitio
 | [incident-handling-procedure.md](incident-handling-procedure.md) | Incident handling procedure | `create_procedure`, `export_procedure` | Annex A 5.24–5.28, 6.8 |
 | [internal-audit-report.md](internal-audit-report.md) | Internal audit report with findings | `generate_audit_report` | Clause 9.2 |
 | [corrective-action-record.md](corrective-action-record.md) | Two corrective action records (1 open, 1 closed) | `create_corrective_action`, `update_corrective_action` | Clause 10.1 |
-| [evidence-package.md](evidence-package.md) | Evidence inventory and gap analysis | `list_evidence` + resource `iso27001://assessment/{id}/evidence-gaps` | Clause 7.5, 9.1 |
+| [evidence-package.md](evidence-package.md) | Evidence inventory, verification status, and gap analysis | `list_evidence`, `verify_evidence` + resource `iso27001://assessment/{id}/evidence-gaps` | Clause 7.5, 9.1 |
+| [risk-acceptance-record.md](risk-acceptance-record.md) | Risk methodology + residual-risk acceptance workflow | `set_risk_methodology`, `record_risk_acceptance`, `list_risk_acceptances` | Clause 6.1.3 |
 
 ## How to Generate Your Own
 
@@ -34,6 +35,7 @@ Ask Claude (with iso27001-mcp connected):
 3. **SoA:** "Export the Statement of Applicability as CSV"
 4. **Policies:** "Generate an access control policy for Acme Financial Services"
 5. **Remediation roadmap:** "Generate a 26-week remediation roadmap based on the current gap assessment"
+6. **Risk acceptance:** "Record the risk owner's acceptance of the residual risk for [risk] — review the preview, then confirm" (required before a treatment plan can reach `verified`; use `set_risk_methodology` first to define scales and the acceptance threshold)
 
 Your outputs will reflect your organisation's actual data — these samples use fictional data for illustration only.
 

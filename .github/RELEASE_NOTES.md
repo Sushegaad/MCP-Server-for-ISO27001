@@ -1,3 +1,35 @@
+## What's new in v0.9.83 — HITL as enforced policy
+
+A security-audit-driven hardening release. The unifying change: **HITL gating is now registry policy, not handler convention** — the same "impossible by construction" philosophy that eliminated registration drift now applies to write-protection.
+
+### HITL policy in the registry (15 → 19 gated tools)
+
+- Every `ToolDefinition` now carries an explicit `hitl` flag; registry tests lock the exact 19-tool gate list, assert every `DESTRUCTIVE`-annotated tool is gated, and assert no read-only tool is
+- **4 newly gated tools:** `import_risks` and `import_control_statuses` (previously a bulk bypass of the gated single-record tools — a one-row CSV could skip human review), plus `archive_gap_assessment` and `revoke_api_key` (the two destructive tools). Imports preview row counts, error summaries, and sample rows before commit; `dry_run` remains available for pure validation
+- **Pipeline gate-verification:** `consumeProposal` marks the per-call context; after any confirmed call to a gated tool, the pipeline verifies the gate actually executed and rejects the response as a server bug otherwise — a handler that forgets its gate becomes a loud, audited incident instead of a silent bypass
+
+### Risk-acceptance rule hardening
+
+- The above-threshold rationale requirement can no longer be bypassed by omitting the treatment plan (`effective_score = residual ?? inherent`) or by never configuring a methodology (a default High-risk threshold of 12 applies until `set_risk_methodology` is run); rationale length is measured trimmed
+- Acceptance previews are now bound to the risk's `updated_at` (TOCTOU guard) — the scores the human approves are the scores that get recorded
+- Treatment completion now keys on the **latest** acceptance decision — a subsequent `rejected` decision re-locks the plan
+
+### Additional fixes
+
+- **Evidence independence** — reviewer/collector comparison is normalized (case, whitespace); superseding evidence must target the same control and a not-already-expired artefact
+- **SSE:** revoking an API key now evicts its live sessions immediately (`sessions_evicted` reported); the server binds `127.0.0.1` by default (`SSE_HOST` to override); the HTTP rate limit applies in all modes, not just production
+- **CSV injection:** formula-trigger escaping now catches leading-whitespace payloads; import strips the escape apostrophe so escaped values round-trip
+- `_testSeedProposal` now throws outside the Vitest environment; rate-limiter sweeps stale entries; `generate-ard` fails loudly on corrupted HTML markers
+
+### Documentation truth pass
+
+- Both sample CSVs regenerated to the current export formats — `risk-register.csv` now round-trips through `import_risks` (12 columns, valid statuses, distinct threat/vulnerability), and `statement-of-applicability.csv` demonstrates §6.1.3 traceability (`driver_type`, `source_ids` linking controls to RISK ids)
+- `evidence-package.md` reframed around *exists → current → independently verified* with a Verification Status section; `corrective-action-record.md` risk acceptances rewritten as first-class `record_risk_acceptance` records; new `risk-acceptance-record.md` sample; stale ROADMAP known-issues resolved; HITL documentation (README, REFERENCE, demo, CLAUDE.md) updated to the 19-tool binding model
+
+**Tests: 842 passing** (+38). No schema migrations. Role counts unchanged (viewer 19 · analyst 41 · admin 56).
+
+---
+
 ## What's new in v0.9.82 — ARD discovery support
 
 `iso27001-mcp` is now discoverable through [Agentic Resource Discovery](https://agenticresourcediscovery.org/) (ARD v0.91) — ARD-implementing registries and agents can find it by semantic search ("run an ISO 27001 gap assessment") instead of prior installation.
@@ -26,7 +58,7 @@ No server runtime changes — ARD is purely a publishing/description layer. Test
 
 ## What's new in v0.9.81 — the road-to-1.0 trust release
 
-This release implements Phases 1–5 of the [v1.0.0 plan](../V1.0.0-PLAN.md): every change closes a gap between what the product implies and what the server enforces. Tool count: 52 → **56** (16 groups).
+This release implements Phases 1–5 of the [v1.0.0 plan](../Plans/V1.0.0-PLAN.md): every change closes a gap between what the product implies and what the server enforces. Tool count: 52 → **56** (16 groups).
 
 ### Phase 1 — Mutation-bound HITL proposals (security)
 

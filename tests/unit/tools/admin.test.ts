@@ -40,6 +40,9 @@ import {
   handleListApiKeys,
   handleRevokeApiKey,
 } from "../../../src/tools/admin.js";
+import { _testSeedProposal } from "../../../src/tools/hitl-utils.js";
+import { createSessionToken, lookupSessionToken } from "../../../src/auth/session-store.js";
+import { McpError } from "../../../src/types/errors.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -130,13 +133,61 @@ describe("handleListApiKeys", () => {
 // ── handleRevokeApiKey ────────────────────────────────────────────────────
 
 describe("handleRevokeApiKey", () => {
-  it("revokes the key by label", () => {
+  const KEY_ROW = {
+    key_hash: "hash-alice", label: "alice", role: "admin",
+    last_used_at: "2026-01-01 00:00:00Z", revoked_at: null,
+  };
+
+  it("returns a HITL preview (label, role, last_used) when confirmed is omitted", () => {
+    mockStmt.get.mockReturnValueOnce(KEY_ROW);
+
     const result = handleRevokeApiKey({ label: "alice" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.label).toBe("alice");
+    expect(data.diff).toContain("role");
+    expect(data.diff).toContain("last_used");
+    expect(data.diff).toContain("revoked");
+    expect(mockRevokeKey).not.toHaveBeenCalled(); // nothing written
+  });
+
+  it("revokes the key by label on confirmed commit and reports evicted sessions", () => {
+    mockStmt.get.mockReturnValueOnce(KEY_ROW);
+    // Simulate two live SSE sessions under the key being revoked + one other
+    const t1 = createSessionToken("hash-alice", "admin");
+    const t2 = createSessionToken("hash-alice", "admin");
+    const t3 = createSessionToken("hash-other", "viewer");
+
+    const PROPOSAL = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    _testSeedProposal(PROPOSAL, "revoke_api_key");
+
+    const result = handleRevokeApiKey({ label: "alice", confirmed: true, proposal_id: PROPOSAL });
 
     expect(result.isError).toBe(false);
     const data = JSON.parse(result.content[0].text);
     expect(data.revoked).toBe(true);
     expect(data.label).toBe("alice");
+    expect(data.sessions_evicted).toBe(2);
     expect(mockRevokeKey).toHaveBeenCalledWith("alice");
+    // Evicted sessions no longer resolve; unrelated session survives
+    expect(lookupSessionToken(t1)).toBeUndefined();
+    expect(lookupSessionToken(t2)).toBeUndefined();
+    expect(lookupSessionToken(t3)).toBeDefined();
+  });
+
+  it("throws BUSINESS_RULE when the label is not found", () => {
+    mockStmt.get.mockReturnValueOnce(undefined);
+
+    try {
+      handleRevokeApiKey({ label: "ghost" });
+      expect.fail("expected throw");
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("BUSINESS_RULE");
+      expect((err as McpError).field).toBe("label");
+    }
+    expect(mockRevokeKey).not.toHaveBeenCalled();
   });
 });

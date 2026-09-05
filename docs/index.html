@@ -46,8 +46,8 @@
     "audit",
     "security"
   ],
-  "version": "0.9.82",
-  "updatedAt": "2026-09-01T01:14:02.556Z"
+  "version": "0.9.83",
+  "updatedAt": "2026-09-05T00:43:51.227Z"
 }
   </script>
   <!-- ARD-JSONLD-END -->
@@ -301,13 +301,16 @@
     <div class="nav-item" onclick="showSection('csv_import')">
       <span class="nav-icon">📥</span> CSV Import
     </div>
+    <div class="nav-item" onclick="showSection('risk_governance')">
+      <span class="nav-icon">⚖️</span> Risk Governance
+    </div>
     <div class="sidebar-section">Info</div>
     <div class="nav-item" onclick="showSection('resources')">
       <span class="nav-icon">📦</span> Resources
     </div>
   </nav>
   <div class="sidebar-footer">
-    <p style="margin-bottom:4px">v0.9.82 · 56 tools · 16 groups</p>
+    <p style="margin-bottom:4px">v0.9.83 · 56 tools · 16 groups</p>
     <p>Real server: <a href="https://npmjs.com/package/iso27001-mcp" target="_blank">npm install -g iso27001-mcp</a></p>
   </div>
 </aside>
@@ -609,7 +612,7 @@
     <!-- ════════════════════════════════════════════════════════ -->
     <div id="section-tools" class="section">
       <div class="notice">
-        💡 All 56 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 19 tools), analyst (41 tools), admin (all 56 tools). 15 critical write tools are HITL-gated: they return a preview diff + single-use proposal_id, and commit only when called again with confirmed=true and that proposal_id.
+        💡 All 56 tools exposed by the MCP server. Each tool requires a valid API key. Role requirements: viewer (read-only, 19 tools), analyst (41 tools), admin (all 56 tools). 19 critical write tools are HITL-gated: they return a preview diff + single-use proposal_id, and commit only when called again with confirmed=true and that proposal_id.
       </div>
 
       <div class="card">
@@ -1251,7 +1254,7 @@
     <div id="section-csv_import" class="section">
       <div class="section-inner">
         <div style="background:linear-gradient(135deg,#064e3b,#065f46);border-radius:12px;padding:28px 32px;color:white;margin-bottom:20px;">
-          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(52,211,153,0.2);border:1px solid rgba(52,211,153,0.4);color:#6ee7b7;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:12px;letter-spacing:.5px;">NEW IN v0.9.74 · GROUP 15</div>
+          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(52,211,153,0.2);border:1px solid rgba(52,211,153,0.4);color:#6ee7b7;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:12px;letter-spacing:.5px;">GROUP 15</div>
           <h2 style="font-size:24px;font-weight:800;margin-bottom:8px;">📥 CSV Bulk Import</h2>
           <p style="color:#a7f3d0;font-size:14px;line-height:1.65;max-width:640px;">Migrate your existing spreadsheet-based risk registers and control status trackers directly into the ISMS. Pass a CSV string, validate with <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">dry_run=true</code>, then commit.</p>
         </div>
@@ -1294,6 +1297,47 @@ control_id,status,notes
 
         <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--text-muted);line-height:1.6;">
           💡 <strong>Workflow tip:</strong> Always pass <code>dry_run: true</code> first. The response lists every row error with its row number and field. Fix errors in your spreadsheet, then call again without <code>dry_run</code> to commit. Both tools abort cleanly on validation failure — no partial imports.
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!--  SECTION 10b: RISK GOVERNANCE                            -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div id="section-risk_governance" class="section">
+      <div class="section-inner">
+        <div style="background:linear-gradient(135deg,#312e81,#4338ca);border-radius:12px;padding:28px 32px;color:white;margin-bottom:20px;">
+          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(165,180,252,0.2);border:1px solid rgba(165,180,252,0.4);color:#c7d2fe;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:12px;letter-spacing:.5px;">GROUP 16 · §6.1.3</div>
+          <h2 style="font-size:24px;font-weight:800;margin-bottom:8px;">⚖️ Risk Governance</h2>
+          <p style="color:#c7d2fe;font-size:14px;line-height:1.65;max-width:640px;">Define the organisation's risk methodology once, then record risk-owner acceptance of residual risk as first-class, tamper-evident records — not free-text notes. Both write tools are HITL-gated (preview diff + single-use <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">proposal_id</code>).</p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px;font-family:monospace;">set_risk_methodology</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.55;">Upsert the org-level methodology singleton — every acceptance decision freezes the threshold in force at that moment.</div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">KEY PARAMS</div>
+            <div style="font-family:monospace;font-size:12px;background:var(--bg);border-radius:6px;padding:10px;color:var(--text);">likelihood_scale (2–10 pts)<br>impact_scale (2–10 pts)<br>risk_level_bands (min/max/level)<br>acceptance_threshold (1–25, def 6)<br>calculation_method · review_frequency</div>
+            <div style="margin-top:12px;font-size:11px;background:rgba(165,180,252,0.08);border:1px solid rgba(165,180,252,0.25);border-radius:6px;padding:8px 10px;color:#818cf8;">🔐 Min role: <strong>admin</strong> · HITL-gated</div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px;font-family:monospace;">record_risk_acceptance</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.55;">Record the risk owner's accept/reject decision, freezing inherent + residual scores and the threshold at decision time. Above-threshold acceptance requires a substantive rationale (≥50 chars).</div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">KEY PARAMS</div>
+            <div style="font-family:monospace;font-size:12px;background:var(--bg);border-radius:6px;padding:10px;color:var(--text);">risk_id · risk_owner · rationale<br>decision (accepted | rejected)<br>treatment_plan_id (needs residual scores)<br>review_due_at</div>
+            <div style="margin-top:12px;font-size:11px;background:rgba(165,180,252,0.08);border:1px solid rgba(165,180,252,0.25);border-radius:6px;padding:8px 10px;color:#818cf8;">🔐 Min role: <strong>analyst</strong> · HITL-gated</div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px;font-family:monospace;">list_risk_acceptances</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.55;">Query the acceptance ledger — the immutable history of who accepted which residual risk, when, and against which threshold.</div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">FILTERS</div>
+            <div style="font-family:monospace;font-size:12px;background:var(--bg);border-radius:6px;padding:10px;color:var(--text);">risk_id · decision<br>limit · offset</div>
+            <div style="margin-top:12px;font-size:11px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:6px;padding:8px 10px;color:#34d399;">✅ Min role: <strong>viewer</strong> · read-only</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--text-muted);line-height:1.6;">
+          ⚖️ <strong>Enforced lifecycle rule:</strong> a treatment plan cannot transition to <code>verified</code> unless residual likelihood + impact are recorded on the plan <em>and</em> the latest risk acceptance for that risk has <code>decision = 'accepted'</code> — §6.1.3 sign-off is a hard gate, not a checkbox.
         </div>
       </div>
     </div>
@@ -1386,7 +1430,7 @@ control_id,status,notes
             <div class="res-hero-stat-label">Templates</div>
           </div>
           <div class="res-hero-stat">
-            <div class="res-hero-stat-value" style="font-size:20px">v0.9.82</div>
+            <div class="res-hero-stat-value" style="font-size:20px">v0.9.83</div>
             <div class="res-hero-stat-label">Latest</div>
           </div>
         </div>
@@ -1661,7 +1705,7 @@ const TOOLS = [
       params:[['assessment_id','✅','uuid',''],['timeline_weeks','—','integer','1–52, default 12']],
       example:'{ "assessment_id": "uuid", "timeline_weeks": 26 }' },
     { name:'archive_gap_assessment',      desc:'Archive a completed assessment',
-      params:[['assessment_id','✅','uuid',''],['reason','—','string','']],
+      params:[['assessment_id','✅','uuid',''],['reason','—','string',''],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "assessment_id": "uuid", "reason": "Certification achieved" }' },
   ]},
   { group:'Group 3 — Risk Management', role:'analyst', tools:[
@@ -1751,7 +1795,7 @@ const TOOLS = [
     { name:'list_api_keys',  desc:'List all API keys with metadata — never returns hashes',
       params:[], example:'{}' },
     { name:'revoke_api_key', desc:'Immediately revoke a key by label',
-      params:[['label','✅','string','the label assigned at key generation']],
+      params:[['label','✅','string','the label assigned at key generation'],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "label": "Alice" }' },
   ]},
   { group:'Group 10 — Organisation Profile', role:'admin', tools:[
@@ -1811,10 +1855,10 @@ const TOOLS = [
   ]},
   { group:'Group 15 — CSV Import', role:'analyst', tools:[
     { name:'import_risks', desc:'Bulk-import risks from a CSV string. Validates all rows before writing. Supports dry_run=true for a validation preview without committing. Required headers: asset, threat, vulnerability, likelihood (1-5), impact (1-5). Optional: owner, status, related_controls (semicolon-separated).',
-      params:[['csv_content','required','string','CSV string including header row'],['default_status','—','enum','open | accepted | mitigated | transferred | closed (default: open)'],['dry_run','—','boolean','default false — set true to validate without writing']],
+      params:[['csv_content','required','string','CSV string including header row'],['default_status','—','enum','open | accepted | mitigated | transferred | closed (default: open)'],['dry_run','—','boolean','default false — set true to validate without writing'],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "csv_content": "asset,threat,vulnerability,likelihood,impact,owner\\nCustomer DB,SQL injection,Unparameterised queries,4,5,Head of Engineering", "dry_run": true }' },
     { name:'import_control_statuses', desc:'Bulk-update control implementation statuses in a gap assessment from a CSV string. Validates every control_id against the assessment. Required headers: control_id, status. Optional: notes, na_justification.',
-      params:[['assessment_id','required','string','UUID of the target gap assessment'],['csv_content','required','string','CSV string including header row'],['dry_run','—','boolean','default false — set true to validate without writing']],
+      params:[['assessment_id','required','string','UUID of the target gap assessment'],['csv_content','required','string','CSV string including header row'],['dry_run','—','boolean','default false — set true to validate without writing'],['confirmed','—','boolean','omit/false = preview diff, nothing written; true = commit'],['proposal_id','—','uuid','single-use token from the preview response — required with confirmed=true']],
       example:'{ "assessment_id": "a1b2c3...", "csv_content": "control_id,status,notes\\n5.1,implemented,Policy approved", "dry_run": true }' },
   ]},
   { group:'Group 16 — Risk Governance (§6.1.3)', role:'analyst', tools:[
@@ -2026,6 +2070,7 @@ const SECTION_META = {
   improvement:     { title: 'Improvement Plan',        sub: 'Clause 10.1 · forward-only status · health rating based on active backlog' },
   evidence:        { title: 'Evidence Templates',      sub: '6 evidence document types · dual-write to evidence + generated_evidence tables' },
   csv_import:      { title: 'CSV Import',                sub: '2 tools · import_risks + import_control_statuses · dry-run preview supported' },
+  risk_governance: { title: 'Risk Governance',            sub: '§6.1.3 · 3 tools · methodology singleton + first-class residual-risk acceptance records' },
   resources:       { title: 'Resources',               sub: 'Installation · quick start · npm · GitHub · author' },
 };
 
@@ -2039,7 +2084,7 @@ function showSection(id) {
   // fix active nav
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(n => n.classList.remove('active'));
-  const map = { gap: 0, risk: 1, policy: 2, tools: 3, procedures: 4, audit: 5, 'mgmt-review': 6, improvement: 7, evidence: 8, resources: 9 };
+  const map = { gap: 0, risk: 1, policy: 2, tools: 3, procedures: 4, audit: 5, 'mgmt-review': 6, improvement: 7, evidence: 8, csv_import: 9, risk_governance: 10, resources: 11 };
   navItems[map[id]]?.classList.add('active');
   document.getElementById('topbar-title').textContent = SECTION_META[id].title;
   document.getElementById('topbar-sub').textContent = SECTION_META[id].sub;

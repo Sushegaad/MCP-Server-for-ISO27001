@@ -12,8 +12,9 @@ import { getDb }    from "../db/connection.js";
 import { newId, now, toJson } from "../db/dal.js";
 import { ok, type ToolResult } from "../types/result.js";
 import { businessRule } from "../types/errors.js";
-import { parseCsv } from "./csv-utils.js";
+import { parseCsv, unescapeCsvCell } from "./csv-utils.js";
 import type { AssessmentRow } from "../db/types.js";
+import { type DiffRow, buildPreviewResponse, consumeProposal } from "./hitl-utils.js";
 
 // ── CSV helpers ───────────────────────────────────────────────
 
@@ -27,7 +28,10 @@ function csvToObjects(raw: string): Record<string, string>[] {
   const headers = (rows[0] ?? []).map(normaliseHeader);
   return rows.slice(1).map(row => {
     const obj: Record<string, string> = {};
-    headers.forEach((h, i) => { obj[h] = (row[i] ?? "").trim(); });
+    // unescapeCsvCell strips the single leading apostrophe csvCell() adds to
+    // formula-trigger values (OWASP CSV-injection escape), restoring the
+    // export → import round-trip without touching legitimate apostrophes.
+    headers.forEach((h, i) => { obj[h] = unescapeCsvCell(row[i] ?? "").trim(); });
     return obj;
   });
 }
@@ -41,7 +45,12 @@ export function handleImportRisks(args: Record<string, unknown>): ToolResult {
     csv_content,
     default_status = "open",
     dry_run        = false,
-  } = args as { csv_content: string; default_status?: string; dry_run?: boolean };
+    confirmed      = false,
+    proposal_id,
+  } = args as {
+    csv_content: string; default_status?: string; dry_run?: boolean;
+    confirmed?: boolean; proposal_id?: string;
+  };
 
   const rows = csvToObjects(csv_content);
 
@@ -89,15 +98,6 @@ export function handleImportRisks(args: Record<string, unknown>): ToolResult {
     previews.push({ asset, threat, vulnerability, likelihood, impact, risk_score, risk_level, owner, status, related_controls });
   }
 
-  if (errors.length > 0 && !dry_run) {
-    return ok({
-      success:        false,
-      message:        `Import aborted: ${errors.length} row(s) failed validation. Fix errors and retry.`,
-      errors,
-      valid_rows:     previews.length,
-    });
-  }
-
   if (dry_run) {
     return ok({
       dry_run:    true,
@@ -108,6 +108,36 @@ export function handleImportRisks(args: Record<string, unknown>): ToolResult {
       message:    errors.length === 0
         ? `All ${previews.length} rows valid. Remove dry_run=true to import.`
         : `${errors.length} row(s) have errors. Fix them before importing.`,
+    });
+  }
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [
+      { field: "rows_to_import",   old: "—", new: String(previews.length) },
+      { field: "rows_with_errors", old: "—", new: String(errors.length) },
+    ];
+    previews.slice(0, 3).forEach((p, i) => rows.push({
+      field: `sample_row_${i + 1}`,
+      old:   "—",
+      new:   `${String(p["asset"])} | ${String(p["threat"])} | L${String(p["likelihood"])}×I${String(p["impact"])} → ${String(p["risk_level"])}`,
+    }));
+    return ok(buildPreviewResponse("import_risks", rows, {
+      valid_rows: previews.length,
+      error_rows: errors.length,
+      errors:     errors.slice(0, 10),
+      message:    `⏸ No data written. Pass "confirmed": true to import ${previews.length} risk(s).`,
+    }));
+  }
+
+  consumeProposal(proposal_id, "import_risks");
+
+  if (errors.length > 0) {
+    return ok({
+      success:        false,
+      message:        `Import aborted: ${errors.length} row(s) failed validation. Fix errors and retry.`,
+      errors,
+      valid_rows:     previews.length,
     });
   }
 
@@ -161,8 +191,13 @@ export function handleImportControlStatuses(args: Record<string, unknown>): Tool
   const {
     assessment_id,
     csv_content,
-    dry_run = false,
-  } = args as { assessment_id: string; csv_content: string; dry_run?: boolean };
+    dry_run   = false,
+    confirmed = false,
+    proposal_id,
+  } = args as {
+    assessment_id: string; csv_content: string; dry_run?: boolean;
+    confirmed?: boolean; proposal_id?: string;
+  };
 
   const db = getDb();
 
@@ -209,15 +244,6 @@ export function handleImportControlStatuses(args: Record<string, unknown>): Tool
     updates.push({ control_id, status: statusRaw, notes, na_justification });
   }
 
-  if (errors.length > 0 && !dry_run) {
-    return ok({
-      success:      false,
-      message:      `Import aborted: ${errors.length} row(s) failed validation.`,
-      errors,
-      valid_rows:   updates.length,
-    });
-  }
-
   if (dry_run) {
     return ok({
       dry_run:    true,
@@ -228,6 +254,37 @@ export function handleImportControlStatuses(args: Record<string, unknown>): Tool
       message:    errors.length === 0
         ? `All ${updates.length} rows valid. Remove dry_run=true to import.`
         : `${errors.length} row(s) have errors.`,
+    });
+  }
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const rows: DiffRow[] = [
+      { field: "rows_to_import",   old: "—", new: String(updates.length) },
+      { field: "rows_with_errors", old: "—", new: String(errors.length) },
+    ];
+    updates.slice(0, 3).forEach((u, i) => rows.push({
+      field: `sample_row_${i + 1}`,
+      old:   "—",
+      new:   `${u.control_id} → ${u.status}`,
+    }));
+    return ok(buildPreviewResponse("import_control_statuses", rows, {
+      assessment_id,
+      valid_rows: updates.length,
+      error_rows: errors.length,
+      errors:     errors.slice(0, 10),
+      message:    `⏸ No data written. Pass "confirmed": true to update ${updates.length} control status(es).`,
+    }));
+  }
+
+  consumeProposal(proposal_id, "import_control_statuses");
+
+  if (errors.length > 0) {
+    return ok({
+      success:      false,
+      message:      `Import aborted: ${errors.length} row(s) failed validation.`,
+      errors,
+      valid_rows:   updates.length,
     });
   }
 

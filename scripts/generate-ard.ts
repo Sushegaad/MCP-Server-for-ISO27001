@@ -104,6 +104,11 @@ const endIdx   = html.indexOf(END);
 if (startIdx === -1 || endIdx === -1) {
   console.error("[ard] ARD-JSONLD markers not found in docs/index.html — skipping HTML injection.");
   console.error("[ard] Add the markers inside <head> to enable in-page markup.");
+} else if (endIdx <= startIdx) {
+  // Malformed markers (END before START) would slice the HTML incorrectly
+  // and corrupt docs/index.html — fail loud instead of writing garbage.
+  console.error("[ard] ARD-JSONLD END marker appears before START in docs/index.html — aborting.");
+  process.exit(1);
 } else {
   const updated = html.slice(0, startIdx) + block + html.slice(endIdx + END.length);
   writeFileSync(indexPath, updated);

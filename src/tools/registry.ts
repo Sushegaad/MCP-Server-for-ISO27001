@@ -122,6 +122,15 @@ export interface ToolDefinition {
   schema:      z.ZodTypeAny;
   handler:     (args: Record<string, unknown>) => ToolResult | Promise<ToolResult>;
   annotations?: ToolAnnotations;
+  /**
+   * HITL confirmation gate policy. `true` means the tool follows the
+   * preview/confirm protocol (buildPreviewResponse / consumeProposal in
+   * src/tools/hitl-utils.ts): its schema carries `confirmed` + `proposal_id`,
+   * an unconfirmed call must write nothing, and a confirmed call must consume
+   * a valid proposal token. The pipeline (src/tools/index.ts) verifies after
+   * every confirmed call that the gate actually executed.
+   */
+  hitl?: boolean;
 }
 
 // ── Annotation presets ────────────────────────────────────────
@@ -203,6 +212,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      UpdateControlStatusSchema,
     handler:     handleUpdateControlStatus,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "list_gap_assessments",
@@ -230,11 +240,12 @@ export const TOOLS: readonly ToolDefinition[] = [
   },
   {
     name:        "archive_gap_assessment",
-    description: "Archive a completed or superseded gap assessment with an optional reason.",
+    description: "Archive a completed or superseded gap assessment with an optional reason. Omit confirmed or pass confirmed=false to preview without writing; pass confirmed=true to commit (archiving is irreversible via tools).",
     minRole:     "analyst",
     schema:      ArchiveGapAssessmentSchema,
     handler:     handleArchiveGapAssessment,
     annotations: DESTRUCTIVE,
+    hitl:        true,
   },
 
   // ── Group 3: Risk Management (reads: viewer+, writes: analyst+) ──
@@ -255,6 +266,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      UpdateRiskSchema,
     handler:     handleUpdateRisk,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "list_risks",
@@ -279,6 +291,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      UpdateTreatmentStatusSchema,
     handler:     handleUpdateTreatmentStatus,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "generate_risk_register",
@@ -298,6 +311,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      CreatePolicySchema,
     handler:     handleCreatePolicy,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "update_policy",
@@ -306,6 +320,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      UpdatePolicySchema,
     handler:     handleUpdatePolicy,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "list_policies",
@@ -332,6 +347,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      UpdateSoaEntrySchema,
     handler:     handleUpdateSoaEntry,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "export_soa",
@@ -350,6 +366,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      CreateAuditSchema,
     handler:     handleCreateAudit,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "record_finding",
@@ -358,6 +375,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      RecordFindingSchema,
     handler:     handleRecordFinding,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "create_corrective_action",
@@ -366,6 +384,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      CreateCorrectiveActionSchema,
     handler:     handleCreateCorrectiveAction,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "update_corrective_action",
@@ -393,6 +412,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      RegisterEvidenceSchema,
     handler:     handleRegisterEvidence,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "list_evidence",
@@ -409,6 +429,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      VerifyEvidenceSchema,
     handler:     handleVerifyEvidence,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "link_jira_ticket",
@@ -448,11 +469,12 @@ export const TOOLS: readonly ToolDefinition[] = [
   },
   {
     name:        "revoke_api_key",
-    description: "Revoke an API key by label, preventing all future use.",
+    description: "Revoke an API key by label, preventing all future use and evicting its live SSE sessions. Omit confirmed or pass confirmed=false to preview without writing; pass confirmed=true to commit.",
     minRole:     "admin",
     schema:      RevokeApiKeySchema,
     handler:     handleRevokeApiKey,
     annotations: DESTRUCTIVE,
+    hitl:        true,
   },
 
   // ── Group 10: Organization Profile (admin) ────────────────
@@ -483,6 +505,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      UpdateProcedureSchema,
     handler:     handleUpdateProcedure,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "list_procedures",
@@ -534,6 +557,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      CompleteManagementReviewSchema,
     handler:     handleCompleteManagementReview,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "list_management_reviews",
@@ -593,19 +617,21 @@ export const TOOLS: readonly ToolDefinition[] = [
   // ── Group 15: CSV Import (analyst+) ───────────────────────
   {
     name:        "import_risks",
-    description: "Bulk-import risks from a CSV string. Supports dry_run=true for validation preview. Headers: asset, threat, vulnerability, likelihood (1–5), impact (1–5), owner, status, related_controls (semicolon-separated).",
+    description: "Bulk-import risks from a CSV string. Supports dry_run=true for validation preview. Omit confirmed or pass confirmed=false to preview the import without writing; pass confirmed=true to commit. Headers: asset, threat, vulnerability, likelihood (1–5), impact (1–5), owner, status, related_controls (semicolon-separated).",
     minRole:     "analyst",
     schema:      ImportRisksSchema,
     handler:     handleImportRisks,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "import_control_statuses",
-    description: "Bulk-update control implementation statuses in a gap assessment from a CSV string. Supports dry_run=true for validation preview. Headers: control_id, status, notes, na_justification.",
+    description: "Bulk-update control implementation statuses in a gap assessment from a CSV string. Supports dry_run=true for validation preview. Omit confirmed or pass confirmed=false to preview the import without writing; pass confirmed=true to commit. Headers: control_id, status, notes, na_justification.",
     minRole:     "analyst",
     schema:      ImportControlStatusesSchema,
     handler:     handleImportControlStatuses,
     annotations: MUTATING,
+    hitl:        true,
   },
 
   // ── Group 16: Risk Governance, §6.1.3 (reads: viewer+, acceptance: analyst+, methodology: admin) ──
@@ -616,6 +642,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      SetRiskMethodologySchema,
     handler:     handleSetRiskMethodology,
     annotations: UPSERT,
+    hitl:        true,
   },
   {
     name:        "record_risk_acceptance",
@@ -624,6 +651,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     schema:      RecordRiskAcceptanceSchema,
     handler:     handleRecordRiskAcceptance,
     annotations: MUTATING,
+    hitl:        true,
   },
   {
     name:        "list_risk_acceptances",

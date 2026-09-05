@@ -32,7 +32,7 @@ vi.mock("../../../src/db/connection.js", () => ({
 
 // ── Import SUT after mock is registered ───────────────────────
 
-import { parseCsv, csvCell } from "../../../src/tools/csv-utils.js";
+import { parseCsv, csvCell, unescapeCsvCell, isFormulaTrigger } from "../../../src/tools/csv-utils.js";
 import { handleGenerateRiskRegister } from "../../../src/tools/risks.js";
 import { handleImportRisks } from "../../../src/tools/csv-import.js";
 
@@ -142,10 +142,31 @@ describe("csvCell", () => {
     expect(csvCell("=1,2")).toBe("\"'=1,2\"");
   });
 
+  it("escapes formula triggers hidden behind leading whitespace", () => {
+    expect(csvCell("  =SUM(A1)")).toBe("'  =SUM(A1)");
+    expect(csvCell(" +1")).toBe("' +1");
+    expect(isFormulaTrigger("   @cmd")).toBe(true);
+    expect(isFormulaTrigger("plain")).toBe(false);
+  });
+
   it("round-trips through parseCsv for non-trigger values", () => {
     const values = ["plain", "a,b", 'say "hi"', "multi\nline", "café 🚀", ""];
     const line   = values.map(csvCell).join(",");
     expect(parseCsv(line)).toEqual([values]);
+  });
+
+  it("round-trips formula-trigger values via unescapeCsvCell", () => {
+    const values = ["=SUM(A1)", "+1", "-1", "@cmd", "  =x"];
+    for (const v of values) {
+      expect(unescapeCsvCell(csvCell(v))).toBe(v);
+    }
+  });
+
+  it("unescapeCsvCell leaves legitimate apostrophes untouched", () => {
+    expect(unescapeCsvCell("'twas the night")).toBe("'twas the night");
+    expect(unescapeCsvCell("O'Brien")).toBe("O'Brien");
+    expect(unescapeCsvCell("'=escaped")).toBe("=escaped"); // one strip only
+    expect(unescapeCsvCell("''=double")).toBe("''=double"); // remainder not a trigger
   });
 });
 
@@ -278,6 +299,31 @@ describe("risk register export → import round-trip", () => {
         : [];
       expect(got["related_controls"]).toEqual(srcControls);
     }
+  });
+
+  it("formula-trigger values survive an export → import round-trip", () => {
+    mockStmt.all.mockReturnValue([
+      {
+        ...SOURCE_RISKS[0],
+        asset: '=HYPERLINK("http://evil")',
+        threat: "+ACK",
+        vulnerability: "@import",
+        owner: "-owner",
+      },
+    ]);
+    const exported = handleGenerateRiskRegister({ format: "csv" });
+    const csv = (JSON.parse(exported.content[0].text) as { content: string }).content;
+
+    const imported = handleImportRisks({ csv_content: csv, dry_run: true });
+    const data = JSON.parse(imported.content[0].text) as {
+      error_rows: number;
+      preview: Array<Record<string, unknown>>;
+    };
+    expect(data.error_rows).toBe(0);
+    expect(data.preview[0]["asset"]).toBe('=HYPERLINK("http://evil")');
+    expect(data.preview[0]["threat"]).toBe("+ACK");
+    expect(data.preview[0]["vulnerability"]).toBe("@import");
+    expect(data.preview[0]["owner"]).toBe("-owner");
   });
 
   it("exported CSV cells never start with a raw formula trigger", () => {

@@ -465,19 +465,63 @@ describe("handleGenerateRemediationRoadmap", () => {
 // ── handleArchiveGapAssessment ────────────────────────────────────────────
 
 describe("handleArchiveGapAssessment", () => {
-  it("archives an active assessment successfully", () => {
+  it("returns a HITL preview (name, control count, irreversibility warning) when confirmed is omitted", () => {
+    const assessStmt = { get: vi.fn(() => activeAssessment), all: vi.fn(() => []), run: vi.fn() };
+    const countStmt  = { get: vi.fn(() => ({ n: 93 })), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare
+      .mockReturnValueOnce(assessStmt)
+      .mockReturnValueOnce(countStmt);
+
+    const result = handleArchiveGapAssessment({ assessment_id: "assess-1", reason: "Completed" });
+
+    expect(result.isError).toBe(false);
+    const data = JSON.parse(result.content[0].text);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.assessment_id).toBe("assess-1");
+    expect(data.message).toMatch(/irreversible/);
+    expect(data.diff).toContain("Q1 2024 Assessment");
+    expect(data.diff).toContain("93");
+    expect(data.diff).toContain("archived");
+  });
+
+  it("archives an active assessment on confirmed commit", () => {
     const assessStmt  = { get: vi.fn(() => activeAssessment), all: vi.fn(() => []), run: vi.fn() };
     const updateStmt  = { get: vi.fn(), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1 })) };
     mockDb.prepare
       .mockReturnValueOnce(assessStmt)
       .mockReturnValueOnce(updateStmt);
 
-    const result = handleArchiveGapAssessment({ assessment_id: "assess-1", reason: "Completed" });
+    const PROPOSAL_AGA_1 = "abababab-abab-4bab-8bab-abababababab";
+    _testSeedProposal(PROPOSAL_AGA_1, "archive_gap_assessment");
+
+    const result = handleArchiveGapAssessment({
+      assessment_id: "assess-1", reason: "Completed",
+      confirmed: true, proposal_id: PROPOSAL_AGA_1,
+    });
 
     expect(result.isError).toBe(false);
     const data = JSON.parse(result.content[0].text);
     expect(data.id).toBe("assess-1");
     expect(data.status).toBe("archived");
+  });
+
+  it("commit rejects a stale proposal when the assessment changed since preview (version binding)", () => {
+    const staleAssessment = { ...activeAssessment, updated_at: "2024-06-01 00:00:00Z" };
+    const assessStmt = { get: vi.fn(() => staleAssessment), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(assessStmt);
+
+    const PROPOSAL_AGA_2 = "cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd";
+    _testSeedProposal(PROPOSAL_AGA_2, "archive_gap_assessment", {
+      resource_version: "2024-01-01 00:00:00Z", // preview-time version
+    });
+
+    expect(() =>
+      handleArchiveGapAssessment({
+        assessment_id: "assess-1",
+        confirmed: true, proposal_id: PROPOSAL_AGA_2,
+      })
+    ).toThrow(/version conflict/);
   });
 
   it("throws BUSINESS_RULE McpError when assessment is already archived", () => {

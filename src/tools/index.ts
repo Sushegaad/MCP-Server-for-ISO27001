@@ -88,7 +88,7 @@ function extractShape(schema: z.ZodTypeAny): z.ZodRawShape {
  * Read-only lookup tools have been retired to MCP Resources (iso27001:// URIs).
  */
 export function registerAllTools(server: McpServer): void {
-  for (const { name: toolName, description, schema, handler, annotations } of TOOLS) {
+  for (const { name: toolName, description, schema, handler, annotations, hitl } of TOOLS) {
     const shape = extractShape(schema);
 
     // Each tool gets the same pipeline wrapper. Registry annotations
@@ -174,6 +174,23 @@ export function registerAllTools(server: McpServer): void {
           argsHash: hashArgs(parsed.data as Record<string, unknown>),
         };
         result = await callContext.run(ctx, () => handler(parsed.data as Record<string, unknown>));
+
+        // ── HITL gate verification (registry policy `hitl: true`) ──
+        // Detects a gated handler that failed to consume its proposal; the
+        // write may have committed — this converts a silent HITL bypass into
+        // a loud incident (thrown error, audit outcome "error") rather than
+        // a quiet success. It cannot roll back the handler's write; it exists
+        // so a mis-implemented commit branch is caught immediately in tests
+        // and in production, not discovered later in an audit.
+        const confirmedCall =
+          (parsed.data as Record<string, unknown>)["confirmed"] === true;
+        if (hitl === true && confirmedCall && !result.isError && ctx.proposalConsumed !== true) {
+          throw new McpError({
+            error_code: "INTERNAL_ERROR",
+            message:
+              "HITL gate did not execute for a confirmed call — server bug, write rejected",
+          });
+        }
 
         if (result.isError) {
           outcome = "error";

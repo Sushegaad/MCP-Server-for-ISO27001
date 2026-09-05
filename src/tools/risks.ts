@@ -303,13 +303,16 @@ export function handleUpdateTreatmentStatus(args: Record<string, unknown>): Tool
         "Record residual_likelihood and residual_impact on the treatment plan before marking it verified (completed).",
       );
     }
+    // The LATEST acceptance decision governs: a later 'rejected' row
+    // re-locks completion even if an earlier 'accepted' row exists.
     const acceptance = db.prepare(
-      "SELECT id FROM risk_acceptances WHERE risk_id = ? AND decision = 'accepted' LIMIT 1"
-    ).get(current.risk_id) as { id: string } | undefined;
-    if (!acceptance) {
+      "SELECT decision FROM risk_acceptances WHERE risk_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1"
+    ).get(current.risk_id) as { decision: string } | undefined;
+    if (!acceptance || acceptance.decision !== "accepted") {
       throw businessRule(
         "status",
-        "A treatment plan cannot be completed until the risk owner has accepted the residual risk (record_risk_acceptance).",
+        "A treatment plan cannot be completed until the risk owner has accepted the residual risk (record_risk_acceptance). " +
+        "The latest acceptance decision for the plan's risk must be 'accepted'.",
       );
     }
   }

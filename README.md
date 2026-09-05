@@ -7,7 +7,7 @@
 [![CI](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml/badge.svg)](https://github.com/Sushegaad/MCP-Server-for-ISO27001/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![ISO 27001:2022](https://img.shields.io/badge/ISO%2027001-2022-blue.svg)](https://www.iso.org/standard/27001)
-[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.82)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.82)
+[![Socket Badge](https://badge.socket.dev/npm/package/iso27001-mcp/0.9.83)](https://socket.dev/npm/package/iso27001-mcp/overview/0.9.83)
 
 **[▶ Live Interactive Demo](https://sushegaad.github.io/MCP-Server-for-ISO27001/)** · **[Guided First-Run Checklist →](QUICKSTART.md)** · **[Roadmap →](ROADMAP.md)**
 
@@ -160,7 +160,7 @@ Common causes: wrong Node.js version loaded by Claude Desktop, missing `DB_ENCRY
 | **Management Review** | 5 | admin | Full Clause 9.3 lifecycle — inputs, outputs, completion (enforces all 7 required input categories) |
 | **Improvement Plan** | 3 | analyst | Clause 10.1 improvement opportunities — track, link, and report |
 | **Evidence Templates** | 2 | analyst | Generate Mustache-rendered evidence documents; dual-write to evidence and generated_evidence tables |
-| **CSV Import** | 2 | analyst | Bulk-import risks and control statuses from a CSV string; supports `dry_run=true` validation preview before writing |
+| **CSV Import** | 2 | analyst | Bulk-import risks and control statuses from a CSV string; supports `dry_run=true` validation preview before writing; imports are HITL-gated with a preview of row counts before commit |
 | **Risk Governance** | 3 | viewer / analyst / admin | §6.1.3 risk methodology (scales, bands, acceptance threshold) and formal risk-owner acceptance of residual risk |
 
 ### MCP Workflow Prompts
@@ -228,11 +228,13 @@ Three roles with strict hierarchy. A key can only call tools at or below its ass
 | Create and export Statements of Applicability | — | ✅ | ✅ |
 | Track and link evidence artefacts | — | ✅ | ✅ |
 | Record and track improvement opportunities | — | ✅ | ✅ |
+| Record risk-owner acceptance of residual risk; verify evidence | — | ✅ | ✅ |
 | Plan and close internal audits; raise CARs | — | — | ✅ |
 | Set organisation profile | — | — | ✅ |
 | Run management reviews (Clause 9.3) | — | — | ✅ |
 | View and query the audit log | — | — | ✅ |
 | Generate and revoke API keys | — | — | ✅ |
+| Set the risk methodology (scales, bands, acceptance threshold) | — | — | ✅ |
 
 **Tool counts:** Viewer — 19 tools · Analyst — 41 tools · Admin — 56 tools
 
@@ -252,7 +254,7 @@ For the full security profile — threat model, hardening guide, supply chain at
 - **Audit log** — HMAC-SHA256 hash chain; every row linked to its predecessor — insertion, deletion, or reordering is detectable; `actor_type` (`ai` | `human` | `system`) and `model_id` are included in the hash so provenance claims are tamper-evident
 - **Prompt injection** — free-text fields sanitised before passing to any handler
 - **Verification and acceptance as first-class records** — evidence verification (independent reviewer, must differ from the collector) and risk-owner acceptance of residual risk are enforced, immutable objects in their own right — not free-text notes
-- **HITL confirmation gates** — 15 mutating tools require `confirmed: true` plus a server-issued `proposal_id` to commit; omitting either returns a preview diff and records `outcome: "proposed"` in the audit log. The `proposal_id` is a server-generated single-use UUID (10-minute TTL) — the model cannot self-confirm by calling the same tool twice with `confirmed: true`, because it must return a token it received from the preview response
+- **HITL confirmation gates** — 19 mutating tools require `confirmed: true` plus a server-issued `proposal_id` to commit; omitting either returns a preview diff and records `outcome: "proposed"` in the audit log. The `proposal_id` is a server-generated single-use UUID (10-minute TTL) — the model cannot self-confirm by calling the same tool twice with `confirmed: true`, because it must return a token it received from the preview response. Each proposal is bound to the authenticated caller (key_hash), a SHA-256 hash of the exact argument payload (constant-time compared at commit), and — for update tools — the target row's `updated_at` at preview time, so parameter substitution, target substitution, credential swap, replay, and stale-object writes are all rejected. The pipeline additionally verifies the gate actually executed on every confirmed call — a confirmed call that never consumed its proposal is rejected as a server bug rather than silently committed
 
 ---
 

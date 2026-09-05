@@ -425,7 +425,7 @@ describe("Business rule: treatment completion requires accepted residual risk (Â
 
   it("status='verified' WITH residuals and an accepted acceptance succeeds", () => {
     const selectStmt = { get: vi.fn(() => TREATMENT_ROW), run: vi.fn(), all: vi.fn(() => []) };
-    const acceptStmt = { get: vi.fn(() => ({ id: "acc1" })), run: vi.fn(), all: vi.fn(() => []) };
+    const acceptStmt = { get: vi.fn(() => ({ decision: "accepted" })), run: vi.fn(), all: vi.fn(() => []) };
     const updateStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
     const readBack   = { get: vi.fn(() => ({ ...TREATMENT_ROW, status: "verified" })), run: vi.fn(), all: vi.fn(() => []) };
 
@@ -448,10 +448,32 @@ describe("Business rule: treatment completion requires accepted residual risk (Â
     expect(result.isError).toBe(false);
     const data = JSON.parse(result.content[0].text) as { status: string };
     expect(data.status).toBe("verified");
-    // The acceptance query must filter on the plan's risk and decision='accepted'
+    // The gate must read the LATEST acceptance for the plan's risk â€” a later
+    // 'rejected' row re-locks completion.
     const acceptSql = (mockDb.prepare.mock.calls[1] as unknown[])[0] as string;
     expect(acceptSql).toContain("risk_acceptances");
-    expect(acceptSql).toContain("decision = 'accepted'");
+    expect(acceptSql).toContain("ORDER BY created_at DESC, rowid DESC LIMIT 1");
+  });
+
+  it("status='verified' is re-locked when the LATEST acceptance is 'rejected'", () => {
+    const selectStmt = { get: vi.fn(() => TREATMENT_ROW), run: vi.fn(), all: vi.fn(() => []) };
+    const acceptStmt = { get: vi.fn(() => ({ decision: "rejected" })), run: vi.fn(), all: vi.fn(() => []) };
+
+    mockDb.prepare
+      .mockReturnValueOnce(selectStmt)  // treatment lookup
+      .mockReturnValueOnce(acceptStmt); // latest acceptance â€” rejected
+
+    let caught: McpError | null = null;
+    try {
+      handleUpdateTreatmentStatus({
+        treatment_id: "550e8400-e29b-41d4-a716-446655440010",
+        status: "verified",
+      });
+    } catch (e) {
+      caught = e as McpError;
+    }
+    expect(caught?.error_code).toBe("BUSINESS_RULE");
+    expect(caught?.message).toMatch(/latest acceptance decision/);
   });
 
   it("non-completion transitions (in_progress) do not require an acceptance", () => {

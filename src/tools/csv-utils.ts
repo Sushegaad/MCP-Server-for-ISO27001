@@ -76,17 +76,29 @@ export function parseCsv(raw: string): string[][] {
 /** Characters that make a cell require quoting per RFC 4180. */
 const NEEDS_QUOTING = /[",\n\r]/;
 
-/** Spreadsheet formula triggers at the start of a cell (OWASP CSV-injection):
- *  = + - @ TAB CR. */
-const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
+/** True when a cell value would be interpreted as a spreadsheet formula
+ *  (OWASP CSV-injection): = + - @ after optional leading whitespace
+ *  (Excel skips leading spaces before evaluating), or a leading TAB/CR. */
+export function isFormulaTrigger(s: string): boolean {
+  return /^\s*[=+\-@]/.test(s) || /^[\t\r]/.test(s);
+}
 
 /** Serialize one CSV cell: always quote when the value contains , " \n or \r;
  *  escape embedded quotes as "". Additionally prefix-escape spreadsheet formula
- *  triggers (=, +, -, @, tab, CR at cell start) with a leading single quote to
- *  block CSV-injection when the file is opened in Excel/Sheets. */
+ *  triggers (=, +, -, @ — including after leading whitespace — and tab/CR at
+ *  cell start) with a leading single quote to block CSV-injection when the
+ *  file is opened in Excel/Sheets. */
 export function csvCell(value: unknown): string {
   let s = value === null || value === undefined ? "" : String(value);
-  if (FORMULA_TRIGGER.test(s)) s = "'" + s;
+  if (isFormulaTrigger(s)) s = "'" + s;
   if (NEEDS_QUOTING.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
   return s;
+}
+
+/** Undo csvCell()'s formula-trigger escape on import: strip ONE leading
+ *  apostrophe only when the remainder is itself a formula trigger. Legit
+ *  values that happen to start with an apostrophe are left untouched
+ *  (an apostrophe followed by a non-trigger was never added by csvCell). */
+export function unescapeCsvCell(s: string): string {
+  return s.startsWith("'") && isFormulaTrigger(s.slice(1)) ? s.slice(1) : s;
 }

@@ -11,6 +11,7 @@ import {
   resetRateLimit,
   clearAllRateLimits,
   currentWindowCount,
+  trackedKeyCount,
 } from "../../../src/security/rate-limiter.js";
 import { McpError } from "../../../src/types/errors.js";
 
@@ -118,6 +119,34 @@ describe("timestamp eviction after window expires", () => {
       expect(() => checkRateLimit("evict-key")).not.toThrow();
       // Only the one new call should be in the window
       expect(currentWindowCount("evict-key")).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+// ── Periodic dead-entry sweep ─────────────────────────────────
+
+describe("periodic sweep of dead window entries", () => {
+  it("removes keys whose window has fully aged out (no unbounded map growth)", () => {
+    vi.useFakeTimers();
+    try {
+      process.env["RATE_LIMIT_RPM"] = "5000";
+      clearAllRateLimits();
+
+      // One call for a key that will go stale
+      checkRateLimit("stale-key");
+      expect(trackedKeyCount()).toBe(1);
+
+      // Age it out of the 60s window
+      vi.advanceTimersByTime(61_000);
+
+      // 1000+ calls on an active key guarantee crossing a sweep boundary
+      for (let i = 0; i < 1001; i++) checkRateLimit("active-key");
+
+      // stale-key was swept; only the active key remains tracked
+      expect(trackedKeyCount()).toBe(1);
+      expect(currentWindowCount("stale-key")).toBe(0);
     } finally {
       vi.useRealTimers();
     }

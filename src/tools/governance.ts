@@ -33,6 +33,14 @@ export const RISK_METHODOLOGY_ID = "default";
  */
 const ABOVE_THRESHOLD_RATIONALE_MIN = 50;
 
+/**
+ * Default escalation threshold when no risk methodology is configured:
+ * the standard 5×5 High band starts at 12 (see import_risks / risks.ts).
+ * Without this fallback, an unconfigured methodology would silently
+ * disable the substantive-rationale rule entirely.
+ */
+const DEFAULT_HIGH_THRESHOLD = 12;
+
 // ── Types ─────────────────────────────────────────────────────
 
 interface ScalePoint  { value: number; label: string }
@@ -237,18 +245,31 @@ export function handleRecordRiskAcceptance(args: Record<string, unknown>): ToolR
   ).get(RISK_METHODOLOGY_ID) as { acceptance_threshold: number } | undefined;
   const threshold = methodology?.acceptance_threshold ?? null;
 
-  // Escalation rule: accepting an above-threshold residual risk demands a
-  // substantive rationale — a one-liner is not a governance decision.
-  if (
-    decision === "accepted" && residualScore !== null && threshold !== null &&
-    residualScore > threshold && rationale.length < ABOVE_THRESHOLD_RATIONALE_MIN
-  ) {
-    throw businessRule(
-      "rationale",
-      `Residual score ${residualScore} exceeds the acceptance threshold ${threshold}. ` +
-      `Accepting an above-threshold residual risk requires a substantive rationale ` +
-      `(at least ${ABOVE_THRESHOLD_RATIONALE_MIN} characters).`,
-    );
+  // Escalation rule: accepting an above-threshold risk demands a substantive
+  // rationale — a one-liner is not a governance decision. The effective score
+  // falls back to the inherent score when no treatment plan is referenced, so
+  // omitting the plan cannot bypass the check; and when no methodology is
+  // configured, the default High band (12) applies instead of no rule at all.
+  const effectiveScore  = residualScore ?? inherentScore;
+  const rationaleLength = rationale.trim().length;
+  if (decision === "accepted" && rationaleLength < ABOVE_THRESHOLD_RATIONALE_MIN) {
+    if (threshold !== null && effectiveScore > threshold) {
+      throw businessRule(
+        "rationale",
+        `${residualScore !== null ? "Residual" : "Inherent"} score ${effectiveScore} exceeds the acceptance threshold ${threshold}. ` +
+        `Accepting an above-threshold risk requires a substantive rationale ` +
+        `(at least ${ABOVE_THRESHOLD_RATIONALE_MIN} characters).`,
+      );
+    }
+    if (threshold === null && effectiveScore >= DEFAULT_HIGH_THRESHOLD) {
+      throw businessRule(
+        "rationale",
+        `${residualScore !== null ? "Residual" : "Inherent"} score ${effectiveScore} — no risk methodology configured — ` +
+        `default High-risk threshold (${DEFAULT_HIGH_THRESHOLD}) applies; set_risk_methodology to customize. ` +
+        `Accepting a High risk requires a substantive rationale ` +
+        `(at least ${ABOVE_THRESHOLD_RATIONALE_MIN} characters).`,
+      );
+    }
   }
 
   // ── HITL preview ──────────────────────────────────────────────
@@ -265,10 +286,11 @@ export function handleRecordRiskAcceptance(args: Record<string, unknown>): ToolR
       risk_id,
       treatment_plan_id: treatment_plan_id ?? null,
       message: `⏸ No data written. Pass "confirmed": true to record this ${decision === "accepted" ? "acceptance" : "rejection"} of residual risk.`,
-    }));
+    }, { resource_id: risk_id, resource_version: String(risk.updated_at) }));
   }
 
-  consumeProposal(proposal_id, "record_risk_acceptance");
+  consumeProposal(proposal_id, "record_risk_acceptance",
+    { resource_version: String(risk.updated_at) });
 
   const id = newId();
   const ts = now();

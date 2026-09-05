@@ -36,6 +36,15 @@ import {
   handleImportControlStatuses,
 } from "../../../src/tools/csv-import.js";
 import { McpError } from "../../../src/types/errors.js";
+import { _testSeedProposal } from "../../../src/tools/hitl-utils.js";
+
+let proposalCounter = 0;
+/** Seed a fresh unbound proposal for a commit-path call. */
+function seedProposal(tool: string): string {
+  const id = `00000000-0000-4000-8000-${String(++proposalCounter).padStart(12, "0")}`;
+  _testSeedProposal(id, tool);
+  return id;
+}
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -100,11 +109,38 @@ describe("handleImportRisks", () => {
     expect(data.message).toMatch(/have errors/);
   });
 
+  it("returns a HITL preview when confirmed is omitted (no writes)", () => {
+    const result = handleImportRisks({ csv_content: VALID_RISKS_CSV });
+    const data = JSON.parse(result.content[0]!.text);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.valid_rows).toBe(2);
+    expect(data.error_rows).toBe(0);
+    expect(data.proposal_id).toBeTruthy();
+    expect(data.diff).toContain("rows_to_import");
+    expect(data.diff).toContain("sample_row_1");
+    expect(mockDb.prepare).not.toHaveBeenCalled(); // nothing written
+  });
+
+  it("preview surfaces validation errors (capped at 10)", () => {
+    const badRows = Array.from({ length: 15 }, (_, i) => `,Missing asset ${i},v,3,4`);
+    const csv = ["asset,threat,vulnerability,likelihood,impact", ...badRows].join("\n");
+    const result = handleImportRisks({ csv_content: csv });
+    const data = JSON.parse(result.content[0]!.text);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.error_rows).toBe(15);
+    expect(data.errors).toHaveLength(10); // capped
+  });
+
   it("imports valid rows and returns risk_ids", () => {
     // mock transaction to execute the callback synchronously
     mockDb.transaction.mockImplementation((fn: (rows: unknown[]) => string[]) => fn);
 
-    const result = handleImportRisks({ csv_content: VALID_RISKS_CSV });
+    const result = handleImportRisks({
+      csv_content: VALID_RISKS_CSV,
+      confirmed: true,
+      proposal_id: seedProposal("import_risks"),
+    });
     const data = JSON.parse(result.content[0]!.text);
     expect(data.success).toBe(true);
     expect(data.imported).toBe(2);
@@ -119,7 +155,11 @@ describe("handleImportRisks", () => {
       "Good Asset,Good Threat,Good Vuln,3,4",
       "Bad,Bad,Bad,0,6", // likelihood 0 and impact 6 are out of range
     ].join("\n");
-    const result = handleImportRisks({ csv_content: csv });
+    const result = handleImportRisks({
+      csv_content: csv,
+      confirmed: true,
+      proposal_id: seedProposal("import_risks"),
+    });
     const data = JSON.parse(result.content[0]!.text);
     expect(data.success).toBe(false);
     expect(data.errors).toHaveLength(1);
@@ -133,7 +173,10 @@ describe("handleImportRisks", () => {
       "Asset,Threat,Vuln,2,3",
     ].join("\n");
     mockDb.transaction.mockImplementation((fn: (rows: unknown[]) => string[]) => fn);
-    handleImportRisks({ csv_content: csv, default_status: "accepted" });
+    handleImportRisks({
+      csv_content: csv, default_status: "accepted",
+      confirmed: true, proposal_id: seedProposal("import_risks"),
+    });
     // The insert.run should have been called with "accepted" as status.
     // risk_score/risk_level are GENERATED columns — never in the INSERT.
     expect(mockStmt.run).toHaveBeenCalledWith(
@@ -153,7 +196,10 @@ describe("handleImportRisks", () => {
       "Asset,Threat,Vuln,2,3,mitigated",
     ].join("\n");
     mockDb.transaction.mockImplementation((fn: (rows: unknown[]) => string[]) => fn);
-    handleImportRisks({ csv_content: csv });
+    handleImportRisks({
+      csv_content: csv,
+      confirmed: true, proposal_id: seedProposal("import_risks"),
+    });
     expect(mockStmt.run).toHaveBeenCalledWith(
       expect.any(String),
       "Asset", "Threat", "Vuln",
@@ -190,7 +236,10 @@ describe("handleImportRisks", () => {
       "Good,Good,Good,3,3",
       ",Bad,Bad,3,3", // missing asset
     ].join("\n");
-    const result = handleImportRisks({ csv_content: csv });
+    const result = handleImportRisks({
+      csv_content: csv,
+      confirmed: true, proposal_id: seedProposal("import_risks"),
+    });
     const data = JSON.parse(result.content[0]!.text);
     expect(data.success).toBe(false);
     expect(data.valid_rows).toBe(1);
@@ -240,6 +289,29 @@ describe("handleImportControlStatuses", () => {
     expect(data.preview[0].status).toBe("implemented");
   });
 
+  it("returns a HITL preview when confirmed is omitted (no writes beyond validation reads)", () => {
+    const assessmentStmt = { get: vi.fn().mockReturnValue(ASSESSMENT_ROW), run: vi.fn(), all: vi.fn() };
+    const controlStmt    = { get: vi.fn().mockReturnValue({ id: "ca-1" }), run: vi.fn(), all: vi.fn() };
+    mockDb.prepare
+      .mockReturnValueOnce(assessmentStmt)
+      .mockReturnValue(controlStmt);
+
+    const result = handleImportControlStatuses({
+      assessment_id: "assess-uuid-1",
+      csv_content: VALID_STATUSES_CSV,
+    });
+    const data = JSON.parse(result.content[0]!.text);
+    expect(data.hitl_proposed).toBe(true);
+    expect(data.status).toBe("preview");
+    expect(data.valid_rows).toBe(2);
+    expect(data.assessment_id).toBe("assess-uuid-1");
+    expect(data.diff).toContain("rows_to_import");
+    expect(data.diff).toContain("5.1 → implemented");
+    // Validation reads only — no UPDATE statement prepared
+    expect(controlStmt.run).not.toHaveBeenCalled();
+    expect(assessmentStmt.run).not.toHaveBeenCalled();
+  });
+
   it("updates rows when valid and dry_run=false", () => {
     const assessmentStmt = { get: vi.fn().mockReturnValue(ASSESSMENT_ROW), run: vi.fn(), all: vi.fn() };
     const controlStmt    = { get: vi.fn().mockReturnValue({ id: "ca-1" }), run: vi.fn(), all: vi.fn() };
@@ -254,6 +326,8 @@ describe("handleImportControlStatuses", () => {
     const result = handleImportControlStatuses({
       assessment_id: "assess-uuid-1",
       csv_content: VALID_STATUSES_CSV,
+      confirmed: true,
+      proposal_id: seedProposal("import_control_statuses"),
     });
     const data = JSON.parse(result.content[0]!.text);
     expect(data.success).toBe(true);
@@ -296,6 +370,8 @@ describe("handleImportControlStatuses", () => {
     const result = handleImportControlStatuses({
       assessment_id: "assess-uuid-1",
       csv_content: csv,
+      confirmed: true,
+      proposal_id: seedProposal("import_control_statuses"),
     });
     const data = JSON.parse(result.content[0]!.text);
     expect(data.success).toBe(false);
@@ -312,6 +388,8 @@ describe("handleImportControlStatuses", () => {
     const result = handleImportControlStatuses({
       assessment_id: "assess-uuid-1",
       csv_content: csv,
+      confirmed: true,
+      proposal_id: seedProposal("import_control_statuses"),
     });
     const data = JSON.parse(result.content[0]!.text);
     expect(data.success).toBe(false);
@@ -351,6 +429,8 @@ describe("handleImportControlStatuses", () => {
     const result = handleImportControlStatuses({
       assessment_id: "assess-uuid-1",
       csv_content: csv,
+      confirmed: true,
+      proposal_id: seedProposal("import_control_statuses"),
     });
     const data = JSON.parse(result.content[0]!.text);
     expect(data.success).toBe(false);
@@ -384,6 +464,8 @@ describe("handleImportControlStatuses", () => {
     const result = handleImportControlStatuses({
       assessment_id: "assess-uuid-1",
       csv_content: csv,
+      confirmed: true,
+      proposal_id: seedProposal("import_control_statuses"),
     });
     const data = JSON.parse(result.content[0]!.text);
     expect(data.success).toBe(false);

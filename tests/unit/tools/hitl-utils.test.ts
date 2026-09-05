@@ -14,6 +14,7 @@ import {
   _testSeedProposal,
   callContext,
   hashArgs,
+  normalizeActor,
   type CallContext,
 } from "../../../src/tools/hitl-utils.js";
 import { McpError } from "../../../src/types/errors.js";
@@ -283,5 +284,58 @@ describe("mutation-bound proposals (Phase 1 invariants)", () => {
     const id = "no-current-version-uuid";
     _testSeedProposal(id, "update_risk", { resource_version: "2026-01-01" });
     expect(() => consumeProposal(id, "update_risk")).not.toThrow();
+  });
+
+  it("sets ctx.proposalConsumed=true on successful consumption (pipeline gate flag)", () => {
+    const args = { risk_id: "RISK-01", likelihood: 3 };
+    const ctx: CallContext = { keyHash: "key-a", argsHash: hashArgs(args) };
+    const id = callContext.run(ctx, () => createProposal("update_risk"));
+    expect(ctx.proposalConsumed).toBeUndefined();
+    callContext.run(ctx, () => consumeProposal(id, "update_risk"));
+    expect(ctx.proposalConsumed).toBe(true);
+  });
+
+  it("does not set proposalConsumed when consumption fails", () => {
+    const args = { risk_id: "RISK-01" };
+    const ctx: CallContext = { keyHash: "key-a", argsHash: hashArgs(args) };
+    expect(() =>
+      callContext.run(ctx, () => consumeProposal("not-a-real-id", "update_risk")),
+    ).toThrow(McpError);
+    expect(ctx.proposalConsumed).toBeUndefined();
+  });
+});
+
+// ── normalizeActor ────────────────────────────────────────────
+
+describe("normalizeActor", () => {
+  it("lowercases, trims, and collapses internal whitespace", () => {
+    expect(normalizeActor("Alice Smith")).toBe("alice smith");
+    expect(normalizeActor("  alice   SMITH ")).toBe("alice smith");
+    expect(normalizeActor("Alice Smith")).toBe(normalizeActor("alice  smith "));
+  });
+
+  it("keeps genuinely different names distinct", () => {
+    expect(normalizeActor("Alice Smith")).not.toBe(normalizeActor("Alicia Smith"));
+  });
+});
+
+// ── _testSeedProposal test-only guard ─────────────────────────
+
+describe("_testSeedProposal guard", () => {
+  it("throws when VITEST is not set (production)", () => {
+    vi.stubEnv("VITEST", "");
+    try {
+      expect(() => _testSeedProposal("guard-uuid", "update_risk")).toThrow(
+        /_testSeedProposal is test-only/,
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("works under vitest (VITEST set)", () => {
+    expect(process.env["VITEST"]).toBeTruthy();
+    expect(() => _testSeedProposal("guard-ok-uuid", "update_risk")).not.toThrow();
+    consumeProposal("guard-ok-uuid", "update_risk"); // clean up
   });
 });

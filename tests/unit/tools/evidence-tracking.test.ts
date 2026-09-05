@@ -745,7 +745,7 @@ describe("handleRegisterEvidence — integrity fields and superseding", () => {
   });
 
   it("superseding an evidence record auto-expires the old one on commit", () => {
-    const oldRow = { ...EVIDENCE_ROW, id: "ev-old" };
+    const oldRow = { ...EVIDENCE_ROW, id: "ev-old", expiry_date: null };
     const newRow = { ...EVIDENCE_ROW, id: "ev-new", supersedes_evidence_id: "ev-old" };
     const targetStmt = { get: vi.fn(() => oldRow), all: vi.fn(() => []), run: vi.fn() };
     const insertStmt = { run: vi.fn(() => ({ changes: 1 })), get: vi.fn(), all: vi.fn(() => []) };
@@ -781,6 +781,50 @@ describe("handleRegisterEvidence — integrity fields and superseding", () => {
     expect(expireSql).toContain("UPDATE evidence SET expiry_date");
     expect(expireStmt.run).toHaveBeenCalled();
     expect((expireStmt.run.mock.calls[0] as unknown[])[2]).toBe("ev-old");
+  });
+
+  it("throws BUSINESS_RULE when the supersede target belongs to a different control", () => {
+    const oldRow = { ...EVIDENCE_ROW, id: "ev-old", control_id: "8.28", expiry_date: null };
+    const targetStmt = { get: vi.fn(() => oldRow), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(targetStmt);
+
+    try {
+      handleRegisterEvidence({
+        control_id: "5.1",
+        type: "log",
+        description: "Replacement artefact",
+        collected_by: "auditor@example.com",
+        collected_date: "2025-06-01",
+        supersedes_evidence_id: "ev-old",
+      });
+      expect.fail("expected throw");
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("BUSINESS_RULE");
+      expect((err as McpError).field).toBe("supersedes_evidence_id");
+      expect((err as McpError).message).toMatch(/same control/);
+    }
+  });
+
+  it("throws BUSINESS_RULE when the supersede target is already expired/superseded", () => {
+    const oldRow = { ...EVIDENCE_ROW, id: "ev-old", expiry_date: "2020-01-01" };
+    const targetStmt = { get: vi.fn(() => oldRow), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(targetStmt);
+
+    try {
+      handleRegisterEvidence({
+        control_id: "5.1",
+        type: "log",
+        description: "Replacement artefact",
+        collected_by: "auditor@example.com",
+        collected_date: "2025-06-01",
+        supersedes_evidence_id: "ev-old",
+      });
+      expect.fail("expected throw");
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("BUSINESS_RULE");
+      expect((err as McpError).field).toBe("supersedes_evidence_id");
+      expect((err as McpError).message).toMatch(/already expired\/superseded/);
+    }
   });
 });
 
@@ -824,6 +868,25 @@ describe("handleVerifyEvidence", () => {
       expect((err as McpError).error_code).toBe("BUSINESS_RULE");
       expect((err as McpError).field).toBe("reviewer");
       expect((err as McpError).message).toMatch(/someone other than its collector/);
+    }
+  });
+
+  it("independence rule normalizes case and whitespace ('Alice Smith' vs 'alice  smith ')", () => {
+    const row = { ...EVIDENCE_ROW, collected_by: "Alice Smith" };
+    const evidenceStmt = { get: vi.fn(() => row), all: vi.fn(() => []), run: vi.fn() };
+    mockDb.prepare.mockReturnValueOnce(evidenceStmt);
+
+    try {
+      handleVerifyEvidence({
+        evidence_id: "ev-1",
+        reviewer: "alice  smith ", // trivially-different variant of the collector
+        verification_status: "verified",
+        sufficiency: "sufficient",
+      });
+      expect.fail("expected throw");
+    } catch (err) {
+      expect((err as McpError).error_code).toBe("BUSINESS_RULE");
+      expect((err as McpError).field).toBe("reviewer");
     }
   });
 

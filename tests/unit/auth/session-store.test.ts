@@ -10,6 +10,7 @@ import {
   createSessionToken,
   lookupSessionToken,
   removeSessionToken,
+  removeSessionsByKeyHash,
   isSessionToken,
 } from "../../../src/auth/session-store.ts";
 
@@ -162,5 +163,31 @@ describe("isSessionToken", () => {
     const tok = createSessionToken("h", "admin");
     removeSessionToken(tok);
     expect(isSessionToken(tok)).toBe(true);
+  });
+});
+
+// ── removeSessionsByKeyHash (revocation eviction) ─────────────
+
+describe("removeSessionsByKeyHash", () => {
+  it("evicts every session under the given key hash and returns the count", () => {
+    const t1 = createSessionToken("hash-revoked", "admin");
+    const t2 = createSessionToken("hash-revoked", "admin");
+    const t3 = createSessionToken("hash-other", "viewer");
+    created.push(t1, t2, t3);
+
+    const evicted = removeSessionsByKeyHash("hash-revoked");
+
+    expect(evicted).toBe(2);
+    expect(lookupSessionToken(t1)).toBeUndefined();
+    expect(lookupSessionToken(t2)).toBeUndefined();
+    // Unrelated sessions survive
+    expect(lookupSessionToken(t3)).toEqual({ keyHash: "hash-other", role: "viewer" });
+  });
+
+  it("returns 0 when no sessions match", () => {
+    const t1 = createSessionToken("hash-live", "analyst");
+    created.push(t1);
+    expect(removeSessionsByKeyHash("hash-none")).toBe(0);
+    expect(lookupSessionToken(t1)).toBeDefined();
   });
 });

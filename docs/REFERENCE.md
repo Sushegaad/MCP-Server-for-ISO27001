@@ -187,7 +187,7 @@ npm run build
 
 The server exposes **56 tools** across 16 groups. All tools require a valid API key. The minimum role required is noted per group; `✅` marks required parameters, `—` marks optional ones.
 
-> **Human-in-the-loop (HITL) confirmation:** 15 critical write tools (`update_control_status`, `update_risk`, `update_treatment_status`, `create_policy`, `update_policy`, `update_soa_entry`, `create_audit`, `record_finding`, `create_corrective_action`, `register_evidence`, `verify_evidence`, `update_procedure`, `complete_management_review`, `set_risk_methodology`, `record_risk_acceptance`) accept a `confirmed` parameter (default `false`). When `false` or omitted, the tool writes **nothing** — it returns a preview diff plus a server-issued single-use `proposal_id` (10-minute TTL). To commit, call the tool again with the same arguments plus `confirmed=true` and that `proposal_id`. Each proposal is **mutation-bound**: it is tied to the authenticated caller (key hash), a canonical SHA-256 hash of the arguments, and — for update-type tools — the target row's version at preview time, so a commit is rejected if the caller, the arguments, or the underlying row changed since the preview (TOCTOU check).
+> **Human-in-the-loop (HITL) confirmation:** 19 critical write tools (`update_control_status`, `archive_gap_assessment`, `update_risk`, `update_treatment_status`, `create_policy`, `update_policy`, `update_soa_entry`, `create_audit`, `record_finding`, `create_corrective_action`, `register_evidence`, `verify_evidence`, `revoke_api_key`, `update_procedure`, `complete_management_review`, `import_risks`, `import_control_statuses`, `set_risk_methodology`, `record_risk_acceptance`) accept a `confirmed` parameter (default `false`). When `false` or omitted, the tool writes **nothing** — it returns a preview diff plus a server-issued single-use `proposal_id` (10-minute TTL). To commit, call the tool again with the same arguments plus `confirmed=true` and that `proposal_id`. Each proposal is **mutation-bound**: it is tied to the authenticated caller (key hash), a canonical SHA-256 hash of the arguments, and — for update-type tools — the target row's version at preview time, so a commit is rejected if the caller, the arguments, or the underlying row changed since the preview (TOCTOU check). The pipeline also **verifies the gate executed**: a confirmed call to a gated tool that returns success without having consumed its proposal is rejected as a server bug rather than committed.
 
 ---
 
@@ -304,6 +304,8 @@ Archive a completed assessment.
 |-----------|-----|------|----------------|
 | `assessment_id` | ✅ | string (UUID) | |
 | `reason` | — | string | Archival reason |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 ---
 
@@ -645,6 +647,8 @@ Immediately revoke a key by label.
 | Parameter | Req | Type | Values / Notes |
 |-----------|-----|------|----------------|
 | `label` | ✅ | string | The label assigned at key generation |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 ---
 
@@ -854,7 +858,7 @@ List generated evidence documents with optional filters.
 
 ### Group 15 — CSV Import *(minimum role: analyst)*
 
-Bulk-load ISMS data from CSV strings. Both tools validate **every** row before writing anything, and support `dry_run=true` for a validation-only preview that commits nothing.
+Bulk-load ISMS data from CSV strings. Both tools validate **every** row before writing anything, support `dry_run=true` for a validation-only preview, and are HITL-gated — the preview response summarises row counts and per-row errors, and nothing is written until the call is repeated with `confirmed=true` plus the issued `proposal_id`.
 
 #### `import_risks`
 Bulk-import risks from a CSV string. Required headers: `asset`, `threat`, `vulnerability`, `likelihood` (1–5), `impact` (1–5). Optional headers: `owner`, `status`, `related_controls` (semicolon-separated control IDs).
@@ -864,6 +868,8 @@ Bulk-import risks from a CSV string. Required headers: `asset`, `threat`, `vulne
 | `csv_content` | ✅ | string | CSV string including the header row (max 500,000 chars) |
 | `default_status` | — | enum | `open` \| `accepted` \| `mitigated` \| `transferred` \| `closed` — default: `open`; applied to rows without a `status` column |
 | `dry_run` | — | boolean | Default `false` — set `true` to validate without writing |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 #### `import_control_statuses`
 Bulk-update control implementation statuses in a gap assessment from a CSV string. Every `control_id` is validated against the assessment. Required headers: `control_id`, `status` (`implemented` \| `partial` \| `not_implemented` \| `na` \| `not_started`). Optional headers: `notes`, `na_justification` (required when `status=na`).
@@ -873,6 +879,8 @@ Bulk-update control implementation statuses in a gap assessment from a CSV strin
 | `assessment_id` | ✅ | string (UUID) | Target gap assessment |
 | `csv_content` | ✅ | string | CSV string including the header row (max 500,000 chars) |
 | `dry_run` | — | boolean | Default `false` — set `true` to validate without writing |
+| `confirmed` | — | boolean | Default `false` — preview mode returns a diff + `proposal_id`, writes nothing. Set `true` to commit |
+| `proposal_id` | — | string (UUID) | Single-use token from the preview response (10-min TTL) — required with `confirmed=true` |
 
 ---
 

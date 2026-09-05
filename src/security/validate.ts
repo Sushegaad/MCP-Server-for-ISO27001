@@ -192,6 +192,8 @@ export const GenerateRemediationRoadmapSchema = z.object({
 export const ArchiveGapAssessmentSchema = z.object({
   assessment_id: uuid,
   reason:        freeText(1000).optional(),
+  confirmed:     coerceBool.optional().default(false),
+  proposal_id:   z.string().uuid().optional(),
 });
 
 // ── Group 3: Risk Management ─────────────────────────────────
@@ -460,7 +462,9 @@ export const QueryAuditLogSchema = z.object({
 export const ListApiKeysSchema = z.object({});
 
 export const RevokeApiKeySchema = z.object({
-  label: shortText(200),
+  label:       shortText(200),
+  confirmed:   coerceBool.optional().default(false),
+  proposal_id: z.string().uuid().optional(),
 });
 
 // ── Group 10: Organization Profile ───────────────────────────
@@ -690,6 +694,8 @@ export const ImportRisksSchema = z.object({
   ),
   default_status: riskStatusEnum.optional().default("open"),
   dry_run:        coerceBool.optional().default(false),
+  confirmed:      coerceBool.optional().default(false),
+  proposal_id:    z.string().uuid().optional(),
 });
 
 export const ImportControlStatusesSchema = z.object({
@@ -698,6 +704,8 @@ export const ImportControlStatusesSchema = z.object({
     "CSV string with headers: control_id, status (implemented|partial|not_implemented|na|not_started), notes (optional), na_justification (required when status=na)",
   ),
   dry_run:       coerceBool.optional().default(false),
+  confirmed:     coerceBool.optional().default(false),
+  proposal_id:   z.string().uuid().optional(),
 });
 
 // ── Group 16: Risk Governance ────────────────────────────────

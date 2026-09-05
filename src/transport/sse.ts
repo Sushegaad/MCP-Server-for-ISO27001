@@ -98,13 +98,13 @@ export function startSseServer(server: McpServer): void {
 
   app.use(express.json());
 
-  if (isProduction) {
-    const limiter = rateLimit({
-      windowMs: 60 * 1000, max: 100,
-      standardHeaders: true, legacyHeaders: false,
-    });
-    app.use("/messages", limiter);
-  }
+  // HTTP-level rate limit applies in ALL modes (not just production) —
+  // the in-process per-key limiter (rate-limiter.ts) still applies on top.
+  const limiter = rateLimit({
+    windowMs: 60 * 1000, max: 100,
+    standardHeaders: true, legacyHeaders: false,
+  });
+  app.use("/messages", limiter);
 
   // ── Routes ────────────────────────────────────────────────
 
@@ -192,7 +192,11 @@ export function startSseServer(server: McpServer): void {
     await entry.transport.handlePostMessage(req, res);
   });
 
-  app.listen(port, () => {
-    console.error(`[iso27001-mcp] SSE server listening on port ${port}.`);
+  // Bind to loopback by default — exposing the SSE server on all interfaces
+  // must be a deliberate operator decision (SSE_HOST=0.0.0.0), ideally
+  // behind a TLS-terminating proxy.
+  const host = process.env["SSE_HOST"] ?? "127.0.0.1";
+  app.listen(port, host, () => {
+    console.error(`[iso27001-mcp] SSE server listening on ${host}:${port}.`);
   });
 }

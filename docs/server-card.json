@@ -6,12 +6,12 @@
     "url": "https://github.com/Sushegaad/MCP-Server-for-ISO27001",
     "source": "github"
   },
-  "version": "0.9.82",
+  "version": "0.9.83",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "iso27001-mcp",
-      "version": "0.9.82",
+      "version": "0.9.83",
       "transport": {
         "type": "stdio"
       },
@@ -47,7 +47,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-01T01:14:02.556Z",
+  "updatedAt": "2026-09-05T00:43:51.227Z",
   "toolCount": 56,
   "tools": [
     {
@@ -134,7 +134,7 @@
     },
     {
       "name": "archive_gap_assessment",
-      "description": "Archive a completed or superseded gap assessment with an optional reason.",
+      "description": "Archive a completed or superseded gap assessment with an optional reason. Omit confirmed or pass confirmed=false to preview without writing; pass confirmed=true to commit (archiving is irreversible via tools).",
       "minRole": "analyst",
       "annotations": {
         "readOnlyHint": false,
@@ -351,7 +351,7 @@
     },
     {
       "name": "revoke_api_key",
-      "description": "Revoke an API key by label, preventing all future use.",
+      "description": "Revoke an API key by label, preventing all future use and evicting its live SSE sessions. Omit confirmed or pass confirmed=false to preview without writing; pass confirmed=true to commit.",
       "minRole": "admin",
       "annotations": {
         "readOnlyHint": false,
@@ -492,7 +492,7 @@
     },
     {
       "name": "import_risks",
-      "description": "Bulk-import risks from a CSV string. Supports dry_run=true for validation preview. Headers: asset, threat, vulnerability, likelihood (1–5), impact (1–5), owner, status, related_controls (semicolon-separated).",
+      "description": "Bulk-import risks from a CSV string. Supports dry_run=true for validation preview. Omit confirmed or pass confirmed=false to preview the import without writing; pass confirmed=true to commit. Headers: asset, threat, vulnerability, likelihood (1–5), impact (1–5), owner, status, related_controls (semicolon-separated).",
       "minRole": "analyst",
       "annotations": {
         "readOnlyHint": false,
@@ -501,7 +501,7 @@
     },
     {
       "name": "import_control_statuses",
-      "description": "Bulk-update control implementation statuses in a gap assessment from a CSV string. Supports dry_run=true for validation preview. Headers: control_id, status, notes, na_justification.",
+      "description": "Bulk-update control implementation statuses in a gap assessment from a CSV string. Supports dry_run=true for validation preview. Omit confirmed or pass confirmed=false to preview the import without writing; pass confirmed=true to commit. Headers: control_id, status, notes, na_justification.",
       "minRole": "analyst",
       "annotations": {
         "readOnlyHint": false,

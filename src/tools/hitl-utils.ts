@@ -57,6 +57,10 @@ import { businessRule } from "../types/errors.js";
 export interface CallContext {
   keyHash:  string;
   argsHash: string;
+  /** Set to true by consumeProposal() on success — the pipeline verifies this
+   *  after a confirmed call to any registry entry with `hitl: true`, so a
+   *  gated handler that commits without consuming its proposal fails loud. */
+  proposalConsumed?: boolean;
 }
 export const callContext = new AsyncLocalStorage<CallContext>();
 
@@ -206,6 +210,22 @@ export function consumeProposal(
     );
   }
   proposals.delete(proposal_id); // single-use
+
+  // Mark the gate as executed for this call. The pipeline (src/tools/index.ts)
+  // checks this flag after every confirmed call to an `hitl: true` tool.
+  if (ctx) ctx.proposalConsumed = true;
+}
+
+// ── Actor normalization ───────────────────────────────────────
+
+/**
+ * Normalize a human actor name for identity comparison: trim, lowercase,
+ * collapse internal whitespace. Used by independence rules (e.g. the
+ * verify_evidence reviewer-vs-collector check) so trivial casing/spacing
+ * variants of the same name cannot defeat the rule.
+ */
+export function normalizeActor(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 // ── buildPreviewResponse ──────────────────────────────────────
@@ -262,6 +282,7 @@ export function _testSeedProposal(
   tool: string,
   binding?: Partial<ProposalRecord>,
 ): void {
+  if (!process.env["VITEST"]) throw new Error("_testSeedProposal is test-only");
   proposals.set(id, {
     tool,
     key_hash:         binding?.key_hash         ?? null,

@@ -62,13 +62,16 @@ describe("TOOLS registry integrity", () => {
 });
 
 describe("MCP tool annotations", () => {
-  // The 15 HITL-gated tools (preview/confirm via buildPreviewResponse).
+  // The 19 HITL-gated tools (preview/confirm via buildPreviewResponse) —
+  // this explicit list IS the policy; changing it is a deliberate act.
   const HITL_TOOLS = [
     "update_control_status", "update_risk", "update_treatment_status",
     "create_policy", "update_policy", "update_soa_entry",
     "create_audit", "record_finding", "create_corrective_action",
     "update_procedure", "complete_management_review", "register_evidence",
     "verify_evidence", "set_risk_methodology", "record_risk_acceptance",
+    "import_risks", "import_control_statuses",
+    "archive_gap_assessment", "revoke_api_key",
   ];
 
   it("every entry has annotations with readOnlyHint defined", () => {
@@ -101,6 +104,74 @@ describe("MCP tool annotations", () => {
       .map((t) => t.name)
       .sort();
     expect(destructive).toEqual(["archive_gap_assessment", "revoke_api_key"]);
+  });
+});
+
+describe("HITL registry policy (hitl: true)", () => {
+  const HITL_EXPECTED = [
+    "archive_gap_assessment",
+    "complete_management_review",
+    "create_audit",
+    "create_corrective_action",
+    "create_policy",
+    "import_control_statuses",
+    "import_risks",
+    "record_finding",
+    "record_risk_acceptance",
+    "register_evidence",
+    "revoke_api_key",
+    "set_risk_methodology",
+    "update_control_status",
+    "update_policy",
+    "update_procedure",
+    "update_risk",
+    "update_soa_entry",
+    "update_treatment_status",
+    "verify_evidence",
+  ];
+
+  it("the exact set of hitl tools matches the expected 19-name policy list", () => {
+    const actual = TOOLS.filter((t) => t.hitl === true).map((t) => t.name).sort();
+    expect(actual).toEqual(HITL_EXPECTED);
+    expect(actual).toHaveLength(19);
+  });
+
+  it("every DESTRUCTIVE-annotated tool is HITL-gated", () => {
+    for (const t of TOOLS) {
+      if (t.annotations?.destructiveHint === true) {
+        expect(t.hitl, `${t.name} is destructive but not hitl`).toBe(true);
+      }
+    }
+  });
+
+  it("no readOnlyHint:true tool is HITL-gated", () => {
+    for (const t of TOOLS) {
+      if (t.annotations?.readOnlyHint === true) {
+        expect(t.hitl, `${t.name} is read-only but hitl`).not.toBe(true);
+      }
+    }
+  });
+
+  it("both CSV importers are HITL-gated", () => {
+    const byName = new Map(TOOLS.map((t) => [t.name, t]));
+    expect(byName.get("import_risks")?.hitl).toBe(true);
+    expect(byName.get("import_control_statuses")?.hitl).toBe(true);
+  });
+
+  it("every hitl tool's schema accepts confirmed and proposal_id", () => {
+    for (const t of TOOLS) {
+      if (t.hitl !== true) continue;
+      const base: Record<string, unknown> = {};
+      // A partial parse is enough to check the fields exist in the shape.
+      const shape = (TOOL_SCHEMAS[t.name] as unknown as {
+        _def?: { schema?: { shape?: Record<string, unknown> } };
+        shape?: Record<string, unknown>;
+      });
+      const rawShape = shape.shape ?? shape._def?.schema?.shape;
+      expect(rawShape, `shape for ${t.name}`).toBeDefined();
+      expect(Object.keys(rawShape ?? base)).toContain("confirmed");
+      expect(Object.keys(rawShape ?? base)).toContain("proposal_id");
+    }
   });
 });
 

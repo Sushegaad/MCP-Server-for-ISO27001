@@ -542,12 +542,35 @@ export function handleGenerateRemediationRoadmap(args: Record<string, unknown>):
 // ── archive_gap_assessment ────────────────────────────────────
 
 export function handleArchiveGapAssessment(args: Record<string, unknown>): ToolResult {
-  const { assessment_id, reason } = args as { assessment_id: string; reason?: string };
+  const { assessment_id, reason, confirmed = false, proposal_id } = args as {
+    assessment_id: string; reason?: string;
+    confirmed?: boolean; proposal_id?: string;
+  };
 
   const assessment = requireAssessment(assessment_id);
   if (assessment.status === "archived") {
     throw businessRule("gap_assessment", "Assessment is already archived.");
   }
+
+  // ── HITL preview ──────────────────────────────────────────────
+  if (!confirmed) {
+    const controlCount = (getDb().prepare(
+      "SELECT count(*) AS n FROM control_statuses WHERE assessment_id = ?"
+    ).get(assessment_id) as { n: number }).n;
+    const rows: DiffRow[] = [
+      { field: "name",             old: assessment.name, new: assessment.name },
+      { field: "status",           old: assessment.status, new: "archived" },
+      { field: "controls_in_assessment", old: String(controlCount), new: String(controlCount) },
+      { field: "archive_reason",   old: null, new: reason ?? null },
+    ];
+    return ok(buildPreviewResponse("archive_gap_assessment", rows, {
+      assessment_id,
+      message: "⏸ No data written. Warning: archiving is irreversible via tools — an archived assessment becomes immutable. Pass \"confirmed\": true to archive.",
+    }, { resource_id: assessment_id, resource_version: String(assessment.updated_at) }));
+  }
+
+  consumeProposal(proposal_id, "archive_gap_assessment",
+    { resource_version: String(assessment.updated_at) });
 
   const ts = now();
   getDb().prepare(`

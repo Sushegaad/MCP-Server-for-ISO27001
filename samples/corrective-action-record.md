@@ -233,13 +233,18 @@ Emergency review of all Critical and High severity Tenable.io findings was condu
 | All 14 unresolved findings reviewed with Engineering leads | Marcus Webb, Lead Engineer | 2024-10-03 to 2024-10-05 |
 | 11 of 14 findings remediated (patches applied, configurations updated) | Cloud Engineering | 2024-10-17 |
 | 3 remaining findings accepted as residual risk with documented business risk acceptance | Sarah Chen, CISO | 2024-10-18 |
-| Risk acceptance forms completed for 3 accepted findings (RISK-005 updated to reflect treatment) | Marcus Webb | 2024-10-18 |
+| Risk acceptance records created via `record_risk_acceptance` for the 3 accepted findings (RISK-005 updated to reflect treatment) | Marcus Webb | 2024-10-18 |
 | Emergency scan re-run to verify remediation | J. Patel | 2024-10-20 |
 
-**Risk acceptance detail for 3 remaining findings:**
-- Finding RA-001: CVE affecting an EC2 instance scheduled for decommission by 2024-11-30; mitigation: network access restricted to internal only; risk accepted by CISO until decommission
-- Finding RA-002: CVE in a third-party library with no available patch; mitigation: WAF rule added; risk accepted by CISO pending vendor patch
-- Finding RA-003: Low-exploitability CVE on monitoring EC2 instance; mitigation: instance isolated from CDE; risk accepted
+**Risk acceptance records for the 3 remaining findings** — each recorded as a first-class ISMS object via the `record_risk_acceptance` tool (HITL-confirmed: preview reviewed by the risk owner, then committed with `confirmed: true` + the issued `proposal_id`). Each record freezes the inherent and residual scores and the acceptance threshold in force at decision time; the immutable audit-log entry evidences §6.1.3 sign-off:
+
+| Record | Risk | Decision | Inherent (frozen) | Residual (frozen) | Threshold at decision | Risk Owner | Rationale |
+|--------|------|----------|-------------------|-------------------|-----------------------|------------|-----------|
+| RA-001 | RISK-005 | accepted | L2 × I4 = 8 | L1 × I3 = 3 | 6 | Sarah Chen, CISO | CVE affects an EC2 instance scheduled for decommission by 2024-11-30; network access restricted to internal only until decommission |
+| RA-002 | RISK-005 | accepted | L2 × I4 = 8 | L2 × I3 = 6 | 6 | Sarah Chen, CISO | Third-party library CVE with no available patch; WAF rule deployed as compensating control; accepted pending vendor patch, review due 2025-01-31 |
+| RA-003 | RISK-005 | accepted | L2 × I4 = 8 | L1 × I2 = 2 | 6 | Sarah Chen, CISO | Low-exploitability CVE on a monitoring EC2 instance isolated from the CDE; residual score well below threshold |
+
+All three residual scores are at or below the methodology's acceptance threshold of 6, so no above-threshold escalation rationale was required. The acceptances are retrievable via `list_risk_acceptances` (filter `risk_id = RISK-005`), and the related treatment plan could not have transitioned to `verified` without the latest acceptance being `accepted`.
 
 ---
 
