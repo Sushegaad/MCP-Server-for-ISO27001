@@ -4,7 +4,9 @@ name: Publish to MCP Registry
 # NOT trigger this workflow (GitHub suppresses workflow-triggered events to
 # prevent loops) — the release pipeline therefore runs the registry publish
 # as a chained job in release.yml. This workflow remains for releases created
-# manually in the GitHub UI, plus workflow_dispatch for manual repair runs.
+# manually in the GitHub UI, plus workflow_dispatch for manual repair runs
+# (it publishes whatever version server.json on the selected branch declares).
+
 on:
   release:
     types: [published]
@@ -18,10 +20,36 @@ jobs:
   publish:
     name: Publish to registry.modelcontextprotocol.io
     runs-on: ubuntu-latest
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.1
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - name: Publish to MCP Registry
-        uses: modelcontextprotocol/registry/.github/actions/publish@115f85225c9fac5281d8a2dc8551cf49b004d2f9 # main as of 2026-11-15
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      # The upstream composite action (.github/actions/publish) was removed from
+      # modelcontextprotocol/registry in late 2026; the supported path is the
+      # mcp-publisher CLI, downloaded pinned-by-tag and Sigstore-verified.
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+          arch="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"
+          archive="mcp-publisher_${os}_${arch}.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server to MCP Registry
+        run: ./mcp-publisher publish
