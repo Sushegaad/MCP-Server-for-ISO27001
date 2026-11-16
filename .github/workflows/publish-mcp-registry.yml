@@ -1,8 +1,14 @@
 name: Publish to MCP Registry
 
+# NOTE: releases created by release.yml with the default GITHUB_TOKEN do
+# NOT trigger this workflow (GitHub suppresses workflow-triggered events to
+# prevent loops) — the release pipeline therefore runs the registry publish
+# as a chained job in release.yml. This workflow remains for releases created
+# manually in the GitHub UI, plus workflow_dispatch for manual repair runs.
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,6 +22,6 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Publish to MCP Registry
-        uses: modelcontextprotocol/registry/.github/actions/publish@29e32c39dcb5e0e2b43974089d959fcc4794eb6d # main as of 2026-07-19
+        uses: modelcontextprotocol/registry/.github/actions/publish@115f85225c9fac5281d8a2dc8551cf49b004d2f9 # main as of 2026-11-15
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

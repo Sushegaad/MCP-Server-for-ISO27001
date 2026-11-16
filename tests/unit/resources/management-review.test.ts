@@ -6,7 +6,7 @@
  *   - iso27001-management-review list: empty, with/without completed_at
  *   - iso27001-management-review read: auth, nested inputs+outputs,
  *     fromJsonArray for reviewers, not-found error
- *   - iso27001-improvement-plan singleton: auth, all 5 health rating
+ *   - iso27001-improvement-plan-backlog singleton: auth, all 5 health rating
  *     branches (at_risk / needs_attention / excellent / good / fair),
  *     stats propagation, opportunity list passthrough
  */
@@ -132,8 +132,8 @@ describe("registerManagementReviewResources", () => {
     expect(r.listFn).toBeDefined();
   });
 
-  it("registers iso27001-improvement-plan as a singleton (no list callback)", () => {
-    const r = getResource("iso27001-improvement-plan");
+  it("registers iso27001-improvement-plan-backlog as a singleton (no list callback)", () => {
+    const r = getResource("iso27001-improvement-plan-backlog");
     expect(r.listFn).toBeUndefined();
   });
 });
@@ -286,7 +286,7 @@ function callPlan(statsOverride: ImprovementStats, opportunities: unknown[] = []
   stmts.stats.get.mockReturnValue(statsOverride);
   stmts.opportunities.all.mockReturnValue(opportunities);
   const uri = new URL("iso27001://improvement-plan");
-  const result = getResource("iso27001-improvement-plan").readFn(
+  const result = getResource("iso27001-improvement-plan-backlog").readFn(
     uri, {}, MOCK_EXTRA,
   ) as { contents: { text: string }[] };
   return JSON.parse(result.contents[0].text) as PlanPayload;
@@ -297,14 +297,14 @@ function callPlan(statsOverride: ImprovementStats, opportunities: unknown[] = []
 describe("iso27001-improvement-plan read callback", () => {
   it("calls assertResourceAuth with extra", () => {
     const uri = new URL("iso27001://improvement-plan");
-    getResource("iso27001-improvement-plan").readFn(uri, {}, MOCK_EXTRA);
+    getResource("iso27001-improvement-plan-backlog").readFn(uri, {}, MOCK_EXTRA);
     expect(mockAssertResourceAuth).toHaveBeenCalledOnce();
     expect(mockAssertResourceAuth).toHaveBeenCalledWith(MOCK_EXTRA);
   });
 
   it("returns mimeType application/json", () => {
     const uri = new URL("iso27001://improvement-plan");
-    const result = getResource("iso27001-improvement-plan").readFn(
+    const result = getResource("iso27001-improvement-plan-backlog").readFn(
       uri, {}, MOCK_EXTRA,
     ) as { contents: { mimeType: string }[] };
     expect(result.contents[0].mimeType).toBe("application/json");
@@ -379,7 +379,7 @@ describe("iso27001-improvement-plan read callback", () => {
     stmts.stats.get.mockReturnValue({ open: null, in_progress: null, implemented: null, closed: null, overdue: null });
     stmts.opportunities.all.mockReturnValue([]);
     const uri = new URL("iso27001://improvement-plan");
-    const result = getResource("iso27001-improvement-plan").readFn(
+    const result = getResource("iso27001-improvement-plan-backlog").readFn(
       uri, {}, MOCK_EXTRA,
     ) as { contents: { text: string }[] };
     const payload = JSON.parse(result.contents[0].text) as PlanPayload;

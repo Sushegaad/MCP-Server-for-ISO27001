@@ -14,7 +14,7 @@
  *   - Optional fields: .optional() or .optional().default(value)
  */
 
-import { z } from "zod";
+import { z } from "zod/v3";
 
 // ── Shared primitives ─────────────────────────────────────────
 

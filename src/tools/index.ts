@@ -24,7 +24,7 @@
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { validateKey, loadRole } from "../auth/api-key.js";
 import { isSessionToken, lookupSessionToken } from "../auth/session-store.js";
 import { assertPermission } from "../auth/rbac.js";

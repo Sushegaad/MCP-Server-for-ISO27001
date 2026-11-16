@@ -134,9 +134,12 @@ export function registerManagementReviewResources(server: McpServer): void {
     },
   );
 
-  // ── iso27001://improvement-plan (singleton) ──────────────────
+  // ── iso27001://improvement-plan (singleton backlog) ──────────
+  // Named distinctly from the per-opportunity template in
+  // improvement-plan.ts ("iso27001-improvement-plan") — SDK ≥1.32 rejects
+  // duplicate resource-template names at registration time.
   server.resource(
-    "iso27001-improvement-plan",
+    "iso27001-improvement-plan-backlog",
     new ResourceTemplate("iso27001://improvement-plan", { list: undefined }),
     {
       description: "ISO 27001 improvement opportunity backlog (Clause 10.1). Returns all opportunities sorted by priority and target date, with a health rating (excellent/good/fair/needs_attention/at_risk) and counts by status.",

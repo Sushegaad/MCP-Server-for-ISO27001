@@ -1,3 +1,29 @@
+## What's new in v0.9.84 — HTTP transport security hardening
+
+A focused dependency-security release: zero schema migrations, no compliance-tool behavior changes, a demonstrably safer HTTP deployment path.
+
+### Dependency security (clears the failing audit gate)
+
+- **`@modelcontextprotocol/sdk` 1.29.0 → 1.32.2** — resolves six advisories (high severity) in the MCP SDK: unlimited HTTP request body size in server transports, bearer tokens accepted for another service, task/session binding gaps, memory exhaustion during validation, and cross-origin redirect credential leakage. The Express layer now also enforces the SDK's 4 MB message cap explicitly (`express.json({ limit: "4mb" })`).
+- **Express 4 → 5** — closes the long-tracked `qs` query-parser advisories (GHSA-x5fp-wj9c-mxmx, GHSA-4mjr-xmp4-gh2g); the vulnerable `qs` chain is gone from the resolved tree. `express-rate-limit` verified compatible. stdio mode unaffected.
+- **zod → 4.6.7** — resolves GHSA-mrhx-c7xc-m3w5 (DoS, no patched 3.x exists) via the package's maintained `zod/v3` compat subpath: identical Zod 3 API, no schema migration, SDK peer ranges satisfied.
+- Dev-dependency moderates swept (`vite`, `hono`, `brace-expansion`, `fast-uri`, and friends). Remaining: 10 dev-only moderates whose fixes require disruptive majors (vitest 5, typescript-eslint 8) — tracked, zero high/critical anywhere.
+
+### Transport hardening & fixes
+
+- **`sessionId` is now validated at the HTTP boundary** — must be a single well-formed UUID string; arrays, objects, or malformed values return `400` before any session lookup (defense-in-depth independent of query-parser behavior)
+- **Fixed a latent SSE bug**: the parsed request body was never handed to the SDK transport after `express.json()` consumed the stream, silently breaking `_meta.apiKey` injection on the SSE path
+- **Fixed a duplicate resource name** (`iso27001-improvement-plan` registered twice) that SDK ≥ 1.32 rejects at startup; the resource URI is unchanged
+- The SSE app is now exported as a testable `buildSseApp()`; **11 new integration tests** cover /health, auth rejection (401), sessionId validation (400), unknown sessions (404), and revocation eviction through the real session store
+
+### Release pipeline fix
+
+- **The MCP registry listing had been stale since 0.8.4**: GitHub releases created by the release workflow's `GITHUB_TOKEN` never trigger the `on: release` registry-publish workflow (GitHub suppresses workflow-generated events). The registry publish now runs as a chained job inside `release.yml` itself; the standalone workflow gains `workflow_dispatch` for manual repair runs, and the registry action pin is refreshed.
+
+**Tests: 853 passing** (+11). Audit gate: clean at high/critical.
+
+---
+
 ## What's new in v0.9.83 — HITL as enforced policy
 
 A security-audit-driven hardening release. The unifying change: **HITL gating is now registry policy, not handler convention** — the same "impossible by construction" philosophy that eliminated registration drift now applies to write-protection.

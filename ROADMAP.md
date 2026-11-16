@@ -14,8 +14,6 @@ Priority: **medium** — completes the CSV migration path.
 
 ### Known issues (tracked)
 
-- **Express 5 migration (SSE transport)** — express 4.x carries moderate `qs` advisories (GHSA-x5fp-wj9c-mxmx, GHSA-4mjr-xmp4-gh2g) that only clear with express@5, a breaking change. The SSE server (`src/transport/sse.ts`) parses query strings, so the exposure is real in team/hosted mode though moderate in severity. Migrate deliberately (route syntax and body-parser changes) rather than via `npm audit fix --force`; stdio mode is unaffected.
-
 > Migration `.sql` sibling files: decision made — the embedded SQL strings in
 > `src/db/migrations/index.ts` are the single canonical source (tsup bundles a
 > single CJS file); the `.sql` sibling convention is formally dropped.
@@ -74,6 +72,7 @@ Extend the control registry and SoA tooling to support additional frameworks alo
 
 | Feature | Version |
 |---------|---------|
+| Express 5 migration (SSE transport) — clears the express 4 `qs` advisories; sessionId UUID validation added | v0.9.84 |
 | RFC 4180 quote-aware CSV tokenizer (`parseCsv`) shared by importers and exporters | v0.9.81 |
 | Risk register export/import round-trip — `vulnerability`/`related_controls` columns and aligned status vocabulary | v0.9.81 |
 | CSV bulk import — `import_risks` + `import_control_statuses` with dry-run preview | v0.9.74 |

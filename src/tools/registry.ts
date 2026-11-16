@@ -11,7 +11,7 @@
  * src/security/validate.ts and the handler in a src/tools/ domain file).
  */
 
-import type { z } from "zod";
+import type { z } from "zod/v3";
 import type { ToolResult } from "../types/result.js";
 
 // ── Schemas ───────────────────────────────────────────────────

@@ -50,7 +50,7 @@ const sessions = new Map<string, SessionEntry>();
 const ttlMs =
   parseInt(process.env["SESSION_TTL_HOURS"] ?? "4") * 60 * 60 * 1000;
 
-setInterval(() => {
+const ttlSweep = setInterval(() => {
   const now = Date.now();
   for (const [sessionId, entry] of sessions) {
     if (now - entry.lastActivity > ttlMs) {
@@ -66,17 +66,28 @@ setInterval(() => {
   }
 }, 60_000);
 
-// ── Main export ───────────────────────────────────────────────
+// The sweep must not keep the process alive on its own — the HTTP listener
+// does that. This also lets test runners import this module without hanging.
+ttlSweep.unref();
 
-export function startSseServer(server: McpServer): void {
+// ── sessionId validation ──────────────────────────────────────
+// Session IDs are minted with randomUUID() at /sse connect time, so any
+// /messages sessionId that is not a single well-formed UUID string is
+// rejected up front — before any session lookup. Express 5's simple query
+// parser can still yield string[] for repeated params (?sessionId=a&b).
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Explicit request-body cap for /messages. Matches the MCP SDK's own
+// per-message limit (MAXIMUM_MESSAGE_SIZE = '4mb' in server/sse.js) so the
+// Express layer rejects oversized payloads before they reach the transport.
+const JSON_BODY_LIMIT = "4mb";
+
+// ── App construction (exported for integration tests) ────────
+
+export function buildSseApp(server: McpServer): express.Express {
   const isProduction = process.env["NODE_ENV"] === "production";
-  const port = parseInt(process.env["SSE_PORT"] ?? "3000", 10);
-
-  if (isProduction && process.env["BEHIND_TLS_PROXY"] !== "true") {
-    console.error(
-      "[SECURITY] Running in production without BEHIND_TLS_PROXY=true. Ensure TLS is terminated upstream.",
-    );
-  }
 
   const app = express();
 
@@ -96,7 +107,7 @@ export function startSseServer(server: McpServer): void {
     next();
   });
 
-  app.use(express.json());
+  app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
   // HTTP-level rate limit applies in ALL modes (not just production) —
   // the in-process per-key limiter (rate-limiter.ts) still applies on top.
@@ -164,11 +175,15 @@ export function startSseServer(server: McpServer): void {
   // Message handler — injects the session token (not the raw key) into _meta.apiKey.
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   app.post("/messages", async (req, res) => {
-    const sessionId = req.query["sessionId"] as string | undefined;
-    if (!sessionId) {
-      res.status(400).json({ error: "Missing sessionId query parameter." });
+    // Defense-in-depth: sessionId must be a single well-formed UUID string.
+    // Arrays (repeated params), objects, malformed strings, and missing
+    // values are all rejected BEFORE any session lookup.
+    const rawSessionId: unknown = req.query["sessionId"];
+    if (typeof rawSessionId !== "string" || !UUID_RE.test(rawSessionId)) {
+      res.status(400).json({ error: "invalid sessionId" });
       return;
     }
+    const sessionId = rawSessionId;
 
     const entry = sessions.get(sessionId);
     if (!entry) {
@@ -189,8 +204,29 @@ export function startSseServer(server: McpServer): void {
       }
     }
 
-    await entry.transport.handlePostMessage(req, res);
+    // express.json() has already consumed the request stream, so the parsed
+    // (and token-injected) body MUST be handed to the transport explicitly —
+    // the SDK only falls back to reading the raw stream when no parsedBody
+    // is provided, and a consumed stream would yield an empty message.
+    await entry.transport.handlePostMessage(req, res, req.body);
   });
+
+  return app;
+}
+
+// ── Main export ───────────────────────────────────────────────
+
+export function startSseServer(server: McpServer): void {
+  const isProduction = process.env["NODE_ENV"] === "production";
+  const port = parseInt(process.env["SSE_PORT"] ?? "3000", 10);
+
+  if (isProduction && process.env["BEHIND_TLS_PROXY"] !== "true") {
+    console.error(
+      "[SECURITY] Running in production without BEHIND_TLS_PROXY=true. Ensure TLS is terminated upstream.",
+    );
+  }
+
+  const app = buildSseApp(server);
 
   // Bind to loopback by default — exposing the SSE server on all interfaces
   // must be a deliberate operator decision (SSE_HOST=0.0.0.0), ideally

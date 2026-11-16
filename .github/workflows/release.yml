@@ -95,3 +95,22 @@ jobs:
           generate_release_notes: false
           body_path: ${{ github.workspace }}/.github/RELEASE_NOTES.md
         continue-on-error: true
+
+  publish-mcp-registry:
+    name: Publish to MCP Registry
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      # Chained here because GitHub releases created with the default
+      # GITHUB_TOKEN do NOT emit events that trigger other workflows —
+      # the standalone on:release workflow never fired for CI-created
+      # releases (which is why the registry sat at 0.8.4).
+      - name: Publish to MCP Registry
+        uses: modelcontextprotocol/registry/.github/actions/publish@115f85225c9fac5281d8a2dc8551cf49b004d2f9 # main as of 2026-11-15
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
